@@ -83,7 +83,7 @@ export default function App() {
   const renderScreen = () => {
     if (screen === 'login') return <LoginScreen onLogin={handleLogin} systemMessage={backHint} />;
     if (screen === 'newSale') return <NewSaleScreen onBack={() => navigateTo('dashboard')} />;
-    if (screen === 'openDocuments') return <OpenDocumentsScreen onBack={() => navigateTo('dashboard')} />;
+    if (screen === 'openDocuments') return <OpenDocumentsScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
     if (screen === 'qrAlbum') return <QRAlbumScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'messages') return <MessagesScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'failedQueue') return <FailedQueueScreen onBack={() => navigateTo('dashboard')} />;
