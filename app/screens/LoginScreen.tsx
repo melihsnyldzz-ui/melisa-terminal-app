@@ -7,6 +7,7 @@ import type { ToastTone } from '../../components/ToastMessage';
 import { loginMock } from '../../services/api';
 import type { UserSession } from '../../types';
 import { colors, radius, shadows, spacing, typography } from '../theme';
+import { APP_VERSION } from '../version';
 
 const branches = ['Merkez Depo', 'Mağaza', 'Sevkiyat'];
 
@@ -65,6 +66,9 @@ export function LoginScreen({ onLogin, systemMessage }: LoginScreenProps) {
             <Text style={styles.brand}>MELİSA BEBE</Text>
             <Text style={styles.product}>Saha Terminali</Text>
             <Text style={styles.branchLine}>T01 · {branch}</Text>
+          </View>
+          <View style={styles.versionBadge}>
+            <Text style={styles.versionText}>v{APP_VERSION}</Text>
           </View>
         </Pressable>
 
@@ -176,6 +180,20 @@ const styles = StyleSheet.create({
   },
   brandCopy: {
     flex: 1,
+  },
+  versionBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.anthraciteSoft,
+    backgroundColor: '#161b22',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+  },
+  versionText: {
+    color: colors.line,
+    fontSize: typography.small,
+    fontWeight: '900',
   },
   brand: {
     color: colors.surface,

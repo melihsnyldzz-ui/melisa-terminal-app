@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, spacing, typography } from '../app/theme';
+import { APP_VERSION } from '../app/version';
 import { StatusPill } from './StatusPill';
 
 type TerminalHeaderProps = {
@@ -13,7 +14,6 @@ type TerminalHeaderProps = {
 
 export function TerminalHeader({ title = 'MELİSA BEBE', terminalId = 'T01', branch = 'Merkez Depo', online = true, onBack }: TerminalHeaderProps) {
   const insets = useSafeAreaInsets();
-  const time = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 
   return (
     <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
@@ -27,7 +27,9 @@ export function TerminalHeader({ title = 'MELİSA BEBE', terminalId = 'T01', bra
           <Text style={styles.brand}>{title}</Text>
           <Text style={styles.subBrand}>Saha Terminali</Text>
         </View>
-        <Text style={styles.time}>{time}</Text>
+        <View style={styles.versionBadge}>
+          <Text style={styles.versionText}>v{APP_VERSION}</Text>
+        </View>
       </View>
       <View style={styles.metaRow}>
         <View style={styles.metaChip}>
@@ -82,8 +84,16 @@ const styles = StyleSheet.create({
     fontSize: typography.small,
     fontWeight: '800',
   },
-  time: {
-    color: colors.surface,
+  versionBadge: {
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.anthraciteSoft,
+    backgroundColor: '#161b22',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+  },
+  versionText: {
+    color: colors.line,
     fontSize: typography.small,
     fontWeight: '900',
   },
