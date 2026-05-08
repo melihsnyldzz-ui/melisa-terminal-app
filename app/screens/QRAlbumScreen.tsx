@@ -38,7 +38,7 @@ export function QRAlbumScreen({ onBack }: QRAlbumScreenProps) {
       <ToastMessage message={banner?.message} tone={banner?.tone} />
 
       {!draft ? (
-        <EmptyState badge="QR" title="QR albüm hazırlanacak fiş yok" description="Yeni fiş başlatıp ürün eklediğinizde albüm burada hazırlanır." />
+        <EmptyState badge="QR" title="QR albüm hazırlanacak fiş yok" description="Ürün eklenen fişler burada hazırlanır." />
       ) : (
         <>
           <InfoCard title="Albüm özeti">
@@ -66,7 +66,7 @@ export function QRAlbumScreen({ onBack }: QRAlbumScreenProps) {
             </View>
           </View>
 
-          <InfoCard title="WhatsApp mesajı" subtitle="Merhaba, ürün görsellerine aşağıdaki bağlantıdan ulaşabilirsiniz." />
+          <InfoCard title="WhatsApp mesajı" subtitle="Merhaba, ürün görselleri bu bağlantıdan açılabilir." />
 
           <View style={styles.grid}>
             {draft.lines.map((item) => (

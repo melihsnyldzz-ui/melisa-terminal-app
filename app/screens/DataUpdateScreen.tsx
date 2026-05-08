@@ -39,7 +39,6 @@ export function DataUpdateScreen({ onBack }: DataUpdateScreenProps) {
         <AppButton label="Veri Güncelle" onPress={updateData} />
       </View>
       <InfoCard title="Çevrimdışı güvenlik" subtitle="Bekleyen belgeler korunur." tone="success" />
-      <InfoCard title="Güvenli çalışma modu" subtitle="Taslaklar cihazda korunur." tone="warning" />
     </ScreenShell>
   );
 }

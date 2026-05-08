@@ -55,7 +55,7 @@ export function LoginScreen({ onLogin, systemMessage }: LoginScreenProps) {
     <View style={styles.container}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + 44 }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + 56 }]}
         keyboardShouldPersistTaps="handled"
       >
         <Pressable onPress={handleTerminalPress} style={({ pressed }) => [styles.hero, pressed && styles.pressed]}>
@@ -147,27 +147,27 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    padding: spacing.md,
+    padding: spacing.sm,
     gap: spacing.sm,
     justifyContent: 'center',
   },
   hero: {
     backgroundColor: colors.anthracite,
     borderRadius: radius.lg,
-    padding: spacing.md,
+    padding: spacing.sm,
     borderBottomWidth: 3,
     borderBottomColor: colors.red,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
     ...shadows.subtle,
   },
   pressed: {
     opacity: 0.9,
   },
   brandMark: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
     alignItems: 'center',
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   },
   brand: {
     color: colors.surface,
-    fontSize: typography.brand,
+    fontSize: typography.title,
     fontWeight: '900',
   },
   product: {
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   terminalCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    padding: spacing.md,
+    padding: spacing.sm,
     borderWidth: 1,
     borderColor: colors.line,
     borderLeftWidth: 5,
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: colors.ink,
-    fontSize: 17,
+    fontSize: typography.section,
     fontWeight: '900',
     marginTop: spacing.xs,
   },
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   panel: {
-    padding: spacing.md,
+    padding: spacing.sm,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   input: {
-    minHeight: 48,
+    minHeight: 46,
     borderRadius: radius.md,
     backgroundColor: colors.surfaceSoft,
     borderWidth: 1,

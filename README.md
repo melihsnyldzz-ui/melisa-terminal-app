@@ -80,6 +80,7 @@ npm run preview:honeywell
 - `v0.3.7`: Terminal ayar paneli, depo segment seçimi, API adresi, bağlantı kontrolü ve oturum kapatma akışı
 - `v0.3.8`: Profesyonel offline kuyruk ekranı, işlem kartları, tümünü tekrar deneme ve boş kuyruk durumu
 - `v0.3.9`: Açık fişler operasyon ekranı, durum filtreleri, kompakt fiş kartları ve hızlı fiş aksiyonları
+- `v0.4.0`: Honeywell cihaz kalite turu; ortak safe area, alt tuş boşluğu, kompakt metin ve tutarlı ekran yoğunluğu
 - Sonraki fazlar: gerçek ERP API bağlantısı, offline kuyruk sertleştirme, bildirim/ses/titreşim, QR albüm servis bağlantısı
 
 Uygulama versiyonu TerminalHeader sağ üstünde gösterilir. Honeywell testlerinde ekranda görünen versiyon, GitHub'daki `package.json` version alanıyla uyumlu olmalıdır.

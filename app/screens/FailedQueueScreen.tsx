@@ -56,7 +56,7 @@ export function FailedQueueScreen({ onBack }: FailedQueueScreenProps) {
         <View style={styles.topPanel}>
           <View>
             <Text style={styles.topTitle}>Offline kuyruk</Text>
-            <Text style={styles.topText}>Bağlantı hazır olduğunda işlemler yeniden gönderilir.</Text>
+            <Text style={styles.topText}>Bağlantı hazır olduğunda yeniden gönderilir.</Text>
           </View>
           <ActionRow actions={[{ label: 'Tümünü Tekrar Dene', onPress: retryAll, variant: 'primary' }]} />
         </View>

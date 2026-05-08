@@ -66,7 +66,7 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
   return (
     <View style={styles.container}>
       <TerminalHeader terminalId="T01" branch={session?.branch ?? 'Merkez Depo'} online={!session?.offlineMode} />
-      <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 44 }]}>
+      <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 56 }]}>
         <ToastMessage message={systemMessage} tone="info" />
         <View style={styles.quickBar}>
           {quickActions.map((action) => (

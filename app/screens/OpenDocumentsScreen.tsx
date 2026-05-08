@@ -64,7 +64,7 @@ export function OpenDocumentsScreen({ onBack, onNavigate }: OpenDocumentsScreenP
 
       <View style={styles.summaryPanel}>
         <Text style={styles.summaryTitle}>Fiş operasyonları</Text>
-        <Text style={styles.summaryText}>Açık, bekleyen ve gönderilemeyen fişleri hızlıca kontrol edin.</Text>
+        <Text style={styles.summaryText}>Fişleri hızlıca kontrol edin.</Text>
       </View>
 
       {filteredDocuments.length === 0 ? (
