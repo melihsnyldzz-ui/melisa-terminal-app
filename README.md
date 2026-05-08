@@ -72,6 +72,7 @@ npm run preview:honeywell
 - `v0.2.6`: Login ekranı ve dashboard ana menü görsel iyileştirme; Honeywell terminal ekranına göre daha premium UI düzeni; safe area davranışı korunmuştur; görünür uygulama versiyonu eklenmiştir
 - `v0.3.0`: Gerçekçi fiş akışı, barkod/QR input, ürün satırları, local aktif fiş taslağı ve QR albüm hazırlama aksiyonu
 - `v0.3.1`: Aktif fişe bağlı QR albüm, güvenli link önizlemesi, WhatsApp mesaj önizlemesi ve fiyat gösterilmeme kuralı
+- `v0.3.2`: Scanner-wedge barkod input odak optimizasyonu, son okutulan ürün alanı, hızlı ürün kodları ve çift okutma koruması
 - Sonraki fazlar: gerçek ERP API bağlantısı, offline kuyruk sertleştirme, bildirim/ses/titreşim, QR albüm servis bağlantısı
 
 Uygulama versiyonu TerminalHeader sağ üstünde gösterilir. Honeywell testlerinde ekranda görünen versiyon, GitHub'daki `package.json` version alanıyla uyumlu olmalıdır.
