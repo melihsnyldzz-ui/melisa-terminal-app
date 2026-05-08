@@ -5,7 +5,7 @@ import { InfoCard } from '../../components/InfoCard';
 import { ScreenShell } from '../../components/ScreenShell';
 import { getQRAlbumMock } from '../../services/api';
 import type { QRAlbum } from '../../types';
-import { colors } from '../theme';
+import { colors, radius, spacing, typography } from '../theme';
 
 type QRAlbumScreenProps = {
   onBack: () => void;
@@ -19,31 +19,81 @@ export function QRAlbumScreen({ onBack }: QRAlbumScreenProps) {
   }, []);
 
   return (
-    <ScreenShell title="QR Albüm" subtitle="Fiyat göstermeyen mock ürün albümü" onBack={onBack}>
-      <InfoCard title={`Fiş: ${album?.documentNo ?? 'Yükleniyor'}`} subtitle={`${album?.customerLabel ?? 'Müşteri'} için ürün görsel önizlemesi`} />
+    <ScreenShell title="QR Albüm" subtitle="Fiyat göstermeyen ürün görsel önizlemesi" onBack={onBack}>
+      <InfoCard title={`Fiş ${album?.documentNo ?? 'yükleniyor'}`} subtitle={`${album?.customerLabel ?? 'Müşteri'} için mock albüm görünümü`} tone="dark" />
       <View style={styles.grid}>
-        {album?.items.map((item) => (
+        {album?.items.map((item, index) => (
           <View key={item.id} style={styles.productCard}>
             <View style={styles.placeholder}>
-              <Text style={styles.placeholderText}>Görsel</Text>
+              <Text style={styles.placeholderCode}>P{index + 1}</Text>
+              <Text style={styles.placeholderText}>Fotoğraf</Text>
             </View>
-            <Text style={styles.productName}>{item.name}</Text>
-            <Text style={styles.productMeta}>{item.color} · {item.size}</Text>
+            <View style={styles.productInfo}>
+              <Text style={styles.productName}>{item.name}</Text>
+              <Text style={styles.productMeta}>{item.color} · {item.size}</Text>
+            </View>
           </View>
         ))}
       </View>
-      <AppButton label="Tüm Görselleri İndir" onPress={() => undefined} variant="secondary" />
-      <AppButton label="WhatsApp ile İletişim" onPress={() => undefined} variant="dark" />
-      <InfoCard title="Fiyat güvenliği" subtitle="QR albüm mock önizlemede fiyat bilgisi gösterilmez." tone="success" />
+      <View style={styles.actions}>
+        <AppButton label="Tüm Görselleri İndir" onPress={() => undefined} />
+        <AppButton label="WhatsApp ile İletişim" onPress={() => undefined} variant="dark" />
+      </View>
+      <InfoCard title="Fiyat gösterimi kapalı" subtitle="QR albüm mock önizlemede fiyat bilgisi gösterilmez." tone="success" />
     </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  grid: { gap: 12 },
-  productCard: { backgroundColor: colors.white, borderRadius: 8, borderWidth: 1, borderColor: colors.lightGray, padding: 12, gap: 8 },
-  placeholder: { height: 120, borderRadius: 8, backgroundColor: colors.black, alignItems: 'center', justifyContent: 'center' },
-  placeholderText: { color: colors.white, fontSize: 18, fontWeight: '900' },
-  productName: { color: colors.black, fontSize: 17, fontWeight: '900' },
-  productMeta: { color: colors.gray, fontWeight: '700' },
+  grid: {
+    gap: spacing.sm,
+  },
+  productCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  placeholder: {
+    width: 96,
+    height: 82,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: colors.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  placeholderCode: {
+    color: colors.red,
+    fontSize: typography.section,
+    fontWeight: '900',
+  },
+  placeholderText: {
+    color: colors.anthracite,
+    fontSize: typography.small,
+    fontWeight: '800',
+  },
+  productInfo: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  productName: {
+    color: colors.ink,
+    fontSize: typography.body,
+    fontWeight: '900',
+  },
+  productMeta: {
+    color: colors.muted,
+    fontWeight: '700',
+    fontSize: typography.small,
+  },
+  actions: {
+    gap: spacing.sm,
+  },
 });

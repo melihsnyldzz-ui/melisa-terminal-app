@@ -3,7 +3,7 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppButton } from '../../components/AppButton';
 import { loginMock } from '../../services/api';
 import type { UserSession } from '../../types';
-import { colors } from '../theme';
+import { colors, radius, shadows, spacing, typography } from '../theme';
 
 const branches = ['Merkez Depo', 'Mağaza', 'Sevkiyat'];
 
@@ -23,37 +23,119 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={styles.terminalCap}>
         <Text style={styles.brand}>MELİSA BEBE</Text>
-        <Text style={styles.subtitle}>El Terminali</Text>
-        <Text style={styles.version}>Versiyon: v0.1.0</Text>
+        <Text style={styles.capMeta}>T01 · Android Terminal · v0.1.2</Text>
       </View>
-      <View style={styles.form}>
-        <Text style={styles.label}>Kullanıcı adı</Text>
-        <TextInput value={username} onChangeText={setUsername} placeholder="Personel adı" placeholderTextColor={colors.gray} style={styles.input} autoCapitalize="none" />
-        <Text style={styles.label}>PIN</Text>
-        <TextInput value={pin} onChangeText={setPin} placeholder="4 haneli PIN" placeholderTextColor={colors.gray} style={styles.input} secureTextEntry keyboardType="number-pad" />
+
+      <View style={styles.panel}>
+        <Text style={styles.title}>El Terminali Giriş</Text>
+        <Text style={styles.subtitle}>Personel operasyon ekranı</Text>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Kullanıcı adı</Text>
+          <TextInput value={username} onChangeText={setUsername} placeholder="Personel adı" placeholderTextColor={colors.muted} style={styles.input} autoCapitalize="none" />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>PIN</Text>
+          <TextInput value={pin} onChangeText={setPin} placeholder="4 haneli PIN" placeholderTextColor={colors.muted} style={styles.input} secureTextEntry keyboardType="number-pad" />
+        </View>
+
         <Text style={styles.label}>Şube / depo</Text>
         <View style={styles.branchGrid}>
           {branches.map((item) => (
-            <AppButton key={item} label={item} onPress={() => setBranch(item)} variant={branch === item ? 'primary' : 'secondary'} />
+            <AppButton key={item} label={item} onPress={() => setBranch(item)} variant={branch === item ? 'primary' : 'quiet'} compact />
           ))}
         </View>
-        <AppButton label="Giriş Yap" onPress={() => submit(false)} />
-        <AppButton label="Çevrimdışı Devam Et" onPress={() => submit(true)} variant="dark" />
+
+        <View style={styles.actions}>
+          <AppButton label="Giriş Yap" onPress={() => submit(false)} />
+          <AppButton label="Çevrimdışı Devam Et" onPress={() => submit(true)} variant="dark" />
+        </View>
       </View>
+
+      <Text style={styles.footer}>Mock data · Local storage · Gerçek Vega / SQL yazma yok</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.black },
-  header: { paddingHorizontal: 22, paddingTop: 34, paddingBottom: 22, backgroundColor: colors.red },
-  brand: { color: colors.white, fontSize: 34, fontWeight: '900' },
-  subtitle: { color: colors.white, fontSize: 22, fontWeight: '800', marginTop: 4 },
-  version: { color: colors.white, fontSize: 14, fontWeight: '700', marginTop: 12 },
-  form: { padding: 16, gap: 12 },
-  label: { color: colors.white, fontSize: 16, fontWeight: '800' },
-  input: { minHeight: 58, borderRadius: 8, backgroundColor: colors.white, color: colors.black, fontSize: 18, paddingHorizontal: 14, fontWeight: '700' },
-  branchGrid: { gap: 10 },
+  container: {
+    flex: 1,
+    backgroundColor: colors.surface,
+  },
+  terminalCap: {
+    backgroundColor: colors.anthracite,
+    paddingHorizontal: spacing.xl,
+    paddingTop: 28,
+    paddingBottom: spacing.lg,
+    borderBottomWidth: 4,
+    borderBottomColor: colors.red,
+  },
+  brand: {
+    color: colors.surface,
+    fontSize: typography.brand,
+    fontWeight: '900',
+  },
+  capMeta: {
+    color: colors.line,
+    fontSize: typography.small,
+    fontWeight: '800',
+    marginTop: spacing.xs,
+  },
+  panel: {
+    margin: spacing.lg,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    gap: spacing.md,
+    ...shadows.subtle,
+  },
+  title: {
+    color: colors.ink,
+    fontSize: typography.title,
+    fontWeight: '900',
+  },
+  subtitle: {
+    color: colors.muted,
+    fontSize: typography.body,
+    fontWeight: '700',
+    marginTop: -spacing.sm,
+  },
+  field: {
+    gap: spacing.xs,
+  },
+  label: {
+    color: colors.anthracite,
+    fontSize: typography.body,
+    fontWeight: '900',
+  },
+  input: {
+    minHeight: 52,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: colors.line,
+    color: colors.ink,
+    fontSize: typography.section,
+    paddingHorizontal: spacing.md,
+    fontWeight: '700',
+  },
+  branchGrid: {
+    gap: spacing.sm,
+  },
+  actions: {
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  footer: {
+    color: colors.muted,
+    fontSize: typography.small,
+    fontWeight: '700',
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
+  },
 });

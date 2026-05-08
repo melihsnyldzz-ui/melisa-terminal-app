@@ -1,19 +1,19 @@
 import { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../app/theme';
+import { colors, radius, shadows, spacing, typography } from '../app/theme';
 
 type InfoCardProps = {
   title: string;
   subtitle?: string;
-  tone?: 'default' | 'danger' | 'success' | 'warning';
+  tone?: 'default' | 'danger' | 'success' | 'warning' | 'dark';
   children?: ReactNode;
 };
 
 export function InfoCard({ title, subtitle, tone = 'default', children }: InfoCardProps) {
   return (
     <View style={[styles.card, styles[tone]]}>
-      <Text style={styles.title}>{title}</Text>
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      <Text style={[styles.title, tone === 'dark' && styles.darkTitle]}>{title}</Text>
+      {subtitle ? <Text style={[styles.subtitle, tone === 'dark' && styles.darkSubtitle]}>{subtitle}</Text> : null}
       {children}
     </View>
   );
@@ -21,17 +21,52 @@ export function InfoCard({ title, subtitle, tone = 'default', children }: InfoCa
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.white,
-    borderRadius: 8,
-    padding: 14,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.lightGray,
-    gap: 8,
+    borderColor: colors.line,
+    gap: spacing.sm,
+    ...shadows.subtle,
   },
-  default: { borderLeftWidth: 5, borderLeftColor: colors.black },
-  danger: { borderLeftWidth: 5, borderLeftColor: colors.red },
-  success: { borderLeftWidth: 5, borderLeftColor: colors.green },
-  warning: { borderLeftWidth: 5, borderLeftColor: colors.amber },
-  title: { color: colors.black, fontSize: 17, fontWeight: '900' },
-  subtitle: { color: colors.gray, fontSize: 14, lineHeight: 20, fontWeight: '600' },
+  default: {
+    borderLeftWidth: 4,
+    borderLeftColor: colors.anthracite,
+  },
+  danger: {
+    backgroundColor: colors.dangerSoft,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.red,
+  },
+  success: {
+    backgroundColor: colors.successSoft,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.success,
+  },
+  warning: {
+    backgroundColor: colors.warningSoft,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.amber,
+  },
+  dark: {
+    backgroundColor: colors.anthracite,
+    borderColor: colors.anthracite,
+  },
+  title: {
+    color: colors.ink,
+    fontSize: typography.section,
+    fontWeight: '900',
+  },
+  darkTitle: {
+    color: colors.surface,
+  },
+  subtitle: {
+    color: colors.muted,
+    fontSize: typography.body,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
+  darkSubtitle: {
+    color: colors.line,
+  },
 });

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppButton } from '../../components/AppButton';
 import { InfoCard } from '../../components/InfoCard';
 import { ScreenShell } from '../../components/ScreenShell';
 import { testConnectionMock } from '../../services/api';
 import { loadSettings, saveSettings } from '../../storage/localStorage';
 import type { TerminalSettings, UserSession } from '../../types';
-import { colors } from '../theme';
+import { colors, radius, spacing, typography } from '../theme';
 
 type SettingsScreenProps = {
   onBack: () => void;
@@ -40,23 +40,67 @@ export function SettingsScreen({ onBack, session }: SettingsScreenProps) {
   };
 
   return (
-    <ScreenShell title="Ayarlar" subtitle="Terminal ve mock API ayarları" onBack={onBack}>
-      <Text style={styles.label}>Terminal ID</Text>
-      <TextInput value={settings.terminalId} onChangeText={(value) => update('terminalId', value)} style={styles.input} />
-      <Text style={styles.label}>Depo</Text>
-      <TextInput value={settings.branch} onChangeText={(value) => update('branch', value)} style={styles.input} />
-      <Text style={styles.label}>API adresi</Text>
-      <TextInput value={settings.apiBaseUrl} onChangeText={(value) => update('apiBaseUrl', value)} style={styles.input} />
-      <AppButton label="Ayarları Kaydet" onPress={save} />
-      <AppButton label="Bağlantı Testi" onPress={test} variant="secondary" />
-      <AppButton label="Veri Güncelle" onPress={() => setStatus('Mock veri güncelleme kontrolü hazır.')} variant="dark" />
+    <ScreenShell title="Terminal Ayarları" subtitle="Cihaz, depo ve mock bağlantı bilgileri" onBack={onBack}>
+      <View style={styles.formPanel}>
+        <Field label="Terminal ID" value={settings.terminalId} onChangeText={(value) => update('terminalId', value)} />
+        <Field label="Depo" value={settings.branch} onChangeText={(value) => update('branch', value)} />
+        <Field label="API adresi" value={settings.apiBaseUrl} onChangeText={(value) => update('apiBaseUrl', value)} />
+      </View>
+      <View style={styles.actions}>
+        <AppButton label="Ayarları Kaydet" onPress={save} />
+        <AppButton label="Bağlantı Testi" onPress={test} variant="secondary" />
+        <AppButton label="Veri Güncelle" onPress={() => setStatus('Mock veri güncelleme kontrolü hazır.')} variant="dark" />
+      </View>
       <InfoCard title="Durum" subtitle={status} />
       <InfoCard title="Güvenli sınır" subtitle="Bu ekran gerçek API, Vega veya SQL bağlantısı başlatmaz." tone="warning" />
     </ScreenShell>
   );
 }
 
+type FieldProps = {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+};
+
+function Field({ label, value, onChangeText }: FieldProps) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.label}>{label}</Text>
+      <TextInput value={value} onChangeText={onChangeText} style={styles.input} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  label: { color: colors.black, fontSize: 16, fontWeight: '900' },
-  input: { minHeight: 58, borderRadius: 8, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.lightGray, color: colors.black, fontSize: 18, paddingHorizontal: 14, fontWeight: '700' },
+  formPanel: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  field: {
+    gap: spacing.xs,
+  },
+  label: {
+    color: colors.anthracite,
+    fontSize: typography.body,
+    fontWeight: '900',
+  },
+  input: {
+    minHeight: 50,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: colors.line,
+    color: colors.ink,
+    fontSize: typography.body,
+    paddingHorizontal: spacing.md,
+    fontWeight: '700',
+  },
+  actions: {
+    gap: spacing.sm,
+  },
 });
