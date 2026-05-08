@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { InfoCard } from '../../components/InfoCard';
 import { StatusPill } from '../../components/StatusPill';
 import { TerminalHeader } from '../../components/TerminalHeader';
 import { ToastMessage } from '../../components/ToastMessage';
@@ -38,7 +37,7 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
   const [unreadCount, setUnreadCount] = useState(0);
   const [documents, setDocuments] = useState<OpenDocument[]>([]);
   const [failedCount, setFailedCount] = useState(0);
-  const [lastSync] = useState('Bugün 09:40');
+  const [lastSync] = useState('09:40');
   const [activeDraft, setActiveDraft] = useState<ActiveSaleDraft | null>(null);
 
   useEffect(() => {
@@ -88,20 +87,24 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
           <SummaryBox label="Açık Fiş" value={documents.length.toString()} />
           <SummaryBox label="Mesaj" value={unreadCount.toString()} tone={unreadCount > 0 ? 'danger' : 'dark'} />
           <SummaryBox label="Kuyruk" value={failedCount.toString()} tone={failedCount > 0 ? 'warning' : 'dark'} />
-          <SummaryBox label="Senkron" value={lastSync} wide />
+          <SummaryBox label="Senkron" value={lastSync} />
         </View>
 
-        <InfoCard title="Son aktif fiş">
+        <View style={styles.activeCard}>
+          <View style={styles.activeCardTop}>
+            <Text style={styles.activeCardTitle}>Son aktif fiş</Text>
+            {hasActiveDraft ? <StatusPill label="Hazır" tone="success" /> : <StatusPill label="Boş" tone="dark" />}
+          </View>
           {hasActiveDraft && activeDraft ? (
             <>
               <View style={styles.documentHeader}>
                 <Text style={styles.documentNo}>{activeDraft.documentNo}</Text>
-                <StatusPill label={`${activeItemCount} ürün`} tone="dark" />
+                <Text style={styles.itemCount}>{activeItemCount} ürün</Text>
               </View>
               <View style={styles.activeDocRow}>
                 <View style={styles.activeMeta}>
                   <Text style={styles.customerLabel}>Müşteri</Text>
-                  <Text style={styles.customerName}>{activeDraft.customerName}</Text>
+                  <Text style={styles.customerName} numberOfLines={1}>{activeDraft.customerName}</Text>
                 </View>
                 <Pressable onPress={() => onNavigate('newSale')} style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
                   <Text style={styles.continueText}>Devam Et</Text>
@@ -112,14 +115,14 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
             <View style={styles.activeDocRow}>
               <View style={styles.activeMeta}>
                 <Text style={styles.documentNoMuted}>Aktif fiş yok</Text>
-                <Text style={styles.customerName}>Yeni fiş başlatabilirsin</Text>
+                <Text style={styles.customerName}>Yeni fiş başlatabilirsiniz</Text>
               </View>
               <Pressable onPress={() => onNavigate('newSale')} style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
-                <Text style={styles.continueText}>Yeni Fiş Başlat</Text>
+                <Text style={styles.continueText}>Yeni Fiş</Text>
               </Pressable>
             </View>
           )}
-        </InfoCard>
+        </View>
 
         <View style={styles.menuGrid}>
           {modules.map((module) => (
@@ -137,7 +140,9 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
           ))}
         </View>
 
-        <InfoCard title="Güvenli çalışma modu" subtitle="Terminal hazır. Veriler cihazda korunur." tone="dark" />
+        <View style={styles.footerNote}>
+          <Text style={styles.footerNoteText}>Terminal hazır · Veriler cihazda korunur</Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -147,12 +152,11 @@ type SummaryBoxProps = {
   label: string;
   value: string;
   tone?: 'dark' | 'danger' | 'warning';
-  wide?: boolean;
 };
 
-function SummaryBox({ label, value, tone = 'dark', wide = false }: SummaryBoxProps) {
+function SummaryBox({ label, value, tone = 'dark' }: SummaryBoxProps) {
   return (
-    <View style={[styles.summaryBox, wide && styles.summaryWide]}>
+    <View style={styles.summaryBox}>
       <Text style={[styles.summaryValue, tone === 'danger' && styles.summaryDanger, tone === 'warning' && styles.summaryWarning]}>{value}</Text>
       <Text style={styles.summaryLabel}>{label}</Text>
     </View>
@@ -168,8 +172,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: spacing.md,
-    gap: spacing.sm,
+    padding: spacing.sm,
+    gap: spacing.xs,
   },
   quickBar: {
     flexDirection: 'row',
@@ -177,7 +181,7 @@ const styles = StyleSheet.create({
   },
   quickButton: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 38,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.line,
@@ -192,6 +196,7 @@ const styles = StyleSheet.create({
   quickPrimary: {
     backgroundColor: colors.red,
     borderColor: colors.redDark,
+    borderBottomColor: colors.anthracite,
   },
   quickDark: {
     backgroundColor: colors.anthracite,
@@ -212,7 +217,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.line,
-    padding: spacing.md,
+    padding: spacing.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -221,20 +226,20 @@ const styles = StyleSheet.create({
   },
   welcomeTitle: {
     color: colors.ink,
-    fontSize: typography.title,
+    fontSize: typography.section,
     fontWeight: '900',
   },
   welcomeSubtitle: {
     color: colors.muted,
-    fontSize: typography.body,
+    fontSize: typography.small,
     fontWeight: '800',
     marginTop: 2,
   },
   terminalBadge: {
     backgroundColor: colors.anthracite,
     borderRadius: radius.md,
-    minWidth: 44,
-    minHeight: 38,
+    minWidth: 40,
+    minHeight: 34,
     alignItems: 'center',
     justifyContent: 'center',
     borderBottomWidth: 2,
@@ -243,16 +248,17 @@ const styles = StyleSheet.create({
   terminalBadgeText: {
     color: colors.surface,
     fontWeight: '900',
-    fontSize: typography.section,
+    fontSize: typography.body,
   },
   startSale: {
     backgroundColor: colors.red,
     borderRadius: radius.lg,
-    padding: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.md,
+    gap: spacing.sm,
     borderWidth: 1,
     borderColor: colors.redDark,
     borderBottomWidth: 3,
@@ -264,18 +270,18 @@ const styles = StyleSheet.create({
   },
   startSaleText: {
     color: colors.surface,
-    fontSize: 18,
+    fontSize: typography.section,
     fontWeight: '900',
   },
   startSaleHint: {
     color: colors.surface,
-    fontSize: typography.body,
+    fontSize: typography.small,
     fontWeight: '800',
     marginTop: 2,
   },
   startArrow: {
-    width: 34,
-    height: 34,
+    width: 30,
+    height: 30,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
     alignItems: 'center',
@@ -283,8 +289,8 @@ const styles = StyleSheet.create({
   },
   startArrowText: {
     color: colors.red,
-    fontSize: 26,
-    lineHeight: 27,
+    fontSize: 23,
+    lineHeight: 24,
     fontWeight: '900',
   },
   summaryGrid: {
@@ -293,26 +299,23 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   summaryBox: {
-    flexGrow: 1,
+    flex: 1,
     minWidth: '23%',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: radius.md,
-    padding: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: 3,
     borderTopWidth: 2,
     borderTopColor: colors.anthracite,
     borderBottomWidth: 1,
     borderBottomColor: colors.red,
     ...shadows.subtle,
   },
-  summaryWide: {
-    minWidth: '48%',
-    borderTopColor: colors.red,
-  },
   summaryValue: {
     color: colors.ink,
-    fontSize: typography.section,
+    fontSize: typography.body,
     fontWeight: '900',
   },
   summaryDanger: {
@@ -327,6 +330,28 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     marginTop: 2,
   },
+  activeCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.red,
+    padding: spacing.sm,
+    gap: spacing.xs,
+    ...shadows.subtle,
+  },
+  activeCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  activeCardTitle: {
+    color: colors.anthracite,
+    fontSize: typography.body,
+    fontWeight: '900',
+  },
   menuGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -334,14 +359,16 @@ const styles = StyleSheet.create({
   },
   module: {
     width: '48.7%',
-    minHeight: 74,
+    minHeight: 62,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: radius.lg,
-    padding: spacing.sm,
+    padding: spacing.xs,
     gap: spacing.xs,
     overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
     ...shadows.subtle,
   },
   moduleAccent: {
@@ -353,8 +380,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.red,
   },
   codeBox: {
-    width: 38,
-    height: 30,
+    width: 36,
+    height: 28,
     borderRadius: radius.sm,
     backgroundColor: colors.anthracite,
     alignItems: 'center',
@@ -366,11 +393,12 @@ const styles = StyleSheet.create({
     fontSize: typography.small,
   },
   moduleTextBlock: {
+    flex: 1,
     gap: 2,
   },
   moduleText: {
     color: colors.ink,
-    fontSize: typography.section,
+    fontSize: typography.body,
     fontWeight: '900',
   },
   moduleDescription: {
@@ -395,6 +423,11 @@ const styles = StyleSheet.create({
     fontSize: typography.section,
     fontWeight: '900',
   },
+  itemCount: {
+    color: colors.anthracite,
+    fontSize: typography.small,
+    fontWeight: '900',
+  },
   documentNoMuted: {
     color: colors.muted,
     fontSize: typography.section,
@@ -402,7 +435,7 @@ const styles = StyleSheet.create({
   },
   activeMeta: {
     flex: 1,
-    gap: spacing.xs,
+    gap: 2,
   },
   customerLabel: {
     color: colors.muted,
@@ -417,14 +450,28 @@ const styles = StyleSheet.create({
   continueButton: {
     backgroundColor: colors.red,
     borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    minHeight: 38,
+    minHeight: 36,
     justifyContent: 'center',
   },
   continueText: {
     color: colors.surface,
     fontWeight: '900',
     fontSize: typography.small,
+  },
+  footerNote: {
+    backgroundColor: colors.anthracite,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.red,
+  },
+  footerNoteText: {
+    color: colors.surface,
+    fontSize: typography.small,
+    fontWeight: '900',
+    textAlign: 'center',
   },
 });
