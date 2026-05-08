@@ -43,7 +43,7 @@ export async function getOpenDocumentsMock(): Promise<OpenDocument[]> {
 export async function createSaleMock(customerName: string) {
   await wait(250);
   return {
-    documentNo: 'FIS-MOCK-001',
+    documentNo: 'FIS-1001',
     customerName: customerName.trim() || 'Seçili müşteri yok',
     itemCount: 0,
   };
@@ -82,7 +82,7 @@ export async function getFailedOperationsMock(): Promise<FailedOperation[]> {
       id: 'fail-1',
       documentNo: 'FIS-1026',
       title: 'Fiş gönderimi bekliyor',
-      reason: 'Mock bağlantı kesintisi nedeniyle kuyrukta tutuluyor.',
+      reason: 'Bağlantı hazırlık aşamasında olduğu için kuyrukta tutuluyor.',
       createdAt: 'Dün 18:05',
     },
   ];
@@ -92,6 +92,6 @@ export async function testConnectionMock(settings: TerminalSettings) {
   await wait(300);
   return {
     ok: true,
-    message: `${settings.terminalId} için mock bağlantı kontrolü hazır.`,
+    message: `${settings.terminalId} için bağlantı kontrolü hazır.`,
   };
 }

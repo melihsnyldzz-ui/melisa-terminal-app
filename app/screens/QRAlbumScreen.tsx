@@ -23,7 +23,7 @@ export function QRAlbumScreen({ onBack }: QRAlbumScreenProps) {
   }, []);
 
   const showMockAction = (action: string) => {
-    setBanner({ message: `${action} mock olarak hazırlandı. Gerçek paylaşım yapılmadı.`, tone: 'success' });
+    setBanner({ message: `${action} hazırlandı. Paylaşım onay bekliyor.`, tone: 'success' });
   };
 
   return (

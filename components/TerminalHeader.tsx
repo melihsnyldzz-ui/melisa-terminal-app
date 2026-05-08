@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, spacing, typography } from '../app/theme';
+import { colors, radius, spacing, typography } from '../app/theme';
 import { StatusPill } from './StatusPill';
 
 type TerminalHeaderProps = {
@@ -17,17 +17,22 @@ export function TerminalHeader({ title = 'MELİSA BEBE', terminalId = 'T01', bra
     <View style={styles.header}>
       <View style={styles.topRow}>
         {onBack ? (
-          <Pressable accessibilityRole="button" onPress={onBack} style={styles.backButton}>
+          <Pressable accessibilityRole="button" onPress={onBack} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
             <Text style={styles.backText}>GERİ</Text>
           </Pressable>
         ) : null}
-        <Text style={styles.brand}>{title}</Text>
+        <View style={styles.brandBlock}>
+          <Text style={styles.brand}>{title}</Text>
+          <Text style={styles.subBrand}>Saha Terminali</Text>
+        </View>
         <Text style={styles.time}>{time}</Text>
       </View>
       <View style={styles.metaRow}>
-        <Text style={styles.meta}>Terminal ID: {terminalId}</Text>
-        <Text style={styles.meta}>Depo: {branch}</Text>
-        <StatusPill label={online ? 'Online' : 'Offline'} tone={online ? 'success' : 'danger'} />
+        <View style={styles.metaChip}>
+          <Text style={styles.metaLabel}>{terminalId}</Text>
+        </View>
+        <Text style={styles.meta}>{branch}</Text>
+        <StatusPill label={online ? 'Hazır' : 'Çevrimdışı'} tone={online ? 'success' : 'warning'} />
       </View>
     </View>
   );
@@ -38,7 +43,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.anthracite,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.md,
     borderBottomWidth: 4,
     borderBottomColor: colors.red,
     gap: spacing.sm,
@@ -51,22 +56,33 @@ const styles = StyleSheet.create({
   backButton: {
     backgroundColor: colors.red,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-    borderRadius: 4,
+    paddingVertical: 6,
+    borderRadius: radius.sm,
+  },
+  pressed: {
+    opacity: 0.82,
   },
   backText: {
     color: colors.surface,
     fontSize: 11,
     fontWeight: '900',
   },
-  brand: {
+  brandBlock: {
     flex: 1,
+  },
+  brand: {
     color: colors.surface,
     fontSize: typography.section,
     fontWeight: '900',
   },
-  time: {
+  subBrand: {
     color: colors.line,
+    fontSize: typography.small,
+    fontWeight: '800',
+    marginTop: 1,
+  },
+  time: {
+    color: colors.surface,
     fontSize: typography.small,
     fontWeight: '900',
   },
@@ -75,6 +91,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: spacing.sm,
+  },
+  metaChip: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  metaLabel: {
+    color: colors.anthracite,
+    fontSize: typography.small,
+    fontWeight: '900',
   },
   meta: {
     color: colors.line,

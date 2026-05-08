@@ -91,7 +91,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     const nextLines = lines.filter((line) => line.lineId !== lineId);
     setLines(nextLines);
     await persistDraft(nextLines);
-    setBanner({ message: 'Ürün satırı mock fişten silindi.', tone: 'info' });
+    setBanner({ message: 'Ürün satırı fişten silindi.', tone: 'info' });
   };
 
   const createAlbum = () => {
@@ -100,11 +100,11 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       return;
     }
     setStep(4);
-    setBanner({ message: `${documentNo} için QR albüm mock olarak hazırlandı.`, tone: 'success' });
+    setBanner({ message: `${documentNo} için QR albüm hazırlandı.`, tone: 'success' });
   };
 
   return (
-    <ScreenShell title="Yeni Fiş / Satış" subtitle="Aktif fiş ve mock barkod akışı" onBack={onBack}>
+    <ScreenShell title="Yeni Fiş / Satış" subtitle="Aktif fiş ve barkod akışı" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
       <View style={styles.stepRow}>
         {steps.map((item, index) => {
@@ -123,7 +123,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
         <AppButton label="Fiş Başlat" onPress={startSale} />
         <Text style={styles.label}>Barkod / QR kod gir</Text>
         <TextInput value={barcode} onChangeText={setBarcode} placeholder="Örn: MB-ELB-104" placeholderTextColor={colors.muted} style={styles.input} autoCapitalize="characters" />
-        <ActionRow actions={[{ label: 'Ekle', onPress: () => addProduct(), variant: 'primary' }, { label: 'Hızlı Mock', onPress: () => addProduct(`MB-${Date.now().toString().slice(-4)}`), variant: 'dark' }]} />
+        <ActionRow actions={[{ label: 'Ekle', onPress: () => addProduct(), variant: 'primary' }, { label: 'Hızlı Ekle', onPress: () => addProduct(`MB-${Date.now().toString().slice(-4)}`), variant: 'dark' }]} />
         <AppButton label="QR Albüm Oluştur" onPress={createAlbum} variant="secondary" compact />
       </View>
 

@@ -24,7 +24,7 @@ export function OpenDocumentsScreen({ onBack }: OpenDocumentsScreenProps) {
   }, []);
 
   const showMockAction = (action: string, documentNo: string) => {
-    setBanner({ message: `${documentNo} için "${action}" mock olarak hazırlandı.`, tone: action === 'Gönder' ? 'warning' : 'info' });
+    setBanner({ message: `${documentNo} için "${action}" işlemi hazırlandı.`, tone: action === 'Gönder' ? 'warning' : 'info' });
   };
 
   return (

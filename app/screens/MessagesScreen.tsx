@@ -83,7 +83,7 @@ export function MessagesScreen({ onBack }: MessagesScreenProps) {
           <Text style={styles.detailText}>{selectedMessage.body}</Text>
           <ActionRow actions={[{ label: 'Okundu işaretle', onPress: markSelectedRead, variant: 'primary' }]} />
           {selectedMessage.relatedDocument ? (
-            <ActionRow actions={[{ label: 'Fişe Git', onPress: () => setBanner({ message: `${selectedMessage.relatedDocument} mock fiş yönlendirmesi hazır.`, tone: 'info' }), variant: 'dark' }]} />
+            <ActionRow actions={[{ label: 'Fişe Git', onPress: () => setBanner({ message: `${selectedMessage.relatedDocument} fiş yönlendirmesi hazır.`, tone: 'info' }), variant: 'dark' }]} />
           ) : null}
         </InfoCard>
       ) : null}

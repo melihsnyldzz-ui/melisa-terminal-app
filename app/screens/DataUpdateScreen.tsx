@@ -21,11 +21,11 @@ export function DataUpdateScreen({ onBack }: DataUpdateScreenProps) {
     const nextSync = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
     setLastSync(`Bugün ${nextSync}`);
     setProgress('Tamamlandı');
-    setBanner({ message: 'Mock ürün/stok verisi güncellendi. Açık fiş ve kuyruk korunur.', tone: 'success' });
+    setBanner({ message: 'Ürün ve stok bilgileri güncellendi. Açık fiş ve kuyruk korunur.', tone: 'success' });
   };
 
   return (
-    <ScreenShell title="Veri Güncelle" subtitle="Ürün/stok mock yenileme kontrolü" onBack={onBack}>
+    <ScreenShell title="Veri Güncelle" subtitle="Ürün ve stok hazırlık kontrolü" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
       <View style={styles.panel}>
         <View style={styles.row}>
@@ -36,10 +36,10 @@ export function DataUpdateScreen({ onBack }: DataUpdateScreenProps) {
           <Text style={styles.label}>Durum</Text>
           <StatusPill label={progress} tone={progress === 'Tamamlandı' ? 'success' : 'warning'} />
         </View>
-        <AppButton label="Mock Veri Güncelle" onPress={updateData} />
+        <AppButton label="Veri Güncelle" onPress={updateData} />
       </View>
-      <InfoCard title="Offline güvenlik" subtitle="Veri güncelleme bekleyen belgeleri ve gönderilemeyen işlemleri silmez." tone="success" />
-      <InfoCard title="Bu sürümde olmayanlar" subtitle="Gerçek API çağrısı, SQL bağlantısı, Vega yazma, import, senkron veya export yoktur." tone="warning" />
+      <InfoCard title="Çevrimdışı güvenlik" subtitle="Veri güncelleme bekleyen belgeleri ve gönderilemeyen işlemleri silmez." tone="success" />
+      <InfoCard title="Güvenli çalışma modu" subtitle="Bağlantı hazırlık aşamasındadır. Taslaklar cihazda korunur." tone="warning" />
     </ScreenShell>
   );
 }

@@ -17,7 +17,7 @@ export function TerminalStatusBar({ terminalId = 'T01', branch = 'Merkez Depo', 
         <Text style={styles.metaText}>{terminalId}</Text>
         <Text style={styles.dot}>•</Text>
         <Text style={styles.metaText}>{branch}</Text>
-        <Text style={[styles.status, online ? styles.online : styles.offline]}>{online ? 'Online' : 'Offline'}</Text>
+        <Text style={[styles.status, online ? styles.online : styles.offline]}>{online ? 'Hazır' : 'Çevrimdışı'}</Text>
         <Text style={styles.metaText}>{time}</Text>
       </View>
     </View>

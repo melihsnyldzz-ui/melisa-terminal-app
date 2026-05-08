@@ -8,28 +8,28 @@ type StatusPillProps = {
   tone?: StatusTone;
 };
 
-const toneStyles: Record<StatusTone, { backgroundColor: string; color: string }> = {
-  success: { backgroundColor: colors.successSoft, color: colors.success },
-  warning: { backgroundColor: colors.warningSoft, color: colors.amber },
-  danger: { backgroundColor: colors.dangerSoft, color: colors.red },
-  info: { backgroundColor: colors.surfaceSoft, color: colors.anthracite },
-  dark: { backgroundColor: colors.anthracite, color: colors.surface },
+const toneStyles: Record<StatusTone, { backgroundColor: string; color: string; borderColor: string }> = {
+  success: { backgroundColor: colors.successSoft, color: colors.success, borderColor: '#bce7c8' },
+  warning: { backgroundColor: colors.warningSoft, color: colors.amber, borderColor: '#efd5a7' },
+  danger: { backgroundColor: colors.dangerSoft, color: colors.red, borderColor: '#f3bcc5' },
+  info: { backgroundColor: colors.surfaceSoft, color: colors.anthracite, borderColor: colors.line },
+  dark: { backgroundColor: colors.anthracite, color: colors.surface, borderColor: colors.anthracite },
 };
 
 export function StatusPill({ label, tone = 'info' }: StatusPillProps) {
   const toneStyle = toneStyles[tone];
 
   return (
-    <View style={[styles.pill, { backgroundColor: toneStyle.backgroundColor }]}>
+    <View style={[styles.pill, { backgroundColor: toneStyle.backgroundColor, borderColor: toneStyle.borderColor }]}>
       <Text style={[styles.text, { color: toneStyle.color }]}>{label}</Text>
     </View>
   );
 }
 
 export function statusToneFor(label: string): StatusTone {
-  if (['Açık', 'Online', 'Hazır', 'Okundu', 'Başarılı'].includes(label)) return 'success';
-  if (['Beklemede', 'Taslak', 'Uyarı'].includes(label)) return 'warning';
-  if (['Gönderilemedi', 'Acil', 'Okunmadı', 'Offline', 'Hata'].includes(label)) return 'danger';
+  if (['Açık', 'Hazır', 'Okundu', 'Başarılı', 'Tamamlandı'].includes(label)) return 'success';
+  if (['Beklemede', 'Taslak', 'Uyarı', 'Çevrimdışı'].includes(label)) return 'warning';
+  if (['Gönderilemedi', 'Acil', 'Okunmadı', 'Hata'].includes(label)) return 'danger';
   return 'info';
 }
 
@@ -39,6 +39,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
+    borderWidth: 1,
   },
   text: {
     fontSize: typography.small,

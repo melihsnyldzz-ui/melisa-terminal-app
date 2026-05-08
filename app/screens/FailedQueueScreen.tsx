@@ -22,19 +22,19 @@ export function FailedQueueScreen({ onBack }: FailedQueueScreenProps) {
   }, []);
 
   return (
-    <ScreenShell title="Gönderilemeyenler" subtitle="Offline kuyruk ve tekrar deneme ekranı" onBack={onBack}>
+    <ScreenShell title="Gönderilemeyenler" subtitle="Çevrimdışı kuyruk ve tekrar deneme ekranı" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
       {operations.length > 0 ? (
-        <ActionRow actions={[{ label: 'Tümünü Tekrar Dene', onPress: () => setBanner({ message: 'Tüm gönderilemeyen işlemler için mock tekrar deneme başlatıldı.', tone: 'warning' }), variant: 'primary' }]} />
+        <ActionRow actions={[{ label: 'Tümünü Tekrar Dene', onPress: () => setBanner({ message: 'Tüm gönderilemeyen işlemler için tekrar deneme başlatıldı.', tone: 'warning' }), variant: 'primary' }]} />
       ) : null}
       {operations.length === 0 ? (
-        <EmptyState badge="OK" title="Kuyruk temiz" description="Gönderilemeyen işlem bulunmuyor. Açık fişler local olarak korunur." />
+        <EmptyState badge="OK" title="Kuyruk temiz" description="Gönderilemeyen işlem bulunmuyor. Açık fişler cihazda korunur." />
       ) : (
         operations.map((operation) => (
           <InfoCard key={operation.id} title={operation.title} subtitle={`${operation.documentNo} · ${operation.createdAt}`} tone="danger">
             <StatusPill label="Gönderilemedi" tone="danger" />
             <InfoCard title="Neden" subtitle={operation.reason} />
-            <ActionRow actions={[{ label: 'Tekrar Dene', onPress: () => setBanner({ message: `${operation.documentNo} tekrar deneme mock kuyruğuna alındı.`, tone: 'warning' }), variant: 'primary' }]} />
+            <ActionRow actions={[{ label: 'Tekrar Dene', onPress: () => setBanner({ message: `${operation.documentNo} tekrar deneme kuyruğuna alındı.`, tone: 'warning' }), variant: 'primary' }]} />
           </InfoCard>
         ))
       )}

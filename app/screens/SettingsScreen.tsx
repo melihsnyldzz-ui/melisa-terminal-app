@@ -21,7 +21,7 @@ export function SettingsScreen({ onBack, session }: SettingsScreenProps) {
   const [settings, setSettings] = useState<TerminalSettings>({
     terminalId: 'MB-TERM-001',
     branch: session?.branch ?? 'Merkez Depo',
-    apiBaseUrl: 'Mock API',
+    apiBaseUrl: 'Hazırlık Bağlantısı',
   });
   const [lastSync, setLastSync] = useState('Bugün 09:40');
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
@@ -36,7 +36,7 @@ export function SettingsScreen({ onBack, session }: SettingsScreenProps) {
 
   const save = async () => {
     await saveSettings(settings);
-    setBanner({ message: 'Terminal ayarları local storage içine kaydedildi.', tone: 'success' });
+    setBanner({ message: 'Terminal ayarları cihazda korunacak şekilde kaydedildi.', tone: 'success' });
   };
 
   const test = async () => {
@@ -47,7 +47,7 @@ export function SettingsScreen({ onBack, session }: SettingsScreenProps) {
   const updateData = () => {
     const nextSync = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
     setLastSync(`Bugün ${nextSync}`);
-    setBanner({ message: 'Mock veri güncelleme tamamlandı. Bekleyen belgeler korunur.', tone: 'success' });
+    setBanner({ message: 'Veri güncelleme tamamlandı. Bekleyen belgeler korunur.', tone: 'success' });
   };
 
   return (
@@ -74,8 +74,8 @@ export function SettingsScreen({ onBack, session }: SettingsScreenProps) {
       </Section>
 
       <Section title="Güvenlik">
-        <InfoCard title="Güvenli sınır" subtitle="Bu ekran gerçek API, Vega veya SQL bağlantısı başlatmaz." tone="warning" />
-        <AppButton label="Oturumu Kapat" onPress={() => setBanner({ message: 'Oturumu kapatma mock olarak gösterildi.', tone: 'info' })} variant="secondary" compact />
+        <InfoCard title="Güvenli sınır" subtitle="Bağlantı hazırlık aşamasındadır. Taslaklar cihazda saklanır." tone="warning" />
+        <AppButton label="Oturumu Kapat" onPress={() => setBanner({ message: 'Oturumu kapatma işlemi hazır.', tone: 'info' })} variant="secondary" compact />
       </Section>
     </ScreenShell>
   );

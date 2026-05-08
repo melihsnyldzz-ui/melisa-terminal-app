@@ -10,10 +10,13 @@ type InfoCardProps = {
 };
 
 export function InfoCard({ title, subtitle, tone = 'default', children }: InfoCardProps) {
+  const isDark = tone === 'dark';
+
   return (
     <View style={[styles.card, styles[tone]]}>
-      <Text style={[styles.title, tone === 'dark' && styles.darkTitle]}>{title}</Text>
-      {subtitle ? <Text style={[styles.subtitle, tone === 'dark' && styles.darkSubtitle]}>{subtitle}</Text> : null}
+      <View style={[styles.accent, isDark && styles.darkAccent]} />
+      <Text style={[styles.title, isDark && styles.darkTitle]}>{title}</Text>
+      {subtitle ? <Text style={[styles.subtitle, isDark && styles.darkSubtitle]}>{subtitle}</Text> : null}
       {children}
     </View>
   );
@@ -27,26 +30,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     gap: spacing.sm,
+    overflow: 'hidden',
     ...shadows.subtle,
   },
+  accent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    backgroundColor: colors.red,
+  },
+  darkAccent: {
+    backgroundColor: colors.red,
+  },
   default: {
-    borderLeftWidth: 4,
-    borderLeftColor: colors.anthracite,
+    borderColor: colors.line,
   },
   danger: {
     backgroundColor: colors.dangerSoft,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.red,
+    borderColor: '#f3bcc5',
   },
   success: {
     backgroundColor: colors.successSoft,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.success,
+    borderColor: '#bce7c8',
   },
   warning: {
     backgroundColor: colors.warningSoft,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.amber,
+    borderColor: '#efd5a7',
   },
   dark: {
     backgroundColor: colors.anthracite,
@@ -64,7 +75,7 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: typography.body,
     lineHeight: 20,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   darkSubtitle: {
     color: colors.line,

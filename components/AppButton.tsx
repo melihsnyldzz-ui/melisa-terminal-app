@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from '../app/theme';
+import { colors, radius, shadows, spacing, typography } from '../app/theme';
 
 type AppButtonProps = {
   label: string;
@@ -10,16 +10,18 @@ type AppButtonProps = {
 };
 
 export function AppButton({ label, onPress, variant = 'primary', badge, compact = false }: AppButtonProps) {
+  const isLight = variant === 'secondary' || variant === 'quiet';
+
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.button, styles[variant], compact && styles.compact, pressed && styles.pressed]}
     >
-      <Text style={[styles.label, (variant === 'secondary' || variant === 'quiet') && styles.darkLabel]}>{label}</Text>
+      <Text style={[styles.label, isLight && styles.darkLabel]}>{label}</Text>
       {typeof badge === 'number' && badge > 0 ? (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{badge}</Text>
+        <View style={[styles.badge, variant === 'dark' && styles.lightBadge]}>
+          <Text style={[styles.badgeText, variant === 'dark' && styles.darkBadgeText]}>{badge}</Text>
         </View>
       ) : null}
     </Pressable>
@@ -36,34 +38,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: spacing.sm,
+    borderWidth: 1,
+    ...shadows.subtle,
   },
   compact: {
-    minHeight: 46,
+    minHeight: 44,
     paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   primary: {
     backgroundColor: colors.red,
+    borderColor: colors.redDark,
   },
   secondary: {
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
+    borderColor: colors.anthracite,
   },
   dark: {
     backgroundColor: colors.anthracite,
+    borderColor: colors.anthracite,
   },
   quiet: {
     backgroundColor: colors.surfaceSoft,
-    borderWidth: 1,
     borderColor: colors.line,
   },
   pressed: {
-    opacity: 0.82,
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
   },
   label: {
     color: colors.surface,
     fontSize: typography.section,
-    fontWeight: '800',
+    fontWeight: '900',
     textAlign: 'center',
   },
   darkLabel: {
@@ -78,9 +84,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
   },
+  lightBadge: {
+    backgroundColor: colors.surface,
+  },
   badgeText: {
     color: colors.surface,
     fontWeight: '900',
     fontSize: typography.small,
+  },
+  darkBadgeText: {
+    color: colors.anthracite,
   },
 });

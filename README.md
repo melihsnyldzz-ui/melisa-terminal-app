@@ -60,6 +60,7 @@ npm run preview:honeywell
 - `v0.1.0`: Login, dashboard, yeni fiş, açık fiş, QR albüm, mesajlar, gönderilemeyenler, veri güncelle ve ayarlar iskeleti
 - `v0.2.0`: Kullanıcı dostu terminal deneyimi; TerminalHeader, durum rozetleri, boş durumlar, banner mesajları, adım yönlendirmeleri ve mock aksiyon geri bildirimleri
 - `v0.2.1`: Operasyon akışı güçlendirme; aktif fiş taslağı local storage'a kaydedilir, barkod/QR kod inputu ile mock ürün eklenir, ürün kalemleri adet/sil aksiyonlarıyla yönetilir, QR albüm fiş ürünlerine daha bağlı görünür
+- `v0.2.2`: Giriş ekranı görsel iyileştirmesi, ana menü görsel iyileştirmesi, teknik ifadelerin UI'dan kaldırılması ve Honeywell preview görünümünün korunması
 - Sonraki fazlar: gerçek ERP API bağlantısı, offline kuyruk sertleştirme, bildirim/ses/titreşim, QR albüm servis bağlantısı
 
 ## v0.2 Kullanım Notları

@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from '../app/theme';
+import { colors, radius, shadows, spacing, typography } from '../app/theme';
 
 export type ToastTone = 'success' | 'error' | 'warning' | 'info';
 
@@ -21,6 +21,7 @@ export function ToastMessage({ message, tone = 'info' }: ToastMessageProps) {
 
   return (
     <View style={[styles.banner, { backgroundColor: toneStyle.backgroundColor, borderColor: toneStyle.borderColor }]}>
+      <View style={[styles.dot, { backgroundColor: toneStyle.borderColor }]} />
       <Text style={[styles.text, { color: toneStyle.color }]}>{message}</Text>
     </View>
   );
@@ -32,8 +33,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    ...shadows.subtle,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   text: {
+    flex: 1,
     fontSize: typography.body,
     fontWeight: '800',
     lineHeight: 19,
