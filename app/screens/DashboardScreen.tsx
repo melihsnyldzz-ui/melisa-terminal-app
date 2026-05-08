@@ -35,13 +35,17 @@ const quickActions: Array<{ label: string; screen: AppScreen; tone?: 'primary' |
 export function DashboardScreen({ session, onNavigate, systemMessage }: DashboardScreenProps) {
   const insets = useSafeAreaInsets();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [urgentCount, setUrgentCount] = useState(0);
   const [documents, setDocuments] = useState<OpenDocument[]>([]);
   const [failedCount, setFailedCount] = useState(0);
   const [lastSync] = useState('09:40');
   const [activeDraft, setActiveDraft] = useState<ActiveSaleDraft | null>(null);
 
   useEffect(() => {
-    getMessagesMock().then((messages) => setUnreadCount(messages.filter((message) => !message.read).length));
+    getMessagesMock().then((messages) => {
+      setUnreadCount(messages.filter((message) => !message.read).length);
+      setUrgentCount(messages.filter((message) => message.type === 'Acil' && !message.read).length);
+    });
     getOpenDocumentsMock().then(setDocuments);
     getFailedOperationsMock().then((operations) => setFailedCount(operations.length));
     loadActiveSaleDraft().then(setActiveDraft);
@@ -60,9 +64,16 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
           {quickActions.map((action) => (
             <Pressable key={action.label} onPress={() => onNavigate(action.screen)} style={({ pressed }) => [styles.quickButton, action.tone === 'primary' && styles.quickPrimary, action.tone === 'dark' && styles.quickDark, pressed && styles.pressed]}>
               <Text style={[styles.quickText, (action.tone === 'primary' || action.tone === 'dark') && styles.quickTextLight]}>{action.label}</Text>
+              {action.screen === 'messages' && unreadCount > 0 ? <View style={styles.quickUnreadDot}><Text style={styles.quickUnreadText}>{unreadCount}</Text></View> : null}
             </Pressable>
           ))}
         </View>
+        {urgentCount > 0 ? (
+          <Pressable onPress={() => onNavigate('messages')} style={({ pressed }) => [styles.urgentAlert, pressed && styles.pressed]}>
+            <Text style={styles.urgentAlertText}>Acil mesaj var</Text>
+            <Text style={styles.urgentAlertCount}>{urgentCount}</Text>
+          </Pressable>
+        ) : null}
         <View style={styles.welcome}>
           <View>
             <Text style={styles.welcomeTitle}>Hoş geldin, {personName}</Text>
@@ -135,7 +146,7 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
                 <Text style={styles.moduleText}>{module.label}</Text>
                 <Text style={styles.moduleDescription}>{module.description}</Text>
               </View>
-              {module.screen === 'messages' && unreadCount > 0 ? <StatusPill label={unreadCount.toString()} tone="danger" /> : null}
+              {module.screen === 'messages' && unreadCount > 0 ? <View style={styles.moduleUnreadBadge}><Text style={styles.moduleUnreadText}>{unreadCount}</Text></View> : null}
             </Pressable>
           ))}
         </View>
@@ -211,6 +222,52 @@ const styles = StyleSheet.create({
   },
   quickTextLight: {
     color: colors.surface,
+  },
+  quickUnreadDot: {
+    position: 'absolute',
+    right: 4,
+    top: 3,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.red,
+    borderWidth: 1,
+    borderColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickUnreadText: {
+    color: colors.surface,
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  urgentAlert: {
+    backgroundColor: colors.dangerSoft,
+    borderWidth: 1,
+    borderColor: colors.red,
+    borderLeftWidth: 4,
+    borderRadius: radius.md,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  urgentAlertText: {
+    color: colors.red,
+    fontSize: typography.body,
+    fontWeight: '900',
+  },
+  urgentAlertCount: {
+    minWidth: 24,
+    textAlign: 'center',
+    color: colors.surface,
+    backgroundColor: colors.red,
+    borderRadius: radius.sm,
+    overflow: 'hidden',
+    fontSize: typography.small,
+    fontWeight: '900',
+    paddingVertical: 2,
   },
   welcome: {
     backgroundColor: colors.surface,
@@ -405,6 +462,21 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: typography.small,
     fontWeight: '800',
+  },
+  moduleUnreadBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: radius.sm,
+    backgroundColor: colors.red,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.redDark,
+  },
+  moduleUnreadText: {
+    color: colors.surface,
+    fontSize: typography.small,
+    fontWeight: '900',
   },
   activeDocRow: {
     flexDirection: 'row',

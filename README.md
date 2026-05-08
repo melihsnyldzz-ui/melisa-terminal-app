@@ -76,6 +76,7 @@ npm run preview:honeywell
 - `v0.3.3`: Ana menü hızlı işlem barı, kompakt bugünkü durum kartları ve iki kolonlu operasyon modülleri
 - `v0.3.4`: Honeywell sıkılaştırılmış satış ekranı, son okutulan ürün alanı, çift okutma koruması ve QR albüm aksiyon grid'i
 - `v0.3.5`: Premium hızlı ana menü, güçlendirilmiş son aktif fiş kartı ve kompakt operasyon modülleri
+- `v0.3.6`: Operasyonel mesaj merkezi, acil mesaj uyarısı, okunmamış rozetleri ve kompakt mesaj detay akışı
 - Sonraki fazlar: gerçek ERP API bağlantısı, offline kuyruk sertleştirme, bildirim/ses/titreşim, QR albüm servis bağlantısı
 
 Uygulama versiyonu TerminalHeader sağ üstünde gösterilir. Honeywell testlerinde ekranda görünen versiyon, GitHub'daki `package.json` version alanıyla uyumlu olmalıdır.
