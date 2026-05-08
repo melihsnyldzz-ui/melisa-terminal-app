@@ -25,6 +25,19 @@ npm start
 3. `npm start` sonrası çıkan QR kod Expo Go ile okutulmalı.
 4. Fiziksel el terminalinde ekranlar büyük butonlar ve sade akışla kontrol edilmeli.
 
+## Gerçek Honeywell Terminalde Expo Go ile Test
+
+```powershell
+cd C:\Users\User\Documents\GitHub\melisa-terminal-app
+npm run start:lan
+```
+
+Honeywell terminal ve bilgisayar aynı ağdaysa Expo Go ile terminalde görünen QR kod okutulur. Ağ kısıtı varsa tünel bağlantısı denenebilir:
+
+```powershell
+npm run start:tunnel
+```
+
 ## Expo Go ile Test
 
 Expo geliştirme sunucusu açıldıktan sonra terminalde görünen QR kod okutulur. Bu sürümde gerçek API, Vega veya SQL bağlantısı yoktur.
@@ -35,13 +48,6 @@ Expo web ortamında uygulama otomatik olarak Honeywell benzeri koyu antrasit cih
 
 ```powershell
 cd C:\Users\User\Documents\GitHub\melisa-terminal-app
-npm run preview:honeywell
-```
-
-Bu makinedeki mevcut lokal proje yolu:
-
-```powershell
-cd C:\Users\WARD-V2\Documents\GitHub\melisa-terminal-app
 npm run preview:honeywell
 ```
 
