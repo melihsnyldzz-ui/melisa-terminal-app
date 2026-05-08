@@ -26,10 +26,11 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    padding: spacing.lg,
+    padding: spacing.md,
+    paddingLeft: spacing.lg,
     borderWidth: 1,
     borderColor: colors.line,
-    gap: spacing.sm,
+    gap: spacing.xs,
     overflow: 'hidden',
     ...shadows.subtle,
   },
@@ -74,7 +75,7 @@ const styles = StyleSheet.create({
   subtitle: {
     color: colors.muted,
     fontSize: typography.body,
-    lineHeight: 20,
+    lineHeight: 18,
     fontWeight: '700',
   },
   darkSubtitle: {

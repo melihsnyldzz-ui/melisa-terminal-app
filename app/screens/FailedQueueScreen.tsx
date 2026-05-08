@@ -22,13 +22,13 @@ export function FailedQueueScreen({ onBack }: FailedQueueScreenProps) {
   }, []);
 
   return (
-    <ScreenShell title="Gönderilemeyenler" subtitle="Çevrimdışı kuyruk ve tekrar deneme ekranı" onBack={onBack}>
+    <ScreenShell title="Gönderilemeyenler" subtitle="Kuyruk ve tekrar deneme" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
       {operations.length > 0 ? (
         <ActionRow actions={[{ label: 'Tümünü Tekrar Dene', onPress: () => setBanner({ message: 'Tüm gönderilemeyen işlemler için tekrar deneme başlatıldı.', tone: 'warning' }), variant: 'primary' }]} />
       ) : null}
       {operations.length === 0 ? (
-        <EmptyState badge="OK" title="Kuyruk temiz" description="Gönderilemeyen işlem bulunmuyor. Açık fişler cihazda korunur." />
+        <EmptyState badge="OK" title="Kuyruk temiz" description="Bekleyen işlem yok." />
       ) : (
         operations.map((operation) => (
           <InfoCard key={operation.id} title={operation.title} subtitle={`${operation.documentNo} · ${operation.createdAt}`} tone="danger">

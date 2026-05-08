@@ -36,7 +36,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       setDocumentNo(draft.documentNo);
       setLines(draft.lines);
       setStep(draft.lines.length > 0 ? 3 : 2);
-      setBanner({ message: `${draft.documentNo} local taslak olarak yüklendi.`, tone: 'info' });
+      setBanner({ message: `${draft.documentNo} taslak yüklendi.`, tone: 'info' });
     });
   }, []);
 
@@ -57,17 +57,17 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     setDocumentNo(sale.documentNo);
     setStep(2);
     await persistDraft(lines, sale.documentNo, customer);
-    setBanner({ message: `${sale.documentNo} aktif fiş taslağı olarak kaydedildi.`, tone: 'success' });
+    setBanner({ message: `${sale.documentNo} aktif fiş hazır.`, tone: 'success' });
   };
 
   const addProduct = async (rawCode?: string) => {
     if (!documentNo) {
-      setBanner({ message: 'Önce fişi başlat. Ürün ekleme fiş açıldıktan sonra yapılır.', tone: 'warning' });
+      setBanner({ message: 'Önce fişi başlat.', tone: 'warning' });
       return;
     }
     const code = (rawCode ?? barcode).trim();
     if (!code) {
-      setBanner({ message: 'Barkod / QR kod alanı boş. Kod yazıp Ekle tuşuna bas.', tone: 'warning' });
+      setBanner({ message: 'Kod yazıp Ekle tuşuna bas.', tone: 'warning' });
       return;
     }
     const product = await getMockProductByCode(code);
@@ -104,7 +104,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   };
 
   return (
-    <ScreenShell title="Yeni Fiş / Satış" subtitle="Aktif fiş ve barkod akışı" onBack={onBack}>
+    <ScreenShell title="Yeni Fiş" subtitle="Barkod ve QR akışı" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
       <View style={styles.stepRow}>
         {steps.map((item, index) => {
@@ -119,9 +119,9 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
 
       <View style={styles.formPanel}>
         <Text style={styles.label}>Müşteri</Text>
-        <TextInput value={customer} onChangeText={setCustomer} placeholder="Müşteri etiketi yaz" placeholderTextColor={colors.muted} style={styles.input} />
+        <TextInput value={customer} onChangeText={setCustomer} placeholder="Müşteri etiketi" placeholderTextColor={colors.muted} style={styles.input} />
         <AppButton label="Fiş Başlat" onPress={startSale} />
-        <Text style={styles.label}>Barkod / QR kod gir</Text>
+        <Text style={styles.label}>Barkod / QR</Text>
         <TextInput value={barcode} onChangeText={setBarcode} placeholder="Örn: MB-ELB-104" placeholderTextColor={colors.muted} style={styles.input} autoCapitalize="characters" />
         <ActionRow actions={[{ label: 'Ekle', onPress: () => addProduct(), variant: 'primary' }, { label: 'Hızlı Ekle', onPress: () => addProduct(`MB-${Date.now().toString().slice(-4)}`), variant: 'dark' }]} />
         <AppButton label="QR Albüm Oluştur" onPress={createAlbum} variant="secondary" compact />
@@ -135,7 +135,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       </InfoCard>
 
       {lines.length === 0 ? (
-        <EmptyState badge="ÜRÜN" title="Fişte ürün yok" description="Barkod / QR kod alanına örnek kod yazıp Ekle tuşuna bas." />
+        <EmptyState badge="ÜRÜN" title="Fişte ürün yok" description="Kod yazıp Ekle tuşuna bas." />
       ) : (
         <View style={styles.productList}>
           {lines.map((line) => (
@@ -151,7 +151,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
         </View>
       )}
 
-      <InfoCard title="Fiyat alanı yok" subtitle="Bu terminal fiş hazırlığında fiyat gösterimi ve gerçek yazma işlemi bulunmaz." tone="warning" />
+      <InfoCard title="Fiyat alanı yok" subtitle="Fiş hazırlığında fiyat gösterilmez." tone="warning" />
     </ScreenShell>
   );
 }
@@ -166,19 +166,19 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  stepRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  stepRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   stepPill: { borderRadius: radius.md, backgroundColor: colors.surfaceSoft, borderWidth: 1, borderColor: colors.line, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   activeStep: { backgroundColor: colors.anthracite, borderColor: colors.anthracite },
   stepText: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
   activeStepText: { color: colors.surface },
-  formPanel: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: spacing.md, gap: spacing.md },
+  formPanel: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
   label: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
-  input: { minHeight: 52, borderRadius: radius.md, backgroundColor: colors.surfaceSoft, borderWidth: 1, borderColor: colors.line, color: colors.ink, fontSize: typography.body, paddingHorizontal: spacing.md, fontWeight: '700' },
+  input: { minHeight: 46, borderRadius: radius.md, backgroundColor: colors.surfaceSoft, borderWidth: 1, borderColor: colors.line, color: colors.ink, fontSize: typography.body, paddingHorizontal: spacing.md, fontWeight: '700' },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
   summaryLabel: { color: colors.muted, fontWeight: '800' },
   summaryValue: { color: colors.ink, fontWeight: '900' },
   productList: { gap: spacing.sm },
-  productRow: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.line, padding: spacing.md, gap: spacing.sm },
+  productRow: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.line, padding: spacing.sm, gap: spacing.xs },
   productMain: { gap: 2 },
   productCode: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
   productName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },

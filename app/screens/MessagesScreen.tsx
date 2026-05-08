@@ -49,7 +49,7 @@ export function MessagesScreen({ onBack }: MessagesScreenProps) {
   };
 
   return (
-    <ScreenShell title="Mesaj Merkezi" subtitle="İş odaklı terminal mesajları" onBack={onBack}>
+    <ScreenShell title="Mesajlar" subtitle="Terminal mesajları" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
       <View style={styles.filterRow}>
         {filters.map((item) => (
@@ -60,7 +60,7 @@ export function MessagesScreen({ onBack }: MessagesScreenProps) {
       </View>
 
       {filteredMessages.length === 0 ? (
-        <EmptyState badge="MSG" title="Bu filtrede mesaj yok" description="Filtreyi değiştirerek diğer iş mesajlarını görüntüleyebilirsin." />
+        <EmptyState badge="MSG" title="Mesaj yok" description="Başka filtre seçebilirsin." />
       ) : (
         filteredMessages.map((message) => (
           <Pressable key={message.id} onPress={() => setSelectedId(message.id)} style={[styles.messageRow, message.type === 'Acil' && styles.urgentRow, selectedId === message.id && styles.selectedRow]}>
@@ -79,7 +79,7 @@ export function MessagesScreen({ onBack }: MessagesScreenProps) {
       )}
 
       {selectedMessage ? (
-        <InfoCard title="Seçili mesaj detayı" subtitle={`${selectedMessage.sender} · ${selectedMessage.timeLabel}`}>
+        <InfoCard title="Mesaj detayı" subtitle={`${selectedMessage.sender} · ${selectedMessage.timeLabel}`}>
           <Text style={styles.detailText}>{selectedMessage.body}</Text>
           <ActionRow actions={[{ label: 'Okundu işaretle', onPress: markSelectedRead, variant: 'primary' }]} />
           {selectedMessage.relatedDocument ? (
@@ -92,14 +92,14 @@ export function MessagesScreen({ onBack }: MessagesScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   filterButton: {
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.line,
     backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   activeFilter: { backgroundColor: colors.anthracite, borderColor: colors.anthracite },
   filterText: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: radius.lg,
-    padding: spacing.md,
+    padding: spacing.sm,
     gap: spacing.xs,
   },
   urgentRow: { backgroundColor: colors.dangerSoft, borderColor: colors.red },
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   sender: { flex: 1, color: colors.red, fontSize: typography.small, fontWeight: '900' },
   time: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
   title: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
-  body: { color: colors.text, fontSize: typography.body, lineHeight: 19, fontWeight: '600' },
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
-  detailText: { color: colors.text, fontSize: typography.body, fontWeight: '700', lineHeight: 20 },
+  body: { color: colors.text, fontSize: typography.body, lineHeight: 18, fontWeight: '600' },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs },
+  detailText: { color: colors.text, fontSize: typography.body, fontWeight: '700', lineHeight: 18 },
 });

@@ -41,10 +41,10 @@ export function TerminalHeader({ title = 'MELİSA BEBE', terminalId = 'T01', bra
 const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.anthracite,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 4,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 3,
     borderBottomColor: colors.red,
     gap: spacing.sm,
   },
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   backButton: {
     backgroundColor: colors.red,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: radius.sm,
   },
   pressed: {
@@ -79,7 +79,6 @@ const styles = StyleSheet.create({
     color: colors.line,
     fontSize: typography.small,
     fontWeight: '800',
-    marginTop: 1,
   },
   time: {
     color: colors.surface,
@@ -96,7 +95,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: 3,
   },
   metaLabel: {
     color: colors.anthracite,

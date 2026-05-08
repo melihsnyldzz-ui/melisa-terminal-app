@@ -18,10 +18,10 @@ export const colors = {
 
 export const spacing = {
   xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 22,
+  sm: 6,
+  md: 10,
+  lg: 14,
+  xl: 18,
 };
 
 export const radius = {
@@ -31,18 +31,18 @@ export const radius = {
 };
 
 export const typography = {
-  brand: 22,
-  title: 21,
-  section: 16,
-  body: 14,
-  small: 12,
+  brand: 20,
+  title: 18,
+  section: 15,
+  body: 13,
+  small: 11,
 };
 
 export const shadows = {
   subtle: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
     elevation: 1,
   },

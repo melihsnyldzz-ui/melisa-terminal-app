@@ -31,11 +31,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     backgroundColor: colors.surfaceSoft,
-    padding: spacing.xl,
+    padding: spacing.lg,
   },
   badge: {
-    minWidth: 52,
-    height: 38,
+    minWidth: 46,
+    height: 34,
     borderRadius: radius.md,
     backgroundColor: colors.anthracite,
     alignItems: 'center',
@@ -57,6 +57,6 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     fontWeight: '700',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 18,
   },
 });

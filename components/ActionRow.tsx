@@ -27,7 +27,7 @@ export function ActionRow({ actions }: ActionRowProps) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   item: {
     flex: 1,

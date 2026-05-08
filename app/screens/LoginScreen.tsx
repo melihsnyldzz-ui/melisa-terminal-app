@@ -132,15 +132,15 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    padding: spacing.lg,
-    gap: spacing.md,
+    padding: spacing.md,
+    gap: spacing.sm,
     justifyContent: 'center',
   },
   hero: {
     backgroundColor: colors.anthracite,
     borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderBottomWidth: 4,
+    padding: spacing.md,
+    borderBottomWidth: 3,
     borderBottomColor: colors.red,
     flexDirection: 'row',
     alignItems: 'center',
@@ -151,8 +151,8 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   brandMark: {
-    width: 52,
-    height: 52,
+    width: 44,
+    height: 44,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
     alignItems: 'center',
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   },
   brandInitials: {
     color: colors.red,
-    fontSize: 18,
+    fontSize: typography.section,
     fontWeight: '900',
   },
   brandCopy: {
@@ -180,12 +180,12 @@ const styles = StyleSheet.create({
   terminalCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    padding: spacing.lg,
+    padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.line,
     borderLeftWidth: 5,
     borderLeftColor: colors.red,
-    gap: spacing.md,
+    gap: spacing.sm,
     ...shadows.subtle,
   },
   cardPressed: {
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: colors.ink,
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '900',
     marginTop: spacing.xs,
   },
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.anthracite,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
+    paddingVertical: 4,
   },
   readyBadgeText: {
     color: colors.surface,
@@ -226,12 +226,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   panel: {
-    padding: spacing.lg,
+    padding: spacing.md,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
-    gap: spacing.md,
+    gap: spacing.sm,
     ...shadows.subtle,
   },
   field: {
@@ -252,13 +252,13 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   input: {
-    minHeight: 56,
+    minHeight: 48,
     borderRadius: radius.md,
     backgroundColor: colors.surfaceSoft,
     borderWidth: 1,
     borderColor: colors.anthracite,
     color: colors.ink,
-    fontSize: 19,
+    fontSize: 17,
     paddingHorizontal: spacing.md,
     fontWeight: '900',
   },
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerSoft,
   },
   secondaryInput: {
-    minHeight: 48,
+    minHeight: 44,
     borderRadius: radius.md,
     backgroundColor: colors.surfaceSoft,
     borderWidth: 1,
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   },
   segment: {
     flex: 1,
-    minHeight: 42,
+    minHeight: 38,
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     color: colors.surface,
   },
   actions: {
-    gap: spacing.sm,
+    gap: spacing.xs,
     marginTop: spacing.xs,
   },
   footer: {
@@ -316,6 +316,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.xs,
   },
 });

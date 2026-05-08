@@ -30,10 +30,10 @@ export function AppButton({ label, onPress, variant = 'primary', badge, compact 
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: 54,
+    minHeight: 50,
     borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -43,8 +43,8 @@ const styles = StyleSheet.create({
   },
   compact: {
     minHeight: 44,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
   },
   primary: {
     backgroundColor: colors.red,
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.surface,
-    fontSize: typography.section,
+    fontSize: typography.body,
     fontWeight: '900',
     textAlign: 'center',
   },
@@ -76,9 +76,9 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   badge: {
-    minWidth: 24,
-    height: 24,
-    borderRadius: 12,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: colors.anthracite,
     alignItems: 'center',
     justifyContent: 'center',

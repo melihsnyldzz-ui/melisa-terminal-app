@@ -21,11 +21,11 @@ export function DataUpdateScreen({ onBack }: DataUpdateScreenProps) {
     const nextSync = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
     setLastSync(`Bugün ${nextSync}`);
     setProgress('Tamamlandı');
-    setBanner({ message: 'Ürün ve stok bilgileri güncellendi. Açık fiş ve kuyruk korunur.', tone: 'success' });
+    setBanner({ message: 'Ürün ve stok bilgileri güncellendi.', tone: 'success' });
   };
 
   return (
-    <ScreenShell title="Veri Güncelle" subtitle="Ürün ve stok hazırlık kontrolü" onBack={onBack}>
+    <ScreenShell title="Veri Güncelle" subtitle="Ürün ve stok kontrolü" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
       <View style={styles.panel}>
         <View style={styles.row}>
@@ -38,8 +38,8 @@ export function DataUpdateScreen({ onBack }: DataUpdateScreenProps) {
         </View>
         <AppButton label="Veri Güncelle" onPress={updateData} />
       </View>
-      <InfoCard title="Çevrimdışı güvenlik" subtitle="Veri güncelleme bekleyen belgeleri ve gönderilemeyen işlemleri silmez." tone="success" />
-      <InfoCard title="Güvenli çalışma modu" subtitle="Bağlantı hazırlık aşamasındadır. Taslaklar cihazda korunur." tone="warning" />
+      <InfoCard title="Çevrimdışı güvenlik" subtitle="Bekleyen belgeler korunur." tone="success" />
+      <InfoCard title="Güvenli çalışma modu" subtitle="Taslaklar cihazda korunur." tone="warning" />
     </ScreenShell>
   );
 }
@@ -50,9 +50,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: radius.lg,
-    padding: spacing.md,
-    gap: spacing.md,
+    padding: spacing.sm,
+    gap: spacing.sm,
   },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   label: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
 });

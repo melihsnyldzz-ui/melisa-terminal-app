@@ -51,7 +51,7 @@ export function SettingsScreen({ onBack, session }: SettingsScreenProps) {
   };
 
   return (
-    <ScreenShell title="Terminal Ayarları" subtitle="Cihaz, bağlantı ve güvenlik kontrolleri" onBack={onBack}>
+    <ScreenShell title="Ayarlar" subtitle="Terminal kontrolleri" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
 
       <Section title="Terminal Bilgisi">
@@ -74,7 +74,7 @@ export function SettingsScreen({ onBack, session }: SettingsScreenProps) {
       </Section>
 
       <Section title="Güvenlik">
-        <InfoCard title="Güvenli sınır" subtitle="Bağlantı hazırlık aşamasındadır. Taslaklar cihazda saklanır." tone="warning" />
+        <InfoCard title="Güvenli sınır" subtitle="Taslaklar cihazda saklanır." tone="warning" />
         <AppButton label="Oturumu Kapat" onPress={() => setBanner({ message: 'Oturumu kapatma işlemi hazır.', tone: 'info' })} variant="secondary" compact />
       </Section>
     </ScreenShell>
@@ -116,14 +116,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: radius.lg,
-    padding: spacing.md,
-    gap: spacing.md,
+    padding: spacing.sm,
+    gap: spacing.sm,
   },
   sectionTitle: { color: colors.red, fontSize: typography.body, fontWeight: '900' },
   field: { gap: spacing.xs },
   label: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
   input: {
-    minHeight: 50,
+    minHeight: 46,
     borderRadius: radius.md,
     backgroundColor: colors.surfaceSoft,
     borderWidth: 1,

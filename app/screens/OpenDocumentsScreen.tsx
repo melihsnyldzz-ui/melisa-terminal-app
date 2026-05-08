@@ -28,9 +28,9 @@ export function OpenDocumentsScreen({ onBack }: OpenDocumentsScreenProps) {
   };
 
   return (
-    <ScreenShell title="Açık Fişler" subtitle="Satış fişlerini operasyon listesinde izle" onBack={onBack}>
+    <ScreenShell title="Açık Fişler" subtitle="Fişleri izle" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
-      <InfoCard title="Canlı fiş takibi" subtitle="Açık, bekleyen ve gönderilemeyen fişler tek ekranda ayrışır." />
+      <InfoCard title="Fiş takibi" subtitle="Açık ve bekleyen fişler." />
       {documents.length === 0 ? (
         <EmptyState badge="FİŞ" title="Açık fiş yok" description="Yeni satış başlatarak ilk fişi oluşturabilirsin." />
       ) : (
@@ -66,14 +66,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: radius.lg,
-    padding: spacing.md,
-    gap: spacing.md,
+    padding: spacing.sm,
+    gap: spacing.sm,
   },
   failedCard: { backgroundColor: colors.dangerSoft, borderColor: colors.red },
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   documentCode: {
-    width: 48,
-    height: 38,
+    width: 44,
+    height: 34,
     borderRadius: radius.sm,
     backgroundColor: colors.anthracite,
     alignItems: 'center',

@@ -16,7 +16,6 @@ export function ScreenShell({ title, subtitle, onBack, children }: ScreenShellPr
     <View style={styles.shell}>
       <TerminalHeader onBack={onBack} />
       <View style={styles.header}>
-        <Text style={styles.kicker}>OPERASYON EKRANI</Text>
         <Text style={styles.title}>{title}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
@@ -36,37 +35,31 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   header: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
-  },
-  kicker: {
-    color: colors.red,
-    fontSize: typography.small,
-    fontWeight: '900',
-    letterSpacing: 0,
   },
   title: {
     color: colors.ink,
     fontSize: typography.title,
     fontWeight: '900',
-    marginTop: 2,
+    marginTop: 1,
   },
   subtitle: {
     color: colors.muted,
     fontSize: typography.body,
     fontWeight: '700',
-    marginTop: 3,
+    marginTop: 2,
   },
   content: {
-    padding: spacing.lg,
-    gap: spacing.md,
+    padding: spacing.md,
+    gap: spacing.sm,
   },
   footer: {
-    padding: spacing.md,
+    padding: spacing.sm,
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.line,

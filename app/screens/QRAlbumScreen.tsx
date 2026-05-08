@@ -27,7 +27,7 @@ export function QRAlbumScreen({ onBack }: QRAlbumScreenProps) {
   };
 
   return (
-    <ScreenShell title="QR Albüm" subtitle="Müşteriye fiyat göstermeyen görsel albüm" onBack={onBack}>
+    <ScreenShell title="QR Albüm" subtitle="Ürün görsel albümü" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
       <InfoCard title={`Fiş ${album?.documentNo ?? 'yükleniyor'}`} subtitle={album?.customerLabel ?? 'Müşteri'}>
         <View style={styles.albumMeta}>
@@ -65,33 +65,33 @@ export function QRAlbumScreen({ onBack }: QRAlbumScreenProps) {
           { label: 'WhatsApp', onPress: () => showMockAction('WhatsApp gönderimi'), variant: 'dark' },
         ]}
       />
-      <InfoCard title="Fiyat gösterilmez" subtitle="Albümde sadece ürün görselleri ve temel ürün etiketleri bulunur." tone="success" />
+      <InfoCard title="Fiyat gösterilmez" subtitle="Sadece ürün görselleri vardır." tone="success" />
     </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  albumMeta: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+  albumMeta: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
   qrPanel: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.line,
-    padding: spacing.lg,
+    padding: spacing.md,
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   qrBox: {
-    width: 132,
-    height: 132,
+    width: 108,
+    height: 108,
     borderRadius: radius.md,
     backgroundColor: colors.surfaceSoft,
-    borderWidth: 8,
+    borderWidth: 6,
     borderColor: colors.anthracite,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  qrText: { color: colors.red, fontSize: 30, fontWeight: '900' },
+  qrText: { color: colors.red, fontSize: 26, fontWeight: '900' },
   qrLink: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
   grid: { gap: spacing.sm },
   productCard: {
@@ -102,11 +102,11 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   placeholder: {
-    width: 86,
-    height: 74,
+    width: 72,
+    height: 62,
     borderRadius: radius.md,
     backgroundColor: colors.surfaceSoft,
     borderWidth: 1,
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
   },
-  placeholderCode: { color: colors.red, fontSize: typography.section, fontWeight: '900' },
+  placeholderCode: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
   placeholderText: { color: colors.anthracite, fontSize: typography.small, fontWeight: '800' },
   productInfo: { flex: 1, gap: spacing.xs },
   productName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
