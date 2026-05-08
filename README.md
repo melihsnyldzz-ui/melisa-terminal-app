@@ -69,6 +69,7 @@ npm run preview:honeywell
 - `v0.2.2`: Giriş ekranı görsel iyileştirmesi, ana menü görsel iyileştirmesi, teknik ifadelerin UI'dan kaldırılması ve Honeywell preview görünümünün korunması
 - `v0.2.4`: Gerçek Honeywell terminal ekranı için spacing, typography, kart, input, buton ve liste yoğunluğu sıkılaştırması
 - `v0.2.5`: Honeywell terminal safe area, alt tuş boşluğu ve Android donanım geri tuşu çift basış çıkış düzeltmesi
+- `v0.2.6`: Login ekranı ve dashboard ana menü görsel iyileştirme; Honeywell terminal ekranına göre daha premium UI düzeni; safe area davranışı korunmuştur
 - Sonraki fazlar: gerçek ERP API bağlantısı, offline kuyruk sertleştirme, bildirim/ses/titreşim, QR albüm servis bağlantısı
 
 ## v0.2 Kullanım Notları

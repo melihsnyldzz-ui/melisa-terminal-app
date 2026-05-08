@@ -18,11 +18,11 @@ type DashboardScreenProps = {
 };
 
 const modules: Array<{ label: string; description: string; screen: AppScreen; code: string }> = [
-  { label: 'Açık Fişler', description: 'Bekleyen satışları yönet', screen: 'openDocuments', code: 'FİŞ' },
-  { label: 'QR Albüm', description: 'Müşteri ürün görselleri', screen: 'qrAlbum', code: 'QR' },
-  { label: 'Mesajlar', description: 'Merkez ve operasyon notları', screen: 'messages', code: 'MSG' },
-  { label: 'Gönderilemeyenler', description: 'Kuyruktaki işlemleri izle', screen: 'failedQueue', code: 'ERR' },
-  { label: 'Veri Güncelle', description: 'Ürün ve stok hazırlığı', screen: 'dataUpdate', code: 'SYN' },
+  { label: 'Açık Fişler', description: 'Bekleyen fişler', screen: 'openDocuments', code: 'AÇK' },
+  { label: 'QR Albüm', description: 'Ürün görselleri', screen: 'qrAlbum', code: 'QR' },
+  { label: 'Mesajlar', description: 'Operasyon notları', screen: 'messages', code: 'MSG' },
+  { label: 'Gönderilemeyenler', description: 'Kuyruk işlemleri', screen: 'failedQueue', code: 'ERR' },
+  { label: 'Veri Güncelle', description: 'Ürün ve stok', screen: 'dataUpdate', code: 'SYN' },
   { label: 'Ayarlar', description: 'Terminal bilgileri', screen: 'settings', code: 'SET' },
 ];
 
@@ -49,7 +49,7 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
   return (
     <View style={styles.container}>
       <TerminalHeader terminalId="T01" branch={session?.branch ?? 'Merkez Depo'} online={!session?.offlineMode} />
-      <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}>
+      <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 44 }]}>
         <ToastMessage message={systemMessage} tone="info" />
         <View style={styles.welcome}>
           <View>
@@ -78,11 +78,15 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
           <SummaryBox label="Son Senkron" value={lastSync} wide />
         </View>
 
-        <InfoCard title="Son aktif fiş" subtitle={`${activeDocumentNo} · ${activeCustomer}`}>
+        <InfoCard title="Son aktif fiş">
+          <View style={styles.documentHeader}>
+            <Text style={styles.documentNo}>{activeDocumentNo}</Text>
+            <StatusPill label={`${activeItemCount} ürün`} tone="dark" />
+          </View>
           <View style={styles.activeDocRow}>
             <View style={styles.activeMeta}>
-              <StatusPill label={`${activeItemCount} ürün`} tone="dark" />
-              <Text style={styles.activeHint}>Taslaklar cihazda saklanır</Text>
+              <Text style={styles.customerLabel}>Müşteri</Text>
+              <Text style={styles.customerName}>{activeCustomer}</Text>
             </View>
             <Pressable onPress={() => onNavigate('newSale')} style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
               <Text style={styles.continueText}>Devam Et</Text>
@@ -188,6 +192,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderWidth: 1,
     borderColor: colors.redDark,
+    borderBottomWidth: 3,
+    borderBottomColor: colors.anthracite,
     ...shadows.subtle,
   },
   pressed: {
@@ -233,6 +239,8 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     borderTopWidth: 2,
     borderTopColor: colors.anthracite,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.red,
     ...shadows.subtle,
   },
   summaryWide: {
@@ -313,14 +321,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
   },
+  documentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  documentNo: {
+    color: colors.red,
+    fontSize: typography.section,
+    fontWeight: '900',
+  },
   activeMeta: {
     flex: 1,
     gap: spacing.xs,
   },
-  activeHint: {
+  customerLabel: {
     color: colors.muted,
     fontSize: typography.small,
-    fontWeight: '800',
+    fontWeight: '900',
+  },
+  customerName: {
+    color: colors.ink,
+    fontSize: typography.body,
+    fontWeight: '900',
   },
   continueButton: {
     backgroundColor: colors.red,

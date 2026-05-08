@@ -30,6 +30,7 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.lg,
     borderWidth: 1,
     borderColor: colors.line,
+    borderBottomWidth: 2,
     gap: spacing.xs,
     overflow: 'hidden',
     ...shadows.subtle,
@@ -47,6 +48,7 @@ const styles = StyleSheet.create({
   },
   default: {
     borderColor: colors.line,
+    borderBottomColor: '#c5cbd3',
   },
   danger: {
     backgroundColor: colors.dangerSoft,
@@ -63,6 +65,7 @@ const styles = StyleSheet.create({
   dark: {
     backgroundColor: colors.anthracite,
     borderColor: colors.anthracite,
+    borderBottomColor: colors.red,
   },
   title: {
     color: colors.ink,

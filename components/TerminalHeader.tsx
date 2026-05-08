@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     borderBottomWidth: 3,
     borderBottomColor: colors.red,
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   topRow: {
     flexDirection: 'row',
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   metaChip: {
     backgroundColor: colors.surface,

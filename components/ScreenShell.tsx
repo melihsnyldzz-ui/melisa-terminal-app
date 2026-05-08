@@ -22,7 +22,7 @@ export function ScreenShell({ title, subtitle, onBack, children }: ScreenShellPr
         <Text style={styles.title}>{title}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
-      <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}>
+      <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 44 }]}>
         {children}
       </ScrollView>
       {onBack ? (

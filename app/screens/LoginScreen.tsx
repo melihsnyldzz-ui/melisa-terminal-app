@@ -54,7 +54,7 @@ export function LoginScreen({ onLogin, systemMessage }: LoginScreenProps) {
     <View style={styles.container}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + 30 }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + 44 }]}
         keyboardShouldPersistTaps="handled"
       >
         <Pressable onPress={handleTerminalPress} style={({ pressed }) => [styles.hero, pressed && styles.pressed]}>
@@ -64,6 +64,7 @@ export function LoginScreen({ onLogin, systemMessage }: LoginScreenProps) {
           <View style={styles.brandCopy}>
             <Text style={styles.brand}>MELİSA BEBE</Text>
             <Text style={styles.product}>Saha Terminali</Text>
+            <Text style={styles.branchLine}>T01 · {branch}</Text>
           </View>
         </Pressable>
 
@@ -71,13 +72,13 @@ export function LoginScreen({ onLogin, systemMessage }: LoginScreenProps) {
           <View style={styles.cardTopRow}>
             <View>
               <Text style={styles.cardKicker}>Terminale Giriş</Text>
-              <Text style={styles.cardTitle}>T01 · {branch}</Text>
+              <Text style={styles.cardTitle}>Devam etmek için dokun</Text>
             </View>
             <View style={styles.readyBadge}>
               <Text style={styles.readyBadgeText}>HAZIR</Text>
             </View>
           </View>
-          <Text style={styles.cardHint}>Devam etmek için dokun</Text>
+          <Text style={styles.cardHint}>PIN ile güvenli giriş · {branch}</Text>
         </Pressable>
 
         <ToastMessage message={systemMessage || banner?.message} tone={systemMessage ? 'info' : banner?.tone} />
@@ -187,6 +188,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginTop: 2,
   },
+  branchLine: {
+    color: colors.surface,
+    fontSize: typography.small,
+    fontWeight: '900',
+    marginTop: 2,
+  },
   terminalCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -196,6 +203,8 @@ const styles = StyleSheet.create({
     borderLeftWidth: 5,
     borderLeftColor: colors.red,
     gap: spacing.sm,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.anthracite,
     ...shadows.subtle,
   },
   cardPressed: {

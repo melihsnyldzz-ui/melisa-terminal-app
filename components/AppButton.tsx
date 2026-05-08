@@ -49,14 +49,17 @@ const styles = StyleSheet.create({
   primary: {
     backgroundColor: colors.red,
     borderColor: colors.redDark,
+    borderBottomWidth: 2,
   },
   secondary: {
     backgroundColor: colors.surface,
     borderColor: colors.anthracite,
+    borderBottomWidth: 2,
   },
   dark: {
     backgroundColor: colors.anthracite,
     borderColor: colors.anthracite,
+    borderBottomWidth: 2,
   },
   quiet: {
     backgroundColor: colors.surfaceSoft,

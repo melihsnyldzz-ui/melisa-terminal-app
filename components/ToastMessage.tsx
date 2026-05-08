@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   banner: {
     borderRadius: radius.md,
     borderWidth: 1,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
@@ -47,6 +47,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: typography.body,
     fontWeight: '800',
-    lineHeight: 19,
+    lineHeight: 18,
   },
 });
