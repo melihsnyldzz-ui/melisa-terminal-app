@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActionRow } from '../../components/ActionRow';
 import { AppButton } from '../../components/AppButton';
-import { InfoCard } from '../../components/InfoCard';
 import { ScreenShell } from '../../components/ScreenShell';
 import { StatusPill } from '../../components/StatusPill';
 import { ToastMessage } from '../../components/ToastMessage';
@@ -14,10 +14,13 @@ import { colors, radius, spacing, typography } from '../theme';
 
 type SettingsScreenProps = {
   onBack: () => void;
+  onLogout: () => void;
   session: UserSession | null;
 };
 
-export function SettingsScreen({ onBack, session }: SettingsScreenProps) {
+const branchOptions = ['Merkez Depo', 'Mağaza', 'Sevkiyat'];
+
+export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProps) {
   const [settings, setSettings] = useState<TerminalSettings>({
     terminalId: 'MB-TERM-001',
     branch: session?.branch ?? 'Merkez Depo',
@@ -39,7 +42,7 @@ export function SettingsScreen({ onBack, session }: SettingsScreenProps) {
     setBanner({ message: 'Terminal ayarları cihazda korunacak şekilde kaydedildi.', tone: 'success' });
   };
 
-  const test = async () => {
+  const checkConnection = async () => {
     const result = await testConnectionMock(settings);
     setBanner({ message: result.message, tone: result.ok ? 'success' : 'error' });
   };
@@ -51,18 +54,35 @@ export function SettingsScreen({ onBack, session }: SettingsScreenProps) {
   };
 
   return (
-    <ScreenShell title="Ayarlar" subtitle="Terminal kontrolleri" onBack={onBack}>
+    <ScreenShell title="Ayarlar" subtitle="Terminal ayar paneli" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
 
       <Section title="Terminal Bilgisi">
         <Field label="Terminal ID" value={settings.terminalId} onChangeText={(value) => update('terminalId', value)} />
-        <Field label="Depo" value={settings.branch} onChangeText={(value) => update('branch', value)} />
+        <View style={styles.field}>
+          <Text style={styles.label}>Depo</Text>
+          <View style={styles.segmentRow}>
+            {branchOptions.map((branch) => (
+              <Pressable
+                key={branch}
+                onPress={() => update('branch', branch)}
+                style={({ pressed }) => [styles.segmentButton, settings.branch === branch && styles.segmentButtonActive, pressed && styles.pressed]}
+              >
+                <Text style={[styles.segmentText, settings.branch === branch && styles.segmentTextActive]}>{branch}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
         <AppButton label="Ayarları Kaydet" onPress={save} compact />
       </Section>
 
       <Section title="Bağlantı">
         <Field label="API adresi" value={settings.apiBaseUrl} onChangeText={(value) => update('apiBaseUrl', value)} />
-        <AppButton label="Bağlantı Testi" onPress={test} variant="secondary" compact />
+        <View style={styles.inlineRow}>
+          <Text style={styles.rowLabel}>Durum</Text>
+          <StatusPill label={settings.apiBaseUrl.trim() ? 'Hazır' : 'Bekliyor'} tone={settings.apiBaseUrl.trim() ? 'success' : 'warning'} />
+        </View>
+        <AppButton label="Bağlantıyı Kontrol Et" onPress={checkConnection} variant="secondary" compact />
       </Section>
 
       <Section title="Senkron">
@@ -70,12 +90,21 @@ export function SettingsScreen({ onBack, session }: SettingsScreenProps) {
           <Text style={styles.rowLabel}>Son senkron</Text>
           <StatusPill label={lastSync} tone="dark" />
         </View>
+        <Text style={styles.helperText}>Ürün, fiş ve mesaj hazırlıkları güncel tutulur.</Text>
         <AppButton label="Veri Güncelle" onPress={updateData} variant="dark" compact />
       </Section>
 
       <Section title="Güvenlik">
-        <InfoCard title="Güvenli sınır" subtitle="Taslaklar cihazda saklanır." tone="warning" />
-        <AppButton label="Oturumu Kapat" onPress={() => setBanner({ message: 'Oturumu kapatma işlemi hazır.', tone: 'info' })} variant="secondary" compact />
+        <View style={styles.securityBox}>
+          <Text style={styles.securityTitle}>Güvenli çalışma modu</Text>
+          <Text style={styles.securityText}>Taslaklar cihazda saklanır. Oturum kapatılsa da kayıtlı ayarlar korunur.</Text>
+        </View>
+        <ActionRow
+          actions={[
+            { label: 'Kaydet', onPress: save, variant: 'secondary' },
+            { label: 'Oturumu Kapat', onPress: onLogout, variant: 'dark' },
+          ]}
+        />
       </Section>
     </ScreenShell>
   );
@@ -123,7 +152,7 @@ const styles = StyleSheet.create({
   field: { gap: spacing.xs },
   label: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
   input: {
-    minHeight: 46,
+    minHeight: 44,
     borderRadius: radius.md,
     backgroundColor: colors.surfaceSoft,
     borderWidth: 1,
@@ -133,6 +162,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     fontWeight: '700',
   },
+  segmentRow: { flexDirection: 'row', gap: spacing.xs },
+  segmentButton: {
+    flex: 1,
+    minHeight: 38,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  segmentButtonActive: {
+    backgroundColor: colors.anthracite,
+    borderColor: colors.anthracite,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.red,
+  },
+  segmentText: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900', textAlign: 'center' },
+  segmentTextActive: { color: colors.surface },
+  pressed: { opacity: 0.86 },
   inlineRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
   rowLabel: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  helperText: { color: colors.muted, fontSize: typography.small, fontWeight: '800', lineHeight: 16 },
+  securityBox: {
+    backgroundColor: colors.warningSoft,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: '#efd5a7',
+    borderLeftWidth: 4,
+    borderLeftColor: colors.amber,
+    padding: spacing.sm,
+    gap: 2,
+  },
+  securityTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  securityText: { color: colors.text, fontSize: typography.small, fontWeight: '800', lineHeight: 16 },
 });

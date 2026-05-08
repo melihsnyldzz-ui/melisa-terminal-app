@@ -94,8 +94,9 @@ export async function getFailedOperationsMock(): Promise<FailedOperation[]> {
 
 export async function testConnectionMock(settings: TerminalSettings) {
   await wait(300);
+  const ready = Boolean(settings.terminalId.trim() && settings.apiBaseUrl.trim());
   return {
-    ok: true,
-    message: `${settings.terminalId} için bağlantı kontrolü hazır.`,
+    ok: ready,
+    message: ready ? 'Bağlantı kontrolü başarılı' : 'Bağlantı bekliyor',
   };
 }

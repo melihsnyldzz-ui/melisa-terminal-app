@@ -13,7 +13,7 @@ import { QRAlbumScreen } from './app/screens/QRAlbumScreen';
 import { SettingsScreen } from './app/screens/SettingsScreen';
 import { colors } from './app/theme';
 import { HoneywellPreviewFrame } from './components/HoneywellPreviewFrame';
-import { loadSession, saveSession } from './storage/localStorage';
+import { clearSession, loadSession, saveSession } from './storage/localStorage';
 import type { AppScreen, UserSession } from './types';
 
 export default function App() {
@@ -73,6 +73,13 @@ export default function App() {
     setScreen(nextScreen);
   };
 
+  const handleLogout = async () => {
+    await clearSession();
+    setSession(null);
+    setBackHint('');
+    setScreen('login');
+  };
+
   const renderScreen = () => {
     if (screen === 'login') return <LoginScreen onLogin={handleLogin} systemMessage={backHint} />;
     if (screen === 'newSale') return <NewSaleScreen onBack={() => navigateTo('dashboard')} />;
@@ -81,7 +88,7 @@ export default function App() {
     if (screen === 'messages') return <MessagesScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'failedQueue') return <FailedQueueScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'dataUpdate') return <DataUpdateScreen onBack={() => navigateTo('dashboard')} />;
-    if (screen === 'settings') return <SettingsScreen onBack={() => navigateTo('dashboard')} session={session} />;
+    if (screen === 'settings') return <SettingsScreen onBack={() => navigateTo('dashboard')} onLogout={handleLogout} session={session} />;
     return <DashboardScreen session={session} onNavigate={navigateTo} systemMessage={backHint} />;
   };
 
