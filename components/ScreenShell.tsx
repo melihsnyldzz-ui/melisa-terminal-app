@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, spacing, typography } from '../app/theme';
 import { AppButton } from './AppButton';
-import { TerminalStatusBar } from './TerminalStatusBar';
+import { TerminalHeader } from './TerminalHeader';
 
 type ScreenShellProps = {
   title: string;
@@ -14,7 +14,7 @@ type ScreenShellProps = {
 export function ScreenShell({ title, subtitle, onBack, children }: ScreenShellProps) {
   return (
     <View style={styles.shell}>
-      <TerminalStatusBar />
+      <TerminalHeader onBack={onBack} />
       <View style={styles.header}>
         <Text style={styles.kicker}>OPERASYON EKRANI</Text>
         <Text style={styles.title}>{title}</Text>

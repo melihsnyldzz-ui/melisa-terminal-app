@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { Platform, SafeAreaView, StyleSheet } from 'react-native';
 import { DashboardScreen } from './app/screens/DashboardScreen';
 import { DataUpdateScreen } from './app/screens/DataUpdateScreen';
 import { FailedQueueScreen } from './app/screens/FailedQueueScreen';
@@ -11,6 +11,7 @@ import { OpenDocumentsScreen } from './app/screens/OpenDocumentsScreen';
 import { QRAlbumScreen } from './app/screens/QRAlbumScreen';
 import { SettingsScreen } from './app/screens/SettingsScreen';
 import { colors } from './app/theme';
+import { HoneywellPreviewFrame } from './components/HoneywellPreviewFrame';
 import { loadSession, saveSession } from './storage/localStorage';
 import type { AppScreen, UserSession } from './types';
 
@@ -45,12 +46,18 @@ export default function App() {
     return <DashboardScreen session={session} onNavigate={setScreen} />;
   };
 
-  return (
+  const appContent = (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
       {renderScreen()}
     </SafeAreaView>
   );
+
+  if (Platform.OS === 'web') {
+    return <HoneywellPreviewFrame>{appContent}</HoneywellPreviewFrame>;
+  }
+
+  return appContent;
 }
 
 const styles = StyleSheet.create({

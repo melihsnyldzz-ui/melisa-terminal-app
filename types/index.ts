@@ -21,6 +21,7 @@ export type MessageType = 'Acil' | 'Merkez' | 'Muhasebe' | 'Depo' | 'Fiş Notu';
 export type Message = {
   id: string;
   type: MessageType;
+  sender: string;
   title: string;
   body: string;
   read: boolean;
@@ -48,6 +49,7 @@ export type QRAlbumItem = {
 export type QRAlbum = {
   documentNo: string;
   customerLabel: string;
+  status: 'Hazır' | 'Taslak';
   items: QRAlbumItem[];
 };
 
@@ -59,6 +61,7 @@ export type TerminalSettings = {
 
 export type FailedOperation = {
   id: string;
+  documentNo: string;
   title: string;
   reason: string;
   createdAt: string;

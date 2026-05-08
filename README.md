@@ -29,6 +29,22 @@ npm start
 
 Expo geliştirme sunucusu açıldıktan sonra terminalde görünen QR kod okutulur. Bu sürümde gerçek API, Vega veya SQL bağlantısı yoktur.
 
+## Bilgisayarda Honeywell Cihaz Gibi Önizleme
+
+Expo web ortamında uygulama otomatik olarak Honeywell benzeri koyu antrasit cihaz çerçevesi içinde gösterilir. Bu görünüm sadece bilgisayar/web geliştirme önizlemesi içindir; Android ve iOS tarafında normal uygulama ekranı çalışır.
+
+```powershell
+cd C:\Users\User\Documents\GitHub\melisa-terminal-app
+npm run preview:honeywell
+```
+
+Bu makinedeki mevcut lokal proje yolu:
+
+```powershell
+cd C:\Users\WARD-V2\Documents\GitHub\melisa-terminal-app
+npm run preview:honeywell
+```
+
 ## Klasör Yapısı
 
 - `app/`: Ekranlar ve tema
@@ -42,7 +58,16 @@ Expo geliştirme sunucusu açıldıktan sonra terminalde görünen QR kod okutul
 ## Sürüm Planı
 
 - `v0.1.0`: Login, dashboard, yeni fiş, açık fiş, QR albüm, mesajlar, gönderilemeyenler, veri güncelle ve ayarlar iskeleti
+- `v0.2.0`: Kullanıcı dostu terminal deneyimi; TerminalHeader, durum rozetleri, boş durumlar, banner mesajları, adım yönlendirmeleri ve mock aksiyon geri bildirimleri
 - Sonraki fazlar: gerçek ERP API bağlantısı, offline kuyruk sertleştirme, bildirim/ses/titreşim, QR albüm servis bağlantısı
+
+## v0.2 Kullanım Notları
+
+- Ana ekran: `+ Yeni Fiş Başlat` ana aksiyonudur; açık fiş, okunmamış mesaj, gönderilemeyen işlem ve son senkron özeti gösterilir.
+- Mesajlar: `Tümü`, `Acil`, `Fiş Notu` ve `Okunmamış` filtreleriyle iş mesajları ayrıştırılır; seçili mesaj mock olarak okundu işaretlenebilir.
+- Açık Fişler: Her fişte `Aç`, `QR Albüm` ve `Gönder` mock aksiyonları vardır; durum rozetleri hata riskini görünür yapar.
+- QR Albüm: Fiş, müşteri, ürün sayısı ve QR placeholder alanı gösterilir; fiyat bilgisi kesinlikle yer almaz.
+- Ayarlar: Terminal bilgisi, bağlantı, senkron ve güvenlik bölümleri ayrıdır; bağlantı testi ve veri güncelleme mock banner verir.
 
 ## Kontrol Komutları
 

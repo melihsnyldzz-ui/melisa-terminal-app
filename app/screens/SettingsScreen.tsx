@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppButton } from '../../components/AppButton';
 import { InfoCard } from '../../components/InfoCard';
 import { ScreenShell } from '../../components/ScreenShell';
+import { StatusPill } from '../../components/StatusPill';
+import { ToastMessage } from '../../components/ToastMessage';
+import type { ToastTone } from '../../components/ToastMessage';
 import { testConnectionMock } from '../../services/api';
 import { loadSettings, saveSettings } from '../../storage/localStorage';
 import type { TerminalSettings, UserSession } from '../../types';
@@ -19,7 +23,8 @@ export function SettingsScreen({ onBack, session }: SettingsScreenProps) {
     branch: session?.branch ?? 'Merkez Depo',
     apiBaseUrl: 'Mock API',
   });
-  const [status, setStatus] = useState('Ayarlar local storage içinde saklanır.');
+  const [lastSync, setLastSync] = useState('Bugün 09:40');
+  const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
 
   useEffect(() => {
     loadSettings().then(setSettings);
@@ -31,29 +36,62 @@ export function SettingsScreen({ onBack, session }: SettingsScreenProps) {
 
   const save = async () => {
     await saveSettings(settings);
-    setStatus('Ayarlar kaydedildi.');
+    setBanner({ message: 'Terminal ayarları local storage içine kaydedildi.', tone: 'success' });
   };
 
   const test = async () => {
     const result = await testConnectionMock(settings);
-    setStatus(result.message);
+    setBanner({ message: result.message, tone: result.ok ? 'success' : 'error' });
+  };
+
+  const updateData = () => {
+    const nextSync = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    setLastSync(`Bugün ${nextSync}`);
+    setBanner({ message: 'Mock veri güncelleme tamamlandı. Bekleyen belgeler korunur.', tone: 'success' });
   };
 
   return (
-    <ScreenShell title="Terminal Ayarları" subtitle="Cihaz, depo ve mock bağlantı bilgileri" onBack={onBack}>
-      <View style={styles.formPanel}>
+    <ScreenShell title="Terminal Ayarları" subtitle="Cihaz, bağlantı ve güvenlik kontrolleri" onBack={onBack}>
+      <ToastMessage message={banner?.message} tone={banner?.tone} />
+
+      <Section title="Terminal Bilgisi">
         <Field label="Terminal ID" value={settings.terminalId} onChangeText={(value) => update('terminalId', value)} />
         <Field label="Depo" value={settings.branch} onChangeText={(value) => update('branch', value)} />
+        <AppButton label="Ayarları Kaydet" onPress={save} compact />
+      </Section>
+
+      <Section title="Bağlantı">
         <Field label="API adresi" value={settings.apiBaseUrl} onChangeText={(value) => update('apiBaseUrl', value)} />
-      </View>
-      <View style={styles.actions}>
-        <AppButton label="Ayarları Kaydet" onPress={save} />
-        <AppButton label="Bağlantı Testi" onPress={test} variant="secondary" />
-        <AppButton label="Veri Güncelle" onPress={() => setStatus('Mock veri güncelleme kontrolü hazır.')} variant="dark" />
-      </View>
-      <InfoCard title="Durum" subtitle={status} />
-      <InfoCard title="Güvenli sınır" subtitle="Bu ekran gerçek API, Vega veya SQL bağlantısı başlatmaz." tone="warning" />
+        <AppButton label="Bağlantı Testi" onPress={test} variant="secondary" compact />
+      </Section>
+
+      <Section title="Senkron">
+        <View style={styles.inlineRow}>
+          <Text style={styles.rowLabel}>Son senkron</Text>
+          <StatusPill label={lastSync} tone="dark" />
+        </View>
+        <AppButton label="Veri Güncelle" onPress={updateData} variant="dark" compact />
+      </Section>
+
+      <Section title="Güvenlik">
+        <InfoCard title="Güvenli sınır" subtitle="Bu ekran gerçek API, Vega veya SQL bağlantısı başlatmaz." tone="warning" />
+        <AppButton label="Oturumu Kapat" onPress={() => setBanner({ message: 'Oturumu kapatma mock olarak gösterildi.', tone: 'info' })} variant="secondary" compact />
+      </Section>
     </ScreenShell>
+  );
+}
+
+type SectionProps = {
+  title: string;
+  children: ReactNode;
+};
+
+function Section({ title, children }: SectionProps) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {children}
+    </View>
   );
 }
 
@@ -73,7 +111,7 @@ function Field({ label, value, onChangeText }: FieldProps) {
 }
 
 const styles = StyleSheet.create({
-  formPanel: {
+  section: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
@@ -81,14 +119,9 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.md,
   },
-  field: {
-    gap: spacing.xs,
-  },
-  label: {
-    color: colors.anthracite,
-    fontSize: typography.body,
-    fontWeight: '900',
-  },
+  sectionTitle: { color: colors.red, fontSize: typography.body, fontWeight: '900' },
+  field: { gap: spacing.xs },
+  label: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
   input: {
     minHeight: 50,
     borderRadius: radius.md,
@@ -100,7 +133,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     fontWeight: '700',
   },
-  actions: {
-    gap: spacing.sm,
-  },
+  inlineRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
+  rowLabel: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
 });

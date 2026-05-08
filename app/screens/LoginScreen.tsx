@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppButton } from '../../components/AppButton';
+import { ToastMessage } from '../../components/ToastMessage';
+import type { ToastTone } from '../../components/ToastMessage';
 import { loginMock } from '../../services/api';
 import type { UserSession } from '../../types';
 import { colors, radius, shadows, spacing, typography } from '../theme';
@@ -15,8 +17,15 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [username, setUsername] = useState('');
   const [pin, setPin] = useState('');
   const [branch, setBranch] = useState(branches[0]);
+  const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
 
   const submit = async (offlineMode: boolean) => {
+    if (!pin.trim()) {
+      setBanner({ message: 'PIN boş bırakılamaz. Devam etmek için terminal PIN bilgisini gir.', tone: 'warning' });
+      return;
+    }
+
+    setBanner({ message: offlineMode ? 'Çevrimdışı terminal oturumu hazırlanıyor.' : 'Giriş başarılı, ana menü açılıyor.', tone: 'success' });
     const session = await loginMock(username || 'Personel', branch, offlineMode);
     onLogin(session);
   };
@@ -25,12 +34,13 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
     <View style={styles.container}>
       <View style={styles.terminalCap}>
         <Text style={styles.brand}>MELİSA BEBE</Text>
-        <Text style={styles.capMeta}>T01 · Android Terminal · v0.1.2</Text>
+        <Text style={styles.capMeta}>T01 · Android Terminal · v0.2.0</Text>
       </View>
 
       <View style={styles.panel}>
         <Text style={styles.title}>El Terminali Giriş</Text>
-        <Text style={styles.subtitle}>Personel operasyon ekranı</Text>
+        <Text style={styles.subtitle}>Kullanıcı adı boşsa Personel olarak devam eder.</Text>
+        <ToastMessage message={banner?.message} tone={banner?.tone} />
 
         <View style={styles.field}>
           <Text style={styles.label}>Kullanıcı adı</Text>
@@ -51,7 +61,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
 
         <View style={styles.actions}>
           <AppButton label="Giriş Yap" onPress={() => submit(false)} />
-          <AppButton label="Çevrimdışı Devam Et" onPress={() => submit(true)} variant="dark" />
+          <AppButton label="Çevrimdışı Devam Et" onPress={() => submit(true)} variant="secondary" />
         </View>
       </View>
 
@@ -61,10 +71,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.surface,
-  },
+  container: { flex: 1, backgroundColor: colors.surface },
   terminalCap: {
     backgroundColor: colors.anthracite,
     paddingHorizontal: spacing.xl,
@@ -73,17 +80,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 4,
     borderBottomColor: colors.red,
   },
-  brand: {
-    color: colors.surface,
-    fontSize: typography.brand,
-    fontWeight: '900',
-  },
-  capMeta: {
-    color: colors.line,
-    fontSize: typography.small,
-    fontWeight: '800',
-    marginTop: spacing.xs,
-  },
+  brand: { color: colors.surface, fontSize: typography.brand, fontWeight: '900' },
+  capMeta: { color: colors.line, fontSize: typography.small, fontWeight: '800', marginTop: spacing.xs },
   panel: {
     margin: spacing.lg,
     padding: spacing.lg,
@@ -94,25 +92,10 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     ...shadows.subtle,
   },
-  title: {
-    color: colors.ink,
-    fontSize: typography.title,
-    fontWeight: '900',
-  },
-  subtitle: {
-    color: colors.muted,
-    fontSize: typography.body,
-    fontWeight: '700',
-    marginTop: -spacing.sm,
-  },
-  field: {
-    gap: spacing.xs,
-  },
-  label: {
-    color: colors.anthracite,
-    fontSize: typography.body,
-    fontWeight: '900',
-  },
+  title: { color: colors.ink, fontSize: typography.title, fontWeight: '900' },
+  subtitle: { color: colors.muted, fontSize: typography.body, fontWeight: '700', marginTop: -spacing.sm },
+  field: { gap: spacing.xs },
+  label: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
   input: {
     minHeight: 52,
     borderRadius: radius.md,
@@ -124,18 +107,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     fontWeight: '700',
   },
-  branchGrid: {
-    gap: spacing.sm,
-  },
-  actions: {
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  footer: {
-    color: colors.muted,
-    fontSize: typography.small,
-    fontWeight: '700',
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
-  },
+  branchGrid: { gap: spacing.sm },
+  actions: { gap: spacing.sm, marginTop: spacing.xs },
+  footer: { color: colors.muted, fontSize: typography.small, fontWeight: '700', textAlign: 'center', paddingHorizontal: spacing.lg },
 });

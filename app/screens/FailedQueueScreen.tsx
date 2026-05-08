@@ -1,42 +1,40 @@
 import { useEffect, useState } from 'react';
+import { ActionRow } from '../../components/ActionRow';
+import { EmptyState } from '../../components/EmptyState';
 import { InfoCard } from '../../components/InfoCard';
 import { ScreenShell } from '../../components/ScreenShell';
-import { loadFailedOperations, saveFailedOperations } from '../../storage/localStorage';
+import { StatusPill } from '../../components/StatusPill';
+import { ToastMessage } from '../../components/ToastMessage';
+import type { ToastTone } from '../../components/ToastMessage';
+import { getFailedOperationsMock } from '../../services/api';
 import type { FailedOperation } from '../../types';
 
 type FailedQueueScreenProps = {
   onBack: () => void;
 };
 
-const fallbackOperations: FailedOperation[] = [
-  {
-    id: 'fail-1',
-    title: 'FIS-1026 gönderilemedi',
-    reason: 'Mock senkron kuyruğu örneği',
-    createdAt: 'Dün 18:05',
-  },
-];
-
 export function FailedQueueScreen({ onBack }: FailedQueueScreenProps) {
   const [operations, setOperations] = useState<FailedOperation[]>([]);
+  const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
 
   useEffect(() => {
-    loadFailedOperations().then(async (saved) => {
-      if (saved.length > 0) {
-        setOperations(saved);
-        return;
-      }
-      await saveFailedOperations(fallbackOperations);
-      setOperations(fallbackOperations);
-    });
+    getFailedOperationsMock().then(setOperations);
   }, []);
 
   return (
-    <ScreenShell title="Gönderilemeyenler" subtitle="Mock local kuyruk" onBack={onBack}>
-      {operations.map((operation) => (
-        <InfoCard key={operation.id} title={operation.title} subtitle={`${operation.reason} · ${operation.createdAt}`} tone="danger" />
-      ))}
-      <InfoCard title="Offline ilke" subtitle="Bekleyen belge kaybolmamalıdır. Bu v0.1 ekranı sadece mock kuyruk gösterir." tone="warning" />
+    <ScreenShell title="Gönderilemeyenler" subtitle="Offline kuyruk ve tekrar deneme ekranı" onBack={onBack}>
+      <ToastMessage message={banner?.message} tone={banner?.tone} />
+      {operations.length === 0 ? (
+        <EmptyState badge="OK" title="Kuyruk temiz" description="Gönderilemeyen işlem bulunmuyor. Açık fişler local olarak korunur." />
+      ) : (
+        operations.map((operation) => (
+          <InfoCard key={operation.id} title={operation.title} subtitle={`${operation.documentNo} · ${operation.createdAt}`} tone="danger">
+            <StatusPill label="Gönderilemedi" tone="danger" />
+            <InfoCard title="Neden" subtitle={operation.reason} />
+            <ActionRow actions={[{ label: 'Tekrar Dene', onPress: () => setBanner({ message: `${operation.documentNo} tekrar deneme mock kuyruğuna alındı.`, tone: 'warning' }), variant: 'primary' }]} />
+          </InfoCard>
+        ))
+      )}
     </ScreenShell>
   );
 }
