@@ -4,6 +4,8 @@ import { InfoCard } from '../../components/InfoCard';
 import { StatusPill } from '../../components/StatusPill';
 import { TerminalHeader } from '../../components/TerminalHeader';
 import { getFailedOperationsMock, getMessagesMock, getOpenDocumentsMock } from '../../services/api';
+import { loadActiveSaleDraft } from '../../storage/localStorage';
+import type { ActiveSaleDraft } from '../../types';
 import type { AppScreen, OpenDocument, UserSession } from '../../types';
 import { colors, radius, shadows, spacing, typography } from '../theme';
 
@@ -26,11 +28,13 @@ export function DashboardScreen({ session, onNavigate }: DashboardScreenProps) {
   const [documents, setDocuments] = useState<OpenDocument[]>([]);
   const [failedCount, setFailedCount] = useState(0);
   const [lastSync] = useState('Bugün 09:40');
+  const [activeDraft, setActiveDraft] = useState<ActiveSaleDraft | null>(null);
 
   useEffect(() => {
     getMessagesMock().then((messages) => setUnreadCount(messages.filter((message) => !message.read).length));
     getOpenDocumentsMock().then(setDocuments);
     getFailedOperationsMock().then((operations) => setFailedCount(operations.length));
+    loadActiveSaleDraft().then(setActiveDraft);
   }, []);
 
   return (
@@ -54,6 +58,15 @@ export function DashboardScreen({ session, onNavigate }: DashboardScreenProps) {
           <SummaryBox label="Kuyruk" value={failedCount.toString()} />
           <SummaryBox label="Son senkron" value={lastSync} wide />
         </View>
+
+        <InfoCard title="Son aktif fiş" subtitle={`${activeDraft?.documentNo ?? 'FIS-1024'} · ${activeDraft?.customerName ?? 'ABC Baby Store'}`}>
+          <View style={styles.activeDocRow}>
+            <StatusPill label={`${activeDraft?.lines.length ?? 8} ürün`} tone="dark" />
+            <Pressable onPress={() => onNavigate('newSale')} style={styles.continueButton}>
+              <Text style={styles.continueText}>Devam Et</Text>
+            </Pressable>
+          </View>
+        </InfoCard>
 
         <View style={styles.menuGrid}>
           {modules.map((module) => (
@@ -146,4 +159,7 @@ const styles = StyleSheet.create({
   moduleTextBlock: { flex: 1, gap: 2 },
   moduleText: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
   moduleDescription: { color: colors.muted, fontSize: typography.small, fontWeight: '700' },
+  activeDocRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
+  continueButton: { backgroundColor: colors.red, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  continueText: { color: colors.surface, fontWeight: '900', fontSize: typography.small },
 });

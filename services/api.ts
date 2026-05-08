@@ -1,6 +1,14 @@
-import type { FailedOperation, Message, OpenDocument, QRAlbum, TerminalSettings, UserSession } from '../types';
+import type { FailedOperation, Message, OpenDocument, Product, QRAlbum, TerminalSettings, UserSession } from '../types';
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const mockProducts: Product[] = [
+  { code: 'MB-ELB-104', name: 'Kız Çocuk Elbise', color: 'Kırmızı', size: '4 Yaş' },
+  { code: 'MB-TKM-212', name: 'Bebek Takım', color: 'Beyaz', size: '12 Ay' },
+  { code: 'MB-MNT-306', name: 'Çocuk Mont', color: 'Siyah', size: '6 Yaş' },
+  { code: 'MB-ZBN-118', name: 'Zıbın Seti', color: 'Ekru', size: '6 Ay' },
+  { code: 'MB-PNT-420', name: 'Çocuk Pantolon', color: 'Lacivert', size: '5 Yaş' },
+];
 
 export async function loginMock(username: string, branch: string, offlineMode: boolean): Promise<UserSession> {
   await wait(250);
@@ -26,7 +34,7 @@ export async function getMessagesMock(): Promise<Message[]> {
 export async function getOpenDocumentsMock(): Promise<OpenDocument[]> {
   await wait(200);
   return [
-    { id: 'FIS-1024', customerName: 'Ayşe Hanım', itemCount: 6, status: 'Açık', updatedAt: 'Bugün 09:10' },
+    { id: 'FIS-1024', customerName: 'ABC Baby Store', itemCount: 8, status: 'Açık', updatedAt: 'Bugün 09:10' },
     { id: 'FIS-1025', customerName: 'Merkez müşteri', itemCount: 3, status: 'Beklemede', updatedAt: 'Bugün 09:35' },
     { id: 'FIS-1026', customerName: 'Depo teslim', itemCount: 2, status: 'Gönderilemedi', updatedAt: 'Dün 18:05' },
   ];
@@ -41,16 +49,28 @@ export async function createSaleMock(customerName: string) {
   };
 }
 
+export async function getMockProductByCode(code: string): Promise<Product> {
+  await wait(120);
+  const normalizedCode = code.trim().toUpperCase();
+  const index = Math.abs([...normalizedCode].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % mockProducts.length;
+  const product = mockProducts[index];
+  return {
+    ...product,
+    code: normalizedCode || product.code,
+  };
+}
+
 export async function getQRAlbumMock(): Promise<QRAlbum> {
   await wait(200);
   return {
     documentNo: 'FIS-1024',
-    customerLabel: 'Ayşe Hanım',
+    customerLabel: 'ABC Baby Store',
     status: 'Hazır',
     items: [
-      { id: 'p-1', name: 'Kız Çocuk Elbise', color: 'Kırmızı', size: '4 Yaş' },
-      { id: 'p-2', name: 'Bebek Takım', color: 'Beyaz', size: '12 Ay' },
-      { id: 'p-3', name: 'Çocuk Mont', color: 'Siyah', size: '6 Yaş' },
+      { id: 'p-1', code: 'MB-ELB-104', name: 'Kız Çocuk Elbise', color: 'Kırmızı', size: '4 Yaş' },
+      { id: 'p-2', code: 'MB-TKM-212', name: 'Bebek Takım', color: 'Beyaz', size: '12 Ay' },
+      { id: 'p-3', code: 'MB-MNT-306', name: 'Çocuk Mont', color: 'Siyah', size: '6 Yaş' },
+      { id: 'p-4', code: 'MB-ZBN-118', name: 'Zıbın Seti', color: 'Ekru', size: '6 Ay' },
     ],
   };
 }

@@ -39,8 +39,31 @@ export type OpenDocument = {
   updatedAt: string;
 };
 
+export type Product = {
+  code: string;
+  name: string;
+  color: string;
+  size: string;
+};
+
+export type SaleLine = Product & {
+  lineId: string;
+  quantity: number;
+};
+
+export type SaleStatus = 'Taslak' | 'Hazır';
+
+export type ActiveSaleDraft = {
+  documentNo: string;
+  customerName: string;
+  status: SaleStatus;
+  lines: SaleLine[];
+  updatedAt: string;
+};
+
 export type QRAlbumItem = {
   id: string;
+  code: string;
   name: string;
   color: string;
   size: string;

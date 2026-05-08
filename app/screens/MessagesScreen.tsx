@@ -82,6 +82,9 @@ export function MessagesScreen({ onBack }: MessagesScreenProps) {
         <InfoCard title="Seçili mesaj detayı" subtitle={`${selectedMessage.sender} · ${selectedMessage.timeLabel}`}>
           <Text style={styles.detailText}>{selectedMessage.body}</Text>
           <ActionRow actions={[{ label: 'Okundu işaretle', onPress: markSelectedRead, variant: 'primary' }]} />
+          {selectedMessage.relatedDocument ? (
+            <ActionRow actions={[{ label: 'Fişe Git', onPress: () => setBanner({ message: `${selectedMessage.relatedDocument} mock fiş yönlendirmesi hazır.`, tone: 'info' }), variant: 'dark' }]} />
+          ) : null}
         </InfoCard>
       ) : null}
     </ScreenShell>

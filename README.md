@@ -59,6 +59,7 @@ npm run preview:honeywell
 
 - `v0.1.0`: Login, dashboard, yeni fiş, açık fiş, QR albüm, mesajlar, gönderilemeyenler, veri güncelle ve ayarlar iskeleti
 - `v0.2.0`: Kullanıcı dostu terminal deneyimi; TerminalHeader, durum rozetleri, boş durumlar, banner mesajları, adım yönlendirmeleri ve mock aksiyon geri bildirimleri
+- `v0.2.1`: Operasyon akışı güçlendirme; aktif fiş taslağı local storage'a kaydedilir, barkod/QR kod inputu ile mock ürün eklenir, ürün kalemleri adet/sil aksiyonlarıyla yönetilir, QR albüm fiş ürünlerine daha bağlı görünür
 - Sonraki fazlar: gerçek ERP API bağlantısı, offline kuyruk sertleştirme, bildirim/ses/titreşim, QR albüm servis bağlantısı
 
 ## v0.2 Kullanım Notları
@@ -68,6 +69,14 @@ npm run preview:honeywell
 - Açık Fişler: Her fişte `Aç`, `QR Albüm` ve `Gönder` mock aksiyonları vardır; durum rozetleri hata riskini görünür yapar.
 - QR Albüm: Fiş, müşteri, ürün sayısı ve QR placeholder alanı gösterilir; fiyat bilgisi kesinlikle yer almaz.
 - Ayarlar: Terminal bilgisi, bağlantı, senkron ve güvenlik bölümleri ayrıdır; bağlantı testi ve veri güncelleme mock banner verir.
+
+## v0.2.1 Operasyon Akışı
+
+- Aktif fiş: Yeni fiş başlatıldığında taslak local storage'a yazılır ve uygulama tekrar açıldığında mock taslak yüklenir.
+- Mock ürün ekleme: `Barkod / QR kod gir` alanına örnek ürün kodu yazılıp `Ekle` seçildiğinde ürün satırı oluşur; fiyat gösterilmez.
+- Ürün satırları: Ürün kodu, ad, renk, beden ve adet görünür; `+`, `-` ve `Sil` aksiyonları mock fiş taslağını günceller.
+- QR albüm: Fiş no, müşteri, ürün sayısı, güvenli link ve ürün görsel placeholder kartları gösterilir.
+- Gönderilemeyenler: Tek işlem veya tüm kuyruk için `Tekrar Dene` mock geri bildirimi verir.
 
 ## Kontrol Komutları
 

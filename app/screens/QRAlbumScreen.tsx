@@ -40,19 +40,19 @@ export function QRAlbumScreen({ onBack }: QRAlbumScreenProps) {
         <View style={styles.qrBox}>
           <Text style={styles.qrText}>QR</Text>
         </View>
-        <Text style={styles.qrLink}>melisa.local/album/{album?.documentNo ?? 'fis'}</Text>
+        <Text style={styles.qrLink}>https://melisababy.com/a/{album?.documentNo ?? 'FIS-1024'}-x8Kp92</Text>
       </View>
 
       <View style={styles.grid}>
         {album?.items.map((item, index) => (
           <View key={item.id} style={styles.productCard}>
             <View style={styles.placeholder}>
-              <Text style={styles.placeholderCode}>P{index + 1}</Text>
+              <Text style={styles.placeholderCode}>{item.code}</Text>
               <Text style={styles.placeholderText}>Fotoğraf</Text>
             </View>
             <View style={styles.productInfo}>
               <Text style={styles.productName}>{item.name}</Text>
-              <Text style={styles.productMeta}>{item.color} · {item.size}</Text>
+              <Text style={styles.productMeta}>{item.code} · {item.color} · {item.size}</Text>
             </View>
           </View>
         ))}
@@ -60,7 +60,7 @@ export function QRAlbumScreen({ onBack }: QRAlbumScreenProps) {
 
       <ActionRow
         actions={[
-          { label: 'QR Oluştur', onPress: () => showMockAction('QR Albüm Oluştur'), variant: 'primary' },
+          { label: 'QR Yenile', onPress: () => showMockAction('QR yenileme'), variant: 'primary' },
           { label: 'Kopyala', onPress: () => showMockAction('Link kopyalama'), variant: 'secondary' },
           { label: 'WhatsApp', onPress: () => showMockAction('WhatsApp gönderimi'), variant: 'dark' },
         ]}

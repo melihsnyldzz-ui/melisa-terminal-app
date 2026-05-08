@@ -24,6 +24,9 @@ export function FailedQueueScreen({ onBack }: FailedQueueScreenProps) {
   return (
     <ScreenShell title="Gönderilemeyenler" subtitle="Offline kuyruk ve tekrar deneme ekranı" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
+      {operations.length > 0 ? (
+        <ActionRow actions={[{ label: 'Tümünü Tekrar Dene', onPress: () => setBanner({ message: 'Tüm gönderilemeyen işlemler için mock tekrar deneme başlatıldı.', tone: 'warning' }), variant: 'primary' }]} />
+      ) : null}
       {operations.length === 0 ? (
         <EmptyState badge="OK" title="Kuyruk temiz" description="Gönderilemeyen işlem bulunmuyor. Açık fişler local olarak korunur." />
       ) : (

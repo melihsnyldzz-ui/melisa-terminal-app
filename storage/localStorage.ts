@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { FailedOperation, OpenDocument, TerminalSettings, UserSession } from '../types';
+import type { ActiveSaleDraft, FailedOperation, OpenDocument, TerminalSettings, UserSession } from '../types';
 
 const KEYS = {
   settings: 'melisa-terminal:settings',
   session: 'melisa-terminal:session',
   failedOperations: 'melisa-terminal:failed-operations',
   draftDocuments: 'melisa-terminal:draft-documents',
+  activeSaleDraft: 'melisa-terminal:active-sale-draft',
 };
 
 const defaultSettings: TerminalSettings = {
@@ -57,4 +58,16 @@ export async function loadDraftDocuments(): Promise<OpenDocument[]> {
 
 export async function saveDraftDocuments(documents: OpenDocument[]): Promise<void> {
   await writeJson(KEYS.draftDocuments, documents);
+}
+
+export async function loadActiveSaleDraft(): Promise<ActiveSaleDraft | null> {
+  return readJson<ActiveSaleDraft | null>(KEYS.activeSaleDraft, null);
+}
+
+export async function saveActiveSaleDraft(draft: ActiveSaleDraft): Promise<void> {
+  await writeJson(KEYS.activeSaleDraft, draft);
+}
+
+export async function clearActiveSaleDraft(): Promise<void> {
+  await AsyncStorage.removeItem(KEYS.activeSaleDraft);
 }
