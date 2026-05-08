@@ -42,9 +42,8 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
   }, []);
 
   const personName = session?.username || 'Personel';
-  const activeDocumentNo = activeDraft?.documentNo ?? documents[0]?.id ?? 'FIS-1024';
-  const activeCustomer = activeDraft?.customerName ?? documents[0]?.customerName ?? 'ABC Baby Store';
-  const activeItemCount = activeDraft?.lines.length ?? documents[0]?.itemCount ?? 8;
+  const hasActiveDraft = Boolean(activeDraft);
+  const activeItemCount = activeDraft?.lines.reduce((sum, line) => sum + line.quantity, 0) ?? 0;
 
   return (
     <View style={styles.container}>
@@ -79,19 +78,33 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
         </View>
 
         <InfoCard title="Son aktif fiş">
-          <View style={styles.documentHeader}>
-            <Text style={styles.documentNo}>{activeDocumentNo}</Text>
-            <StatusPill label={`${activeItemCount} ürün`} tone="dark" />
-          </View>
-          <View style={styles.activeDocRow}>
-            <View style={styles.activeMeta}>
-              <Text style={styles.customerLabel}>Müşteri</Text>
-              <Text style={styles.customerName}>{activeCustomer}</Text>
+          {hasActiveDraft && activeDraft ? (
+            <>
+              <View style={styles.documentHeader}>
+                <Text style={styles.documentNo}>{activeDraft.documentNo}</Text>
+                <StatusPill label={`${activeItemCount} ürün`} tone="dark" />
+              </View>
+              <View style={styles.activeDocRow}>
+                <View style={styles.activeMeta}>
+                  <Text style={styles.customerLabel}>Müşteri</Text>
+                  <Text style={styles.customerName}>{activeDraft.customerName}</Text>
+                </View>
+                <Pressable onPress={() => onNavigate('newSale')} style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
+                  <Text style={styles.continueText}>Devam Et</Text>
+                </Pressable>
+              </View>
+            </>
+          ) : (
+            <View style={styles.activeDocRow}>
+              <View style={styles.activeMeta}>
+                <Text style={styles.documentNoMuted}>Aktif fiş yok</Text>
+                <Text style={styles.customerName}>Yeni fiş başlatabilirsin</Text>
+              </View>
+              <Pressable onPress={() => onNavigate('newSale')} style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
+                <Text style={styles.continueText}>Yeni Fiş Başlat</Text>
+              </Pressable>
             </View>
-            <Pressable onPress={() => onNavigate('newSale')} style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
-              <Text style={styles.continueText}>Devam Et</Text>
-            </Pressable>
-          </View>
+          )}
         </InfoCard>
 
         <View style={styles.menuGrid}>
@@ -329,6 +342,11 @@ const styles = StyleSheet.create({
   },
   documentNo: {
     color: colors.red,
+    fontSize: typography.section,
+    fontWeight: '900',
+  },
+  documentNoMuted: {
+    color: colors.muted,
     fontSize: typography.section,
     fontWeight: '900',
   },

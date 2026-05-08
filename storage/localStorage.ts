@@ -12,7 +12,7 @@ const KEYS = {
 const defaultSettings: TerminalSettings = {
   terminalId: 'MB-TERM-001',
   branch: 'Merkez Depo',
-  apiBaseUrl: 'Mock API',
+  apiBaseUrl: 'Hazırlık Bağlantısı',
 };
 
 async function readJson<T>(key: string, fallback: T): Promise<T> {
@@ -25,7 +25,8 @@ async function writeJson<T>(key: string, value: T): Promise<void> {
 }
 
 export async function loadSettings(): Promise<TerminalSettings> {
-  return readJson(KEYS.settings, defaultSettings);
+  const settings = await readJson(KEYS.settings, defaultSettings);
+  return settings.apiBaseUrl.toLowerCase().includes('mock') ? { ...settings, apiBaseUrl: defaultSettings.apiBaseUrl } : settings;
 }
 
 export async function saveSettings(settings: TerminalSettings): Promise<void> {

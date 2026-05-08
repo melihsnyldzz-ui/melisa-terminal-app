@@ -2,12 +2,12 @@ import type { FailedOperation, Message, OpenDocument, Product, QRAlbum, Terminal
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const mockProducts: Product[] = [
-  { code: 'MB-ELB-104', name: 'Kız Çocuk Elbise', color: 'Kırmızı', size: '4 Yaş' },
-  { code: 'MB-TKM-212', name: 'Bebek Takım', color: 'Beyaz', size: '12 Ay' },
-  { code: 'MB-MNT-306', name: 'Çocuk Mont', color: 'Siyah', size: '6 Yaş' },
-  { code: 'MB-ZBN-118', name: 'Zıbın Seti', color: 'Ekru', size: '6 Ay' },
-  { code: 'MB-PNT-420', name: 'Çocuk Pantolon', color: 'Lacivert', size: '5 Yaş' },
+const productTemplates: Product[] = [
+  { code: 'MB-1001', name: 'Bebek Takım', color: 'Pembe', size: '6-9 Ay' },
+  { code: 'MB-1002', name: 'Hastane Çıkışı', color: 'Ekru', size: '0-3 Ay' },
+  { code: 'MB-1003', name: 'Tulum', color: 'Mavi', size: '9-12 Ay' },
+  { code: 'MB-1004', name: 'Zıbın Seti', color: 'Beyaz', size: '3-6 Ay' },
+  { code: 'MB-1005', name: 'Çocuk Elbise', color: 'Kırmızı', size: '4 Yaş' },
 ];
 
 export async function loginMock(username: string, branch: string, offlineMode: boolean): Promise<UserSession> {
@@ -42,8 +42,9 @@ export async function getOpenDocumentsMock(): Promise<OpenDocument[]> {
 
 export async function createSaleMock(customerName: string) {
   await wait(250);
+  const suffix = Date.now().toString().slice(-5);
   return {
-    documentNo: 'FIS-1001',
+    documentNo: `FIS-${suffix}`,
     customerName: customerName.trim() || 'Seçili müşteri yok',
     itemCount: 0,
   };
@@ -52,8 +53,11 @@ export async function createSaleMock(customerName: string) {
 export async function getMockProductByCode(code: string): Promise<Product> {
   await wait(120);
   const normalizedCode = code.trim().toUpperCase();
-  const index = Math.abs([...normalizedCode].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % mockProducts.length;
-  const product = mockProducts[index];
+  const knownProduct = productTemplates.find((product) => product.code === normalizedCode);
+  if (knownProduct) return knownProduct;
+
+  const index = Math.abs([...normalizedCode].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % productTemplates.length;
+  const product = productTemplates[index];
   return {
     ...product,
     code: normalizedCode || product.code,

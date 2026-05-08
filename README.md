@@ -70,6 +70,7 @@ npm run preview:honeywell
 - `v0.2.4`: Gerçek Honeywell terminal ekranı için spacing, typography, kart, input, buton ve liste yoğunluğu sıkılaştırması
 - `v0.2.5`: Honeywell terminal safe area, alt tuş boşluğu ve Android donanım geri tuşu çift basış çıkış düzeltmesi
 - `v0.2.6`: Login ekranı ve dashboard ana menü görsel iyileştirme; Honeywell terminal ekranına göre daha premium UI düzeni; safe area davranışı korunmuştur; görünür uygulama versiyonu eklenmiştir
+- `v0.3.0`: Gerçekçi fiş akışı, barkod/QR input, ürün satırları, local aktif fiş taslağı ve QR albüm hazırlama aksiyonu
 - Sonraki fazlar: gerçek ERP API bağlantısı, offline kuyruk sertleştirme, bildirim/ses/titreşim, QR albüm servis bağlantısı
 
 Uygulama versiyonu TerminalHeader sağ üstünde gösterilir. Honeywell testlerinde ekranda görünen versiyon, GitHub'daki `package.json` version alanıyla uyumlu olmalıdır.
