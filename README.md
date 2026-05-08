@@ -68,6 +68,7 @@ npm run preview:honeywell
 - `v0.2.1`: Operasyon akışı güçlendirme; aktif fiş taslağı local storage'a kaydedilir, barkod/QR kod inputu ile mock ürün eklenir, ürün kalemleri adet/sil aksiyonlarıyla yönetilir, QR albüm fiş ürünlerine daha bağlı görünür
 - `v0.2.2`: Giriş ekranı görsel iyileştirmesi, ana menü görsel iyileştirmesi, teknik ifadelerin UI'dan kaldırılması ve Honeywell preview görünümünün korunması
 - `v0.2.4`: Gerçek Honeywell terminal ekranı için spacing, typography, kart, input, buton ve liste yoğunluğu sıkılaştırması
+- `v0.2.5`: Honeywell terminal safe area, alt tuş boşluğu ve Android donanım geri tuşu çift basış çıkış düzeltmesi
 - Sonraki fazlar: gerçek ERP API bağlantısı, offline kuyruk sertleştirme, bildirim/ses/titreşim, QR albüm servis bağlantısı
 
 ## v0.2 Kullanım Notları

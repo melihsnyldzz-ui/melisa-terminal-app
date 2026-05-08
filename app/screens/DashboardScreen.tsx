@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { InfoCard } from '../../components/InfoCard';
 import { StatusPill } from '../../components/StatusPill';
 import { TerminalHeader } from '../../components/TerminalHeader';
+import { ToastMessage } from '../../components/ToastMessage';
 import { getFailedOperationsMock, getMessagesMock, getOpenDocumentsMock } from '../../services/api';
 import { loadActiveSaleDraft } from '../../storage/localStorage';
 import type { ActiveSaleDraft } from '../../types';
@@ -12,6 +14,7 @@ import { colors, radius, shadows, spacing, typography } from '../theme';
 type DashboardScreenProps = {
   session: UserSession | null;
   onNavigate: (screen: AppScreen) => void;
+  systemMessage?: string;
 };
 
 const modules: Array<{ label: string; description: string; screen: AppScreen; code: string }> = [
@@ -23,7 +26,8 @@ const modules: Array<{ label: string; description: string; screen: AppScreen; co
   { label: 'Ayarlar', description: 'Terminal bilgileri', screen: 'settings', code: 'SET' },
 ];
 
-export function DashboardScreen({ session, onNavigate }: DashboardScreenProps) {
+export function DashboardScreen({ session, onNavigate, systemMessage }: DashboardScreenProps) {
+  const insets = useSafeAreaInsets();
   const [unreadCount, setUnreadCount] = useState(0);
   const [documents, setDocuments] = useState<OpenDocument[]>([]);
   const [failedCount, setFailedCount] = useState(0);
@@ -45,7 +49,8 @@ export function DashboardScreen({ session, onNavigate }: DashboardScreenProps) {
   return (
     <View style={styles.container}>
       <TerminalHeader terminalId="T01" branch={session?.branch ?? 'Merkez Depo'} online={!session?.offlineMode} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}>
+        <ToastMessage message={systemMessage} tone="info" />
         <View style={styles.welcome}>
           <View>
             <Text style={styles.welcomeTitle}>Hoş geldin, {personName}</Text>
@@ -127,6 +132,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
+  },
+  scroll: {
+    flex: 1,
   },
   content: {
     padding: spacing.md,

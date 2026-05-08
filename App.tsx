@@ -1,6 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
-import { Platform, SafeAreaView, StyleSheet } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { BackHandler, Platform, StyleSheet, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DashboardScreen } from './app/screens/DashboardScreen';
 import { DataUpdateScreen } from './app/screens/DataUpdateScreen';
 import { FailedQueueScreen } from './app/screens/FailedQueueScreen';
@@ -18,6 +19,9 @@ import type { AppScreen, UserSession } from './types';
 export default function App() {
   const [screen, setScreen] = useState<AppScreen>('login');
   const [session, setSession] = useState<UserSession | null>(null);
+  const [backHint, setBackHint] = useState('');
+  const lastBackPressRef = useRef(0);
+  const backHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     loadSession().then((savedSession) => {
@@ -28,29 +32,66 @@ export default function App() {
     });
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS !== 'android') return undefined;
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (screen !== 'dashboard' && screen !== 'login') {
+        setScreen('dashboard');
+        setBackHint('');
+        return true;
+      }
+
+      const now = Date.now();
+      if (now - lastBackPressRef.current < 2000) {
+        BackHandler.exitApp();
+        return true;
+      }
+
+      lastBackPressRef.current = now;
+      setBackHint('Çıkmak için tekrar geri tuşuna basın');
+      if (backHintTimerRef.current) clearTimeout(backHintTimerRef.current);
+      backHintTimerRef.current = setTimeout(() => setBackHint(''), 2000);
+      return true;
+    });
+
+    return () => {
+      subscription.remove();
+      if (backHintTimerRef.current) clearTimeout(backHintTimerRef.current);
+    };
+  }, [screen]);
+
   const handleLogin = async (nextSession: UserSession) => {
     setSession(nextSession);
     await saveSession(nextSession);
+    setBackHint('');
     setScreen('dashboard');
   };
 
+  const navigateTo = (nextScreen: AppScreen) => {
+    setBackHint('');
+    setScreen(nextScreen);
+  };
+
   const renderScreen = () => {
-    if (screen === 'login') return <LoginScreen onLogin={handleLogin} />;
-    if (screen === 'newSale') return <NewSaleScreen onBack={() => setScreen('dashboard')} />;
-    if (screen === 'openDocuments') return <OpenDocumentsScreen onBack={() => setScreen('dashboard')} />;
-    if (screen === 'qrAlbum') return <QRAlbumScreen onBack={() => setScreen('dashboard')} />;
-    if (screen === 'messages') return <MessagesScreen onBack={() => setScreen('dashboard')} />;
-    if (screen === 'failedQueue') return <FailedQueueScreen onBack={() => setScreen('dashboard')} />;
-    if (screen === 'dataUpdate') return <DataUpdateScreen onBack={() => setScreen('dashboard')} />;
-    if (screen === 'settings') return <SettingsScreen onBack={() => setScreen('dashboard')} session={session} />;
-    return <DashboardScreen session={session} onNavigate={setScreen} />;
+    if (screen === 'login') return <LoginScreen onLogin={handleLogin} systemMessage={backHint} />;
+    if (screen === 'newSale') return <NewSaleScreen onBack={() => navigateTo('dashboard')} />;
+    if (screen === 'openDocuments') return <OpenDocumentsScreen onBack={() => navigateTo('dashboard')} />;
+    if (screen === 'qrAlbum') return <QRAlbumScreen onBack={() => navigateTo('dashboard')} />;
+    if (screen === 'messages') return <MessagesScreen onBack={() => navigateTo('dashboard')} />;
+    if (screen === 'failedQueue') return <FailedQueueScreen onBack={() => navigateTo('dashboard')} />;
+    if (screen === 'dataUpdate') return <DataUpdateScreen onBack={() => navigateTo('dashboard')} />;
+    if (screen === 'settings') return <SettingsScreen onBack={() => navigateTo('dashboard')} session={session} />;
+    return <DashboardScreen session={session} onNavigate={navigateTo} systemMessage={backHint} />;
   };
 
   const appContent = (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="light" />
-      {renderScreen()}
-    </SafeAreaView>
+    <SafeAreaProvider>
+      <View style={styles.container}>
+        <StatusBar style="light" backgroundColor={colors.anthracite} />
+        {renderScreen()}
+      </View>
+    </SafeAreaProvider>
   );
 
   if (Platform.OS === 'web') {

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppButton } from '../../components/AppButton';
 import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
@@ -11,9 +12,11 @@ const branches = ['Merkez Depo', 'Mağaza', 'Sevkiyat'];
 
 type LoginScreenProps = {
   onLogin: (session: UserSession) => void;
+  systemMessage?: string;
 };
 
-export function LoginScreen({ onLogin }: LoginScreenProps) {
+export function LoginScreen({ onLogin, systemMessage }: LoginScreenProps) {
+  const insets = useSafeAreaInsets();
   const pinInputRef = useRef<TextInput>(null);
   const [username, setUsername] = useState('');
   const [pin, setPin] = useState('');
@@ -49,7 +52,11 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + 30 }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <Pressable onPress={handleTerminalPress} style={({ pressed }) => [styles.hero, pressed && styles.pressed]}>
           <View style={styles.brandMark}>
             <Text style={styles.brandInitials}>MB</Text>
@@ -73,7 +80,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           <Text style={styles.cardHint}>Devam etmek için dokun</Text>
         </Pressable>
 
-        <ToastMessage message={banner?.message} tone={banner?.tone} />
+        <ToastMessage message={systemMessage || banner?.message} tone={systemMessage ? 'info' : banner?.tone} />
 
         <View style={styles.panel}>
           <View style={styles.fieldSecondary}>
@@ -129,6 +136,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
+  },
+  scroll: {
+    flex: 1,
   },
   content: {
     flexGrow: 1,

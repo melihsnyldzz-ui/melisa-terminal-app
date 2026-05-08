@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, spacing, typography } from '../app/theme';
 import { StatusPill } from './StatusPill';
 
@@ -11,10 +12,11 @@ type TerminalHeaderProps = {
 };
 
 export function TerminalHeader({ title = 'MELİSA BEBE', terminalId = 'T01', branch = 'Merkez Depo', online = true, onBack }: TerminalHeaderProps) {
+  const insets = useSafeAreaInsets();
   const time = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
       <View style={styles.topRow}>
         {onBack ? (
           <Pressable accessibilityRole="button" onPress={onBack} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>

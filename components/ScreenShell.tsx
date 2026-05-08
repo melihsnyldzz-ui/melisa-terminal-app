@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, typography } from '../app/theme';
 import { AppButton } from './AppButton';
 import { TerminalHeader } from './TerminalHeader';
@@ -12,6 +13,8 @@ type ScreenShellProps = {
 };
 
 export function ScreenShell({ title, subtitle, onBack, children }: ScreenShellProps) {
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={styles.shell}>
       <TerminalHeader onBack={onBack} />
@@ -19,9 +22,11 @@ export function ScreenShell({ title, subtitle, onBack, children }: ScreenShellPr
         <Text style={styles.title}>{title}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
-      <ScrollView contentContainerStyle={styles.content}>{children}</ScrollView>
+      <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}>
+        {children}
+      </ScrollView>
       {onBack ? (
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
           <AppButton label="Ana Menüye Dön" onPress={onBack} variant="dark" compact />
         </View>
       ) : null}
@@ -53,6 +58,9 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     fontWeight: '700',
     marginTop: 2,
+  },
+  scroll: {
+    flex: 1,
   },
   content: {
     padding: spacing.md,
