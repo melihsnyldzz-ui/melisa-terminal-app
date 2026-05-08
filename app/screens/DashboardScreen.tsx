@@ -5,7 +5,7 @@ import { StatusPill } from '../../components/StatusPill';
 import { TerminalHeader } from '../../components/TerminalHeader';
 import { ToastMessage } from '../../components/ToastMessage';
 import { getFailedOperationsMock, getMessagesMock, getOpenDocumentsMock } from '../../services/api';
-import { loadActiveSaleDraft } from '../../storage/localStorage';
+import { loadActiveSaleDraft, loadFailedOperationsSnapshot, saveFailedOperations } from '../../storage/localStorage';
 import type { ActiveSaleDraft } from '../../types';
 import type { AppScreen, OpenDocument, UserSession } from '../../types';
 import { colors, radius, shadows, spacing, typography } from '../theme';
@@ -47,7 +47,15 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
       setUrgentCount(messages.filter((message) => message.type === 'Acil' && !message.read).length);
     });
     getOpenDocumentsMock().then(setDocuments);
-    getFailedOperationsMock().then((operations) => setFailedCount(operations.length));
+    loadFailedOperationsSnapshot().then(async (savedOperations) => {
+      if (savedOperations) {
+        setFailedCount(savedOperations.length);
+        return;
+      }
+      const operations = await getFailedOperationsMock();
+      await saveFailedOperations(operations);
+      setFailedCount(operations.length);
+    });
     loadActiveSaleDraft().then(setActiveDraft);
   }, []);
 

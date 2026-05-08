@@ -85,7 +85,9 @@ export type TerminalSettings = {
 export type FailedOperation = {
   id: string;
   documentNo: string;
+  operationType: string;
   title: string;
   reason: string;
   createdAt: string;
+  status: 'Bekliyor' | 'Gönderilemedi' | 'Tekrar denenecek';
 };

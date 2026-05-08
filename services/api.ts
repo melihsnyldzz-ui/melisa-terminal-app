@@ -85,9 +85,11 @@ export async function getFailedOperationsMock(): Promise<FailedOperation[]> {
     {
       id: 'fail-1',
       documentNo: 'FIS-1026',
+      operationType: 'Fiş gönderimi',
       title: 'Fiş gönderimi bekliyor',
       reason: 'Bağlantı hazırlık aşamasında olduğu için kuyrukta tutuluyor.',
       createdAt: 'Dün 18:05',
+      status: 'Gönderilemedi',
     },
   ];
 }

@@ -49,6 +49,11 @@ export async function loadFailedOperations(): Promise<FailedOperation[]> {
   return readJson(KEYS.failedOperations, []);
 }
 
+export async function loadFailedOperationsSnapshot(): Promise<FailedOperation[] | null> {
+  const value = await AsyncStorage.getItem(KEYS.failedOperations);
+  return value ? (JSON.parse(value) as FailedOperation[]) : null;
+}
+
 export async function saveFailedOperations(operations: FailedOperation[]): Promise<void> {
   await writeJson(KEYS.failedOperations, operations);
 }
