@@ -26,6 +26,13 @@ const modules: Array<{ label: string; description: string; screen: AppScreen; co
   { label: 'Ayarlar', description: 'Terminal bilgileri', screen: 'settings', code: 'SET' },
 ];
 
+const quickActions: Array<{ label: string; screen: AppScreen; tone?: 'primary' | 'dark' }> = [
+  { label: 'Yeni Fiş', screen: 'newSale', tone: 'primary' },
+  { label: 'Açık Fiş', screen: 'openDocuments' },
+  { label: 'Mesaj', screen: 'messages' },
+  { label: 'QR', screen: 'qrAlbum', tone: 'dark' },
+];
+
 export function DashboardScreen({ session, onNavigate, systemMessage }: DashboardScreenProps) {
   const insets = useSafeAreaInsets();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -50,6 +57,13 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
       <TerminalHeader terminalId="T01" branch={session?.branch ?? 'Merkez Depo'} online={!session?.offlineMode} />
       <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 44 }]}>
         <ToastMessage message={systemMessage} tone="info" />
+        <View style={styles.quickBar}>
+          {quickActions.map((action) => (
+            <Pressable key={action.label} onPress={() => onNavigate(action.screen)} style={({ pressed }) => [styles.quickButton, action.tone === 'primary' && styles.quickPrimary, action.tone === 'dark' && styles.quickDark, pressed && styles.pressed]}>
+              <Text style={[styles.quickText, (action.tone === 'primary' || action.tone === 'dark') && styles.quickTextLight]}>{action.label}</Text>
+            </Pressable>
+          ))}
+        </View>
         <View style={styles.welcome}>
           <View>
             <Text style={styles.welcomeTitle}>Hoş geldin, {personName}</Text>
@@ -63,7 +77,7 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
         <Pressable onPress={() => onNavigate('newSale')} style={({ pressed }) => [styles.startSale, pressed && styles.pressed]}>
           <View>
             <Text style={styles.startSaleText}>+ Yeni Fiş Başlat</Text>
-            <Text style={styles.startSaleHint}>Müşteri seç, fişi aç, ürünleri ekle</Text>
+            <Text style={styles.startSaleHint}>Müşteri seç, ürünü okut</Text>
           </View>
           <View style={styles.startArrow}>
             <Text style={styles.startArrowText}>›</Text>
@@ -74,7 +88,7 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
           <SummaryBox label="Açık Fiş" value={documents.length.toString()} />
           <SummaryBox label="Mesaj" value={unreadCount.toString()} tone={unreadCount > 0 ? 'danger' : 'dark'} />
           <SummaryBox label="Kuyruk" value={failedCount.toString()} tone={failedCount > 0 ? 'warning' : 'dark'} />
-          <SummaryBox label="Son Senkron" value={lastSync} wide />
+          <SummaryBox label="Senkron" value={lastSync} wide />
         </View>
 
         <InfoCard title="Son aktif fiş">
@@ -157,6 +171,42 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.sm,
   },
+  quickBar: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  quickButton: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.anthracite,
+    ...shadows.subtle,
+  },
+  quickPrimary: {
+    backgroundColor: colors.red,
+    borderColor: colors.redDark,
+  },
+  quickDark: {
+    backgroundColor: colors.anthracite,
+    borderColor: colors.anthracite,
+    borderBottomColor: colors.red,
+  },
+  quickText: {
+    color: colors.anthracite,
+    fontSize: typography.small,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  quickTextLight: {
+    color: colors.surface,
+  },
   welcome: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -198,7 +248,7 @@ const styles = StyleSheet.create({
   startSale: {
     backgroundColor: colors.red,
     borderRadius: radius.lg,
-    padding: spacing.md,
+    padding: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -224,8 +274,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   startArrow: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
     alignItems: 'center',
@@ -244,12 +294,12 @@ const styles = StyleSheet.create({
   },
   summaryBox: {
     flexGrow: 1,
-    minWidth: '30%',
+    minWidth: '23%',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: radius.md,
-    padding: spacing.sm,
+    padding: spacing.xs,
     borderTopWidth: 2,
     borderTopColor: colors.anthracite,
     borderBottomWidth: 1,
@@ -257,7 +307,7 @@ const styles = StyleSheet.create({
     ...shadows.subtle,
   },
   summaryWide: {
-    minWidth: '64%',
+    minWidth: '48%',
     borderTopColor: colors.red,
   },
   summaryValue: {
@@ -278,18 +328,19 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   menuGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.xs,
   },
   module: {
-    minHeight: 52,
+    width: '48.7%',
+    minHeight: 74,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: radius.lg,
     padding: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
     overflow: 'hidden',
     ...shadows.subtle,
   },
@@ -302,8 +353,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.red,
   },
   codeBox: {
-    width: 40,
-    height: 32,
+    width: 38,
+    height: 30,
     borderRadius: radius.sm,
     backgroundColor: colors.anthracite,
     alignItems: 'center',
@@ -315,7 +366,6 @@ const styles = StyleSheet.create({
     fontSize: typography.small,
   },
   moduleTextBlock: {
-    flex: 1,
     gap: 2,
   },
   moduleText: {
