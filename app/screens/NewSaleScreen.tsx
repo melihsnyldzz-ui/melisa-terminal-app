@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ActionRow } from '../../components/ActionRow';
 import { AppButton } from '../../components/AppButton';
 import { EmptyState } from '../../components/EmptyState';
-import { InfoCard } from '../../components/InfoCard';
 import { ScreenShell } from '../../components/ScreenShell';
 import { StatusPill } from '../../components/StatusPill';
 import { ToastMessage, ToastTone } from '../../components/ToastMessage';
@@ -23,7 +22,6 @@ type LastScannedProduct = {
   code: string;
   name: string;
   quantity: number;
-  time: string;
 };
 
 export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
@@ -114,7 +112,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     const now = Date.now();
     if (lastScanRef.current?.code === code && now - lastScanRef.current.time < 500) {
       setBarcode('');
-      setBanner({ message: 'Aynı kod tekrar algılandı.', tone: 'info' });
+      setBanner({ message: 'Tekrarlı okutma engellendi.', tone: 'info' });
       focusScanner();
       return;
     }
@@ -134,7 +132,6 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       code: product.code,
       name: product.name,
       quantity: nextQuantity,
-      time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
     });
     setBanner({ message: `${product.code} fişe eklendi.`, tone: 'success' });
     focusScanner();
@@ -208,16 +205,21 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   };
 
   return (
-    <ScreenShell title="Yeni Fiş" subtitle="Müşteri, barkod ve ürün akışı" onBack={onBack}>
+    <ScreenShell title="Yeni Fiş" subtitle="Hızlı satış akışı" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
 
-      <InfoCard title="Fiş durumu">
-        <SummaryRow label="Müşteri" value={customer || 'Seçilmedi'} />
-        <SummaryRow label="Fiş No" value={documentNo || 'Başlatılmadı'} />
-        <SummaryRow label="Ürün kalemi" value={lines.length.toString()} />
-        <SummaryRow label="Toplam adet" value={totalQuantity.toString()} />
-        <StatusPill label={status} tone={status === 'Hazır' ? 'success' : 'warning'} />
-      </InfoCard>
+      <View style={styles.statusPanel}>
+        <View style={styles.statusTopRow}>
+          <Text style={styles.statusDocument}>{documentNo || 'Fiş başlatılmadı'}</Text>
+          <StatusPill label={status} tone={status === 'Hazır' ? 'success' : 'warning'} />
+        </View>
+        <Text style={styles.statusCustomer} numberOfLines={1}>{customer || 'Müşteri seçilmedi'}</Text>
+        <View style={styles.statusMetricRow}>
+          <Metric label="Kalem" value={lines.length.toString()} />
+          <Metric label="Toplam" value={totalQuantity.toString()} />
+          <Metric label="Okutma" value={canScan ? 'Hazır' : 'Kapalı'} />
+        </View>
+      </View>
 
       <View style={styles.formPanel}>
         <Text style={styles.label}>Müşteri</Text>
@@ -254,7 +256,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
             <View style={styles.lastScanBody}>
               <Text style={styles.lastScanCode}>{lastScanned.code}</Text>
               <Text style={styles.lastScanName} numberOfLines={1}>{lastScanned.name}</Text>
-              <Text style={styles.lastScanMeta}>Adet {lastScanned.quantity} · {lastScanned.time}</Text>
+              <Text style={styles.lastScanMeta}>Adet {lastScanned.quantity}</Text>
             </View>
           ) : (
             <Text style={styles.lastScanEmpty}>Henüz ürün okutulmadı</Text>
@@ -272,21 +274,6 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
             </Pressable>
           ))}
         </View>
-      </View>
-
-      <View style={styles.actionPanel}>
-        <ActionRow
-          actions={[
-            { label: 'Taslağı Kaydet', onPress: saveDraft, variant: 'secondary' },
-            { label: 'QR Albüm Hazırla', onPress: prepareAlbum, variant: 'dark' },
-          ]}
-        />
-        <ActionRow
-          actions={[
-            { label: 'Beklemeye Al', onPress: holdSale, variant: 'quiet' },
-            { label: 'Fişi Tamamla', onPress: completeSale, variant: 'primary' },
-          ]}
-        />
       </View>
 
       {lines.length === 0 ? (
@@ -319,26 +306,66 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
           ))}
         </View>
       )}
+
+      <View style={styles.actionPanel}>
+        <ActionRow
+          actions={[
+            { label: 'Taslağı Kaydet', onPress: saveDraft, variant: 'secondary' },
+            { label: 'QR Albüm Hazırla', onPress: prepareAlbum, variant: 'dark' },
+          ]}
+        />
+        <ActionRow
+          actions={[
+            { label: 'Beklemeye Al', onPress: holdSale, variant: 'quiet' },
+            { label: 'Fişi Tamamla', onPress: completeSale, variant: 'primary' },
+          ]}
+        />
+      </View>
     </ScreenShell>
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
+function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <View style={styles.summaryRow}>
-      <Text style={styles.summaryLabel}>{label}</Text>
-      <Text style={styles.summaryValue}>{value}</Text>
+    <View style={styles.metricBox}>
+      <Text style={styles.metricValue}>{value}</Text>
+      <Text style={styles.metricLabel}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  formPanel: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
+  statusPanel: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.red,
+    padding: spacing.sm,
+    gap: spacing.xs,
+  },
+  statusTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
+  statusDocument: { color: colors.red, fontSize: typography.section, fontWeight: '900', flex: 1 },
+  statusCustomer: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  statusMetricRow: { flexDirection: 'row', gap: spacing.xs },
+  metricBox: {
+    flex: 1,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surfaceSoft,
+    paddingVertical: 4,
+    paddingHorizontal: spacing.xs,
+  },
+  metricValue: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900', textAlign: 'center' },
+  metricLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900', textAlign: 'center' },
+  formPanel: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: spacing.sm, gap: spacing.xs },
   actionPanel: { gap: spacing.xs },
   label: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
   customerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   customerChip: {
-    minHeight: 36,
+    minHeight: 32,
     minWidth: '48%',
     flexGrow: 1,
     borderRadius: radius.md,
@@ -352,7 +379,7 @@ const styles = StyleSheet.create({
   customerChipSelected: { backgroundColor: colors.anthracite, borderColor: colors.anthracite },
   customerChipText: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900', textAlign: 'center' },
   customerChipTextSelected: { color: colors.surface },
-  input: { minHeight: 46, borderRadius: radius.md, backgroundColor: colors.surfaceSoft, borderWidth: 1, borderColor: colors.line, color: colors.ink, fontSize: typography.body, paddingHorizontal: spacing.md, fontWeight: '800' },
+  input: { minHeight: 42, borderRadius: radius.md, backgroundColor: colors.surfaceSoft, borderWidth: 1, borderColor: colors.line, color: colors.ink, fontSize: typography.body, paddingHorizontal: spacing.md, fontWeight: '800' },
   scanInput: { borderColor: colors.anthracite, backgroundColor: colors.surface },
   disabledInput: { opacity: 0.72 },
   lastScanBox: {
@@ -362,7 +389,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: colors.red,
     backgroundColor: colors.surfaceSoft,
-    padding: spacing.sm,
+    padding: spacing.xs,
     gap: 2,
   },
   lastScanLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
@@ -374,7 +401,7 @@ const styles = StyleSheet.create({
   quickCodeRow: { flexDirection: 'row', gap: spacing.xs },
   quickCodeButton: {
     flex: 1,
-    minHeight: 36,
+    minHeight: 34,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.anthracite,
@@ -384,9 +411,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   quickCodeText: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
-  summaryLabel: { color: colors.muted, fontWeight: '800', fontSize: typography.small },
-  summaryValue: { color: colors.ink, fontWeight: '900', fontSize: typography.body, flexShrink: 1, textAlign: 'right' },
   productList: { gap: spacing.sm },
   productRow: {
     backgroundColor: colors.surface,
@@ -395,7 +419,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     borderLeftWidth: 4,
     borderLeftColor: colors.red,
-    padding: spacing.sm,
+    padding: spacing.xs,
     gap: spacing.xs,
   },
   productMain: { gap: 2, paddingRight: 76 },
@@ -416,10 +440,10 @@ const styles = StyleSheet.create({
   },
   quantityLabel: { color: colors.muted, fontSize: 10, fontWeight: '900' },
   quantityValue: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
-  lineActions: { flexDirection: 'row', gap: spacing.xs, paddingRight: 74 },
+  lineActions: { flexDirection: 'row', gap: spacing.xs, paddingRight: 72 },
   lineButton: {
-    minHeight: 36,
-    minWidth: 42,
+    minHeight: 34,
+    minWidth: 40,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.anthracite,

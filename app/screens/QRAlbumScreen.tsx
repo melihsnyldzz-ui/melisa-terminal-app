@@ -34,7 +34,7 @@ export function QRAlbumScreen({ onBack }: QRAlbumScreenProps) {
   };
 
   return (
-    <ScreenShell title="QR Albüm" subtitle="Müşteri ürün görsel albümü" onBack={onBack}>
+    <ScreenShell title="QR Albüm" subtitle="Müşteri albümü" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
 
       {!draft ? (
@@ -60,10 +60,13 @@ export function QRAlbumScreen({ onBack }: QRAlbumScreenProps) {
                 ))}
               </View>
             </View>
-            <Text style={styles.qrLink} numberOfLines={1}>{albumLink}</Text>
+            <View style={styles.linkBox}>
+              <Text style={styles.linkLabel}>Güvenli bağlantı</Text>
+              <Text style={styles.qrLink} numberOfLines={1}>{albumLink}</Text>
+            </View>
           </View>
 
-          <InfoCard title="WhatsApp mesajı" subtitle="Merhaba, aldığınız ürünlerin görsellerine aşağıdaki bağlantıdan ulaşabilirsiniz." />
+          <InfoCard title="WhatsApp mesajı" subtitle="Merhaba, ürün görsellerine aşağıdaki bağlantıdan ulaşabilirsiniz." />
 
           <View style={styles.grid}>
             {draft.lines.map((item) => (
@@ -81,18 +84,20 @@ export function QRAlbumScreen({ onBack }: QRAlbumScreenProps) {
             ))}
           </View>
 
-          <ActionRow
-            actions={[
-              { label: 'QR Oluştur / Yenile', onPress: () => showAction('QR albüm hazırlandı.'), variant: 'primary' },
-              { label: 'Linki Kopyala', onPress: () => showAction('Albüm bağlantısı kopyalandı.'), variant: 'secondary' },
-            ]}
-          />
-          <ActionRow
-            actions={[
-              { label: 'WhatsApp ile Gönder', onPress: () => showAction('WhatsApp mesajı hazırlandı.'), variant: 'dark' },
-              { label: 'Görselleri Hazırla', onPress: () => showAction('Ürün görselleri hazırlandı.'), variant: 'quiet' },
-            ]}
-          />
+          <View style={styles.actionGrid}>
+            <ActionRow
+              actions={[
+                { label: 'QR Oluştur / Yenile', onPress: () => showAction('QR albüm hazırlandı.'), variant: 'primary' },
+                { label: 'Linki Kopyala', onPress: () => showAction('Albüm bağlantısı kopyalandı.'), variant: 'secondary' },
+              ]}
+            />
+            <ActionRow
+              actions={[
+                { label: 'WhatsApp ile Gönder', onPress: () => showAction('WhatsApp mesajı hazırlandı.'), variant: 'dark' },
+                { label: 'Görselleri Hazırla', onPress: () => showAction('Ürün görselleri hazırlandı.'), variant: 'quiet' },
+              ]}
+            />
+          </View>
         </>
       )}
     </ScreenShell>
@@ -120,13 +125,13 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     borderLeftWidth: 4,
     borderLeftColor: colors.red,
-    padding: spacing.md,
+    padding: spacing.sm,
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   qrBox: {
-    width: 122,
-    height: 122,
+    width: 112,
+    height: 112,
     borderRadius: radius.md,
     backgroundColor: colors.surfaceSoft,
     borderWidth: 6,
@@ -135,35 +140,45 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   qrGrid: {
-    width: 82,
-    height: 82,
+    width: 76,
+    height: 76,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 3,
   },
   qrCell: {
-    width: 13,
-    height: 13,
+    width: 12,
+    height: 12,
     backgroundColor: colors.surface,
   },
   qrCellDark: {
     backgroundColor: colors.anthracite,
   },
-  qrLink: { alignSelf: 'stretch', color: colors.muted, fontSize: typography.small, fontWeight: '900', textAlign: 'center' },
+  linkBox: {
+    alignSelf: 'stretch',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surfaceSoft,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  linkLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900', textAlign: 'center' },
+  qrLink: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900', textAlign: 'center' },
   grid: { gap: spacing.sm },
   productCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.line,
-    padding: spacing.sm,
+    padding: spacing.xs,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
   imageBox: {
-    width: 72,
-    height: 62,
+    width: 66,
+    height: 56,
     borderRadius: radius.md,
     backgroundColor: colors.surfaceSoft,
     borderWidth: 1,
@@ -178,4 +193,5 @@ const styles = StyleSheet.create({
   productCode: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
   productName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
   productMeta: { color: colors.muted, fontWeight: '800', fontSize: typography.small },
+  actionGrid: { gap: spacing.xs },
 });
