@@ -21,4 +21,5 @@ Her sürümden önce aşağıdaki liste tamamlanmalıdır.
 - [ ] Ayarlar ve titreşim tercihleri kontrol edildi mi?
 - [ ] Android geri tuşu davranışı kontrol edildi mi?
 - [ ] Honeywell alt tuş alanına taşma olmadığı kontrol edildi mi?
+- [ ] v0.5.1 APK öncesi Honeywell kalite turu tamamlandı mı?
 - [ ] README sürüm notu güncellendi mi?

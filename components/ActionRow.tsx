@@ -16,7 +16,7 @@ export function ActionRow({ actions }: ActionRowProps) {
   return (
     <View style={styles.row}>
       {actions.map((action) => (
-        <View key={action.label} style={styles.item}>
+        <View key={action.label} style={[styles.item, actions.length > 2 && styles.tightItem]}>
           <AppButton label={action.label} onPress={action.onPress} variant={action.variant ?? 'quiet'} compact />
         </View>
       ))}
@@ -27,9 +27,14 @@ export function ActionRow({ actions }: ActionRowProps) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.xs,
   },
   item: {
     flex: 1,
+    minWidth: '48%',
+  },
+  tightItem: {
+    minWidth: '31%',
   },
 });

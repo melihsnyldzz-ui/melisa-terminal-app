@@ -138,6 +138,7 @@ Detaylı APK akışı için `docs/APK_BUILD_GUIDE.md` kullanılmalıdır.
 - `v0.4.3`: QR albüm müşteri vitrini, WhatsApp mesaj önizlemesi, ürün görsel kartları ve feedback aksiyonları güçlendirildi
 - `v0.4.4`: APK hazırlık dokümantasyonu, Honeywell kurulum notları ve release checklist eklendi
 - `v0.5.0`: APK build hazırlığı, APK build rehberi, versiyon uyumu ve Honeywell APK kontrol maddeleri eklendi
+- `v0.5.1`: APK öncesi Honeywell kalite turu; safe area, alt tuş boşluğu, kompakt buton/kart düzeni ve UI metin temizliği kontrol edildi
 - Sonraki fazlar: gerçek ERP API bağlantısı, offline kuyruk sertleştirme, bildirim/ses/titreşim, QR albüm servis bağlantısı
 
 Uygulama versiyonu TerminalHeader sağ üstünde gösterilir. Honeywell testlerinde ekranda görünen versiyon, GitHub'daki `package.json` version alanıyla uyumlu olmalıdır.

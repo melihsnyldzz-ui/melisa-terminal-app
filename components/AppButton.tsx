@@ -30,7 +30,7 @@ export function AppButton({ label, onPress, variant = 'primary', badge, compact 
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: 50,
+    minHeight: 48,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     ...shadows.subtle,
   },
   compact: {
-    minHeight: 44,
+    minHeight: 42,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
   },

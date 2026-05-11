@@ -22,11 +22,11 @@ export function ScreenShell({ title, subtitle, onBack, children }: ScreenShellPr
         <Text style={styles.title}>{title}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
-      <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 56 }]} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 64 }]} keyboardShouldPersistTaps="handled">
         {children}
       </ScrollView>
       {onBack ? (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.lg }]}>
           <AppButton label="Ana Menüye Dön" onPress={onBack} variant="dark" compact />
         </View>
       ) : null}

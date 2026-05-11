@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     backgroundColor: colors.surfaceSoft,
-    padding: spacing.lg,
+    padding: spacing.md,
   },
   badge: {
     minWidth: 46,
