@@ -13,6 +13,8 @@ const defaultSettings: TerminalSettings = {
   terminalId: 'MB-TERM-001',
   branch: 'Merkez Depo',
   apiBaseUrl: 'Hazırlık Bağlantısı',
+  vibrationEnabled: true,
+  urgentVibrationEnabled: true,
 };
 
 async function readJson<T>(key: string, fallback: T): Promise<T> {
@@ -26,7 +28,8 @@ async function writeJson<T>(key: string, value: T): Promise<void> {
 
 export async function loadSettings(): Promise<TerminalSettings> {
   const settings = await readJson(KEYS.settings, defaultSettings);
-  return settings.apiBaseUrl.toLowerCase().includes('mock') ? { ...settings, apiBaseUrl: defaultSettings.apiBaseUrl } : settings;
+  const normalizedSettings = { ...defaultSettings, ...settings };
+  return normalizedSettings.apiBaseUrl.toLowerCase().includes('mock') ? { ...normalizedSettings, apiBaseUrl: defaultSettings.apiBaseUrl } : normalizedSettings;
 }
 
 export async function saveSettings(settings: TerminalSettings): Promise<void> {

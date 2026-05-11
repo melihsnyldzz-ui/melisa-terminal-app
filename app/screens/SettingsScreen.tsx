@@ -8,6 +8,7 @@ import { StatusPill } from '../../components/StatusPill';
 import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
 import { testConnectionMock } from '../../services/api';
+import { notifySuccess } from '../../services/feedback';
 import { loadSettings, saveSettings } from '../../storage/localStorage';
 import type { TerminalSettings, UserSession } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
@@ -25,6 +26,8 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
     terminalId: 'MB-TERM-001',
     branch: session?.branch ?? 'Merkez Depo',
     apiBaseUrl: 'Hazırlık Bağlantısı',
+    vibrationEnabled: true,
+    urgentVibrationEnabled: true,
   });
   const [lastSync, setLastSync] = useState('Bugün 09:40');
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
@@ -33,13 +36,22 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
     loadSettings().then(setSettings);
   }, []);
 
-  const update = (key: keyof TerminalSettings, value: string) => {
+  const update = <K extends keyof TerminalSettings>(key: K, value: TerminalSettings[K]) => {
     setSettings((current) => ({ ...current, [key]: value }));
   };
 
   const save = async () => {
     await saveSettings(settings);
     setBanner({ message: 'Terminal ayarları cihazda korunacak şekilde kaydedildi.', tone: 'success' });
+    notifySuccess();
+  };
+
+  const savePreference = async <K extends keyof TerminalSettings>(key: K, value: TerminalSettings[K]) => {
+    const nextSettings = { ...settings, [key]: value };
+    setSettings(nextSettings);
+    await saveSettings(nextSettings);
+    setBanner({ message: 'Uyarı tercihi kaydedildi.', tone: 'success' });
+    notifySuccess();
   };
 
   const checkConnection = async () => {
@@ -94,6 +106,20 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
         <AppButton label="Veri Güncelle" onPress={updateData} variant="dark" compact />
       </Section>
 
+      <Section title="Bildirim / Titreşim">
+        <ToggleRow
+          label="Titreşim açık"
+          enabled={settings.vibrationEnabled}
+          onPress={() => savePreference('vibrationEnabled', !settings.vibrationEnabled)}
+        />
+        <ToggleRow
+          label="Acil uyarı titreşimi"
+          enabled={settings.urgentVibrationEnabled}
+          disabled={!settings.vibrationEnabled}
+          onPress={() => savePreference('urgentVibrationEnabled', !settings.urgentVibrationEnabled)}
+        />
+      </Section>
+
       <Section title="Güvenlik">
         <View style={styles.securityBox}>
           <Text style={styles.securityTitle}>Güvenli çalışma modu</Text>
@@ -136,6 +162,24 @@ function Field({ label, value, onChangeText }: FieldProps) {
       <Text style={styles.label}>{label}</Text>
       <TextInput value={value} onChangeText={onChangeText} style={styles.input} />
     </View>
+  );
+}
+
+type ToggleRowProps = {
+  label: string;
+  enabled: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+};
+
+function ToggleRow({ label, enabled, disabled = false, onPress }: ToggleRowProps) {
+  return (
+    <Pressable onPress={disabled ? undefined : onPress} style={({ pressed }) => [styles.toggleRow, disabled && styles.toggleDisabled, pressed && !disabled && styles.pressed]}>
+      <Text style={styles.toggleLabel}>{label}</Text>
+      <View style={[styles.toggleTrack, enabled && !disabled && styles.toggleTrackActive]}>
+        <View style={[styles.toggleThumb, enabled && !disabled && styles.toggleThumbActive]} />
+      </View>
+    </Pressable>
   );
 }
 
@@ -186,6 +230,33 @@ const styles = StyleSheet.create({
   inlineRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
   rowLabel: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
   helperText: { color: colors.muted, fontSize: typography.small, fontWeight: '800', lineHeight: 16 },
+  toggleRow: {
+    minHeight: 42,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surfaceSoft,
+    paddingHorizontal: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  toggleDisabled: { opacity: 0.55 },
+  toggleLabel: { color: colors.ink, fontSize: typography.body, fontWeight: '900', flex: 1 },
+  toggleTrack: {
+    width: 42,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.line,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  toggleTrackActive: { backgroundColor: colors.anthracite, borderColor: colors.anthracite },
+  toggleThumb: { width: 18, height: 18, borderRadius: 9, backgroundColor: colors.surface },
+  toggleThumbActive: { alignSelf: 'flex-end', backgroundColor: colors.red },
   securityBox: {
     backgroundColor: colors.warningSoft,
     borderRadius: radius.md,

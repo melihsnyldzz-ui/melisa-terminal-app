@@ -7,6 +7,7 @@ import { ScreenShell } from '../../components/ScreenShell';
 import { StatusPill } from '../../components/StatusPill';
 import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
+import { notifySuccess } from '../../services/feedback';
 import { loadActiveSaleDraft } from '../../storage/localStorage';
 import type { ActiveSaleDraft } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
@@ -31,6 +32,7 @@ export function QRAlbumScreen({ onBack }: QRAlbumScreenProps) {
   const showAction = (message: string, tone: ToastTone = 'success') => {
     setAlbumReady(true);
     setBanner({ message, tone });
+    notifySuccess();
   };
 
   return (

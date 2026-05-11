@@ -7,6 +7,7 @@ import { StatusPill, statusToneFor } from '../../components/StatusPill';
 import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
 import { getMessagesMock } from '../../services/api';
+import { notifyMessage, notifySuccess, notifyUrgent, notifyWarning } from '../../services/feedback';
 import type { Message } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
@@ -25,7 +26,12 @@ export function MessagesScreen({ onBack }: MessagesScreenProps) {
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
 
   useEffect(() => {
-    getMessagesMock().then(setMessages);
+    getMessagesMock().then((nextMessages) => {
+      setMessages(nextMessages);
+      if (nextMessages.some((message) => message.type === 'Acil' && !message.read)) {
+        notifyUrgent();
+      }
+    });
   }, []);
 
   const filteredMessages = useMemo(() => {
@@ -35,6 +41,12 @@ export function MessagesScreen({ onBack }: MessagesScreenProps) {
     return messages;
   }, [filter, messages]);
 
+  useEffect(() => {
+    if (filter === 'Acil' && filteredMessages.some((message) => message.type === 'Acil' && !message.read)) {
+      notifyUrgent();
+    }
+  }, [filter, filteredMessages]);
+
   const selectedMessage = messages.find((message) => message.id === selectedId);
   const unreadCount = messages.filter((message) => !message.read).length;
   const urgentCount = messages.filter((message) => message.type === 'Acil' && !message.read).length;
@@ -42,16 +54,28 @@ export function MessagesScreen({ onBack }: MessagesScreenProps) {
   const markSelectedRead = () => {
     if (!selectedMessage) {
       setBanner({ message: 'Önce bir mesaj seç.', tone: 'warning' });
+      notifyWarning();
       return;
     }
 
     setMessages((current) => current.map((message) => (message.id === selectedMessage.id ? { ...message, read: true } : message)));
     setBanner({ message: `${selectedMessage.title} okundu olarak işaretlendi.`, tone: 'success' });
+    notifySuccess();
   };
 
   const goToDocument = () => {
     if (!selectedMessage?.relatedDocument) return;
     setBanner({ message: `${selectedMessage.relatedDocument} fiş yönlendirmesi hazır.`, tone: 'info' });
+    notifyMessage();
+  };
+
+  const selectMessage = (message: Message) => {
+    setSelectedId(message.id);
+    if (message.type === 'Acil' && !message.read) {
+      notifyUrgent();
+      return;
+    }
+    notifyMessage();
   };
 
   return (
@@ -76,7 +100,7 @@ export function MessagesScreen({ onBack }: MessagesScreenProps) {
         <EmptyState badge="MSG" title="Mesaj yok" description="Başka filtre seçebilirsin." />
       ) : (
         filteredMessages.map((message) => (
-          <Pressable key={message.id} onPress={() => setSelectedId(message.id)} style={[styles.messageRow, message.type === 'Acil' && styles.urgentRow, selectedId === message.id && styles.selectedRow]}>
+          <Pressable key={message.id} onPress={() => selectMessage(message)} style={[styles.messageRow, message.type === 'Acil' && styles.urgentRow, selectedId === message.id && styles.selectedRow]}>
             <View style={[styles.rowAccent, message.type === 'Acil' && styles.rowAccentUrgent]} />
             <View style={styles.messageHeader}>
               <View style={styles.typeGroup}>

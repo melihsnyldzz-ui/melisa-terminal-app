@@ -7,6 +7,7 @@ import { ScreenShell } from '../../components/ScreenShell';
 import { StatusPill } from '../../components/StatusPill';
 import { ToastMessage, ToastTone } from '../../components/ToastMessage';
 import { createSaleMock, getMockProductByCode } from '../../services/api';
+import { notifySuccess, notifyWarning } from '../../services/feedback';
 import { loadActiveSaleDraft, saveActiveSaleDraft } from '../../storage/localStorage';
 import type { ActiveSaleDraft, SaleLine, SaleStatus } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
@@ -89,6 +90,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     const selectedCustomer = customer.trim();
     if (!selectedCustomer) {
       setBanner({ message: 'Önce müşteri seç.', tone: 'warning' });
+      notifyWarning();
       focusScanner();
       return;
     }
@@ -97,18 +99,21 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     setDocumentNo(sale.documentNo);
     await persistDraft(lines, sale.documentNo, selectedCustomer);
     setBanner({ message: `${sale.documentNo} aktif fiş hazır.`, tone: 'success' });
+    notifySuccess();
     focusScanner();
   };
 
   const addProduct = async (rawCode?: string) => {
     if (!documentNo) {
       setBanner({ message: 'Önce fişi başlat.', tone: 'warning' });
+      notifyWarning();
       focusScanner();
       return;
     }
     const code = (rawCode ?? barcode).trim().toUpperCase();
     if (!code) {
       setBanner({ message: 'Kod okut ya da yaz.', tone: 'warning' });
+      notifyWarning();
       focusScanner();
       return;
     }
@@ -117,6 +122,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     if (lastScanRef.current?.code === code && now - lastScanRef.current.time < 500) {
       setBarcode('');
       setBanner({ message: 'Tekrarlı okutma engellendi.', tone: 'info' });
+      notifyWarning();
       focusScanner();
       return;
     }
@@ -142,6 +148,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
     });
     setBanner({ message: `${product.code} fişe eklendi.`, tone: 'success' });
+    notifySuccess();
     focusScanner();
   };
 
@@ -167,6 +174,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     if (pendingDeleteLineId !== lineId) {
       setPendingDeleteLineId(lineId);
       setBanner({ message: 'Silmek için tekrar basın.', tone: 'warning' });
+      notifyWarning();
       focusScanner();
       return;
     }
@@ -176,37 +184,44 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     setPendingDeleteLineId(null);
     await persistDraft(nextLines);
     setBanner({ message: 'Ürün satırı silindi.', tone: 'info' });
+    notifyWarning();
     focusScanner();
   };
 
   const saveDraft = async () => {
     if (!documentNo) {
       setBanner({ message: 'Kaydetmek için fiş başlat.', tone: 'warning' });
+      notifyWarning();
       focusScanner();
       return;
     }
     await persistDraft();
     setBanner({ message: 'Taslak kaydedildi.', tone: 'success' });
+    notifySuccess();
   };
 
   const prepareAlbum = async () => {
     if (!documentNo) {
       setBanner({ message: 'QR albüm için fiş başlat.', tone: 'warning' });
+      notifyWarning();
       focusScanner();
       return;
     }
     if (lines.length === 0) {
       setBanner({ message: 'QR albüm için ürün ekle.', tone: 'warning' });
+      notifyWarning();
       focusScanner();
       return;
     }
     await persistDraft();
     setBanner({ message: 'QR albüm hazırlandı.', tone: 'success' });
+    notifySuccess();
   };
 
   const holdSale = async () => {
     if (!documentNo) {
       setBanner({ message: 'Beklemeye almak için fiş başlat.', tone: 'warning' });
+      notifyWarning();
       focusScanner();
       return;
     }
@@ -217,16 +232,19 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   const completeSale = async () => {
     if (!documentNo) {
       setBanner({ message: 'Tamamlamak için fiş başlat.', tone: 'warning' });
+      notifyWarning();
       focusScanner();
       return;
     }
     if (lines.length === 0) {
       setBanner({ message: 'Tamamlamak için ürün ekle.', tone: 'warning' });
+      notifyWarning();
       focusScanner();
       return;
     }
     await persistDraft();
     setBanner({ message: 'Fiş hazırlandı.', tone: 'success' });
+    notifySuccess();
   };
 
   return (

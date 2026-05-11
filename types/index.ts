@@ -80,6 +80,8 @@ export type TerminalSettings = {
   terminalId: string;
   branch: string;
   apiBaseUrl: string;
+  vibrationEnabled: boolean;
+  urgentVibrationEnabled: boolean;
 };
 
 export type FailedOperation = {
