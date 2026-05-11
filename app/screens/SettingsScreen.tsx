@@ -8,7 +8,7 @@ import { StatusPill } from '../../components/StatusPill';
 import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
 import { testConnectionMock } from '../../services/api';
-import { notifySuccess } from '../../services/feedback';
+import { notifySuccess, notifyWarning } from '../../services/feedback';
 import { loadSettings, saveSettings } from '../../storage/localStorage';
 import type { TerminalSettings, UserSession } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
@@ -50,13 +50,23 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
     const nextSettings = { ...settings, [key]: value };
     setSettings(nextSettings);
     await saveSettings(nextSettings);
-    setBanner({ message: 'Uyarı tercihi kaydedildi.', tone: 'success' });
-    notifySuccess();
+    if (key === 'vibrationEnabled') {
+      setBanner({ message: value ? 'Titreşim açıldı.' : 'Titreşim kapatıldı.', tone: value ? 'success' : 'info' });
+      if (value) notifySuccess();
+      return;
+    }
+    setBanner({ message: value ? 'Acil uyarı titreşimi açıldı.' : 'Acil uyarı titreşimi kapatıldı.', tone: value ? 'success' : 'info' });
+    if (value) notifySuccess();
   };
 
   const checkConnection = async () => {
     const result = await testConnectionMock(settings);
     setBanner({ message: result.message, tone: result.ok ? 'success' : 'error' });
+    if (result.ok) {
+      notifySuccess();
+      return;
+    }
+    notifyWarning();
   };
 
   const updateData = () => {

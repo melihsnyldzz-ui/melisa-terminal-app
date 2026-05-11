@@ -7,6 +7,7 @@ import { StatusPill, statusToneFor } from '../../components/StatusPill';
 import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
 import { getFailedOperationsMock } from '../../services/api';
+import { notifySuccess } from '../../services/feedback';
 import { loadFailedOperationsSnapshot, saveFailedOperations } from '../../storage/localStorage';
 import type { FailedOperation } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
@@ -40,12 +41,14 @@ export function FailedQueueScreen({ onBack }: FailedQueueScreenProps) {
     setOperations(nextOperations);
     await saveFailedOperations(nextOperations);
     setBanner({ message: `${operation.documentNo} için tekrar deneme başarılı.`, tone: 'success' });
+    notifySuccess();
   };
 
   const retryAll = async () => {
     setOperations([]);
     await saveFailedOperations([]);
     setBanner({ message: 'Bekleyen tüm işlemler başarıyla tekrar denendi.', tone: 'success' });
+    notifySuccess();
   };
 
   return (

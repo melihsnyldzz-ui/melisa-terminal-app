@@ -86,6 +86,7 @@ npm run preview:honeywell
 - Sonraki fazlar: gerçek ERP API bağlantısı, offline kuyruk sertleştirme, bildirim/ses/titreşim, QR albüm servis bağlantısı
 
 Uygulama versiyonu TerminalHeader sağ üstünde gösterilir. Honeywell testlerinde ekranda görünen versiyon, GitHub'daki `package.json` version alanıyla uyumlu olmalıdır.
+Uygulama içi titreşim geri bildirimi `services/feedback.ts` üzerinden yönetilir; gerçek push notification ileriki fazdadır.
 
 ## v0.2 Kullanım Notları
 
