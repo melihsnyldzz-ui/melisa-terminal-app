@@ -61,7 +61,8 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
 
   const personName = session?.username || 'Personel';
   const hasActiveDraft = Boolean(activeDraft);
-  const activeItemCount = activeDraft?.lines.reduce((sum, line) => sum + line.quantity, 0) ?? 0;
+  const activeLineCount = activeDraft?.lines.length ?? 0;
+  const activeTotalQuantity = activeDraft?.lines.reduce((sum, line) => sum + line.quantity, 0) ?? 0;
 
   return (
     <View style={styles.container}>
@@ -118,7 +119,7 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
             <>
               <View style={styles.documentHeader}>
                 <Text style={styles.documentNo}>{activeDraft.documentNo}</Text>
-                <Text style={styles.itemCount}>{activeItemCount} ürün</Text>
+                <Text style={styles.itemCount}>{activeLineCount} kalem · {activeTotalQuantity} adet</Text>
               </View>
               <View style={styles.activeDocRow}>
                 <View style={styles.activeMeta}>

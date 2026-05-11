@@ -21,7 +21,10 @@ const quickCodes = ['MB-1001', 'MB-1002', 'MB-1003'];
 type LastScannedProduct = {
   code: string;
   name: string;
+  color: string;
+  size: string;
   quantity: number;
+  time: string;
 };
 
 export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
@@ -32,6 +35,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   const [barcode, setBarcode] = useState('');
   const [lines, setLines] = useState<SaleLine[]>([]);
   const [lastScanned, setLastScanned] = useState<LastScannedProduct | null>(null);
+  const [pendingDeleteLineId, setPendingDeleteLineId] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
 
   const totalQuantity = useMemo(() => lines.reduce((sum, line) => sum + line.quantity, 0), [lines]);
@@ -126,12 +130,16 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
 
     setLines(nextLines);
     setBarcode('');
+    setPendingDeleteLineId(null);
     await persistDraft(nextLines);
     const nextQuantity = nextLines.find((line) => line.code === product.code)?.quantity ?? 1;
     setLastScanned({
       code: product.code,
       name: product.name,
+      color: product.color,
+      size: product.size,
       quantity: nextQuantity,
+      time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
     });
     setBanner({ message: `${product.code} fişe eklendi.`, tone: 'success' });
     focusScanner();
@@ -149,16 +157,23 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
 
   const changeQuantity = async (lineId: string, delta: number) => {
     const nextLines = lines
-      .map((line) => (line.lineId === lineId ? { ...line, quantity: Math.max(0, line.quantity + delta) } : line))
-      .filter((line) => line.quantity > 0);
+      .map((line) => (line.lineId === lineId ? { ...line, quantity: Math.max(1, line.quantity + delta) } : line));
     setLines(nextLines);
     await persistDraft(nextLines);
     focusScanner();
   };
 
   const removeLine = async (lineId: string) => {
+    if (pendingDeleteLineId !== lineId) {
+      setPendingDeleteLineId(lineId);
+      setBanner({ message: 'Silmek için tekrar basın.', tone: 'warning' });
+      focusScanner();
+      return;
+    }
+
     const nextLines = lines.filter((line) => line.lineId !== lineId);
     setLines(nextLines);
+    setPendingDeleteLineId(null);
     await persistDraft(nextLines);
     setBanner({ message: 'Ürün satırı silindi.', tone: 'info' });
     focusScanner();
@@ -180,6 +195,11 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       focusScanner();
       return;
     }
+    if (lines.length === 0) {
+      setBanner({ message: 'QR albüm için ürün ekle.', tone: 'warning' });
+      focusScanner();
+      return;
+    }
     await persistDraft();
     setBanner({ message: 'QR albüm hazırlandı.', tone: 'success' });
   };
@@ -195,13 +215,18 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   };
 
   const completeSale = async () => {
-    if (!documentNo || lines.length === 0) {
+    if (!documentNo) {
+      setBanner({ message: 'Tamamlamak için fiş başlat.', tone: 'warning' });
+      focusScanner();
+      return;
+    }
+    if (lines.length === 0) {
       setBanner({ message: 'Tamamlamak için ürün ekle.', tone: 'warning' });
       focusScanner();
       return;
     }
     await persistDraft();
-    setBanner({ message: 'Fiş tamamlandı.', tone: 'success' });
+    setBanner({ message: 'Fiş hazırlandı.', tone: 'success' });
   };
 
   return (
@@ -256,10 +281,11 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
             <View style={styles.lastScanBody}>
               <Text style={styles.lastScanCode}>{lastScanned.code}</Text>
               <Text style={styles.lastScanName} numberOfLines={1}>{lastScanned.name}</Text>
-              <Text style={styles.lastScanMeta}>Adet {lastScanned.quantity}</Text>
+              <Text style={styles.lastScanMeta}>{lastScanned.color} · {lastScanned.size}</Text>
+              <Text style={styles.lastScanMeta}>Adet {lastScanned.quantity} · {lastScanned.time}</Text>
             </View>
           ) : (
-            <Text style={styles.lastScanEmpty}>Henüz ürün okutulmadı</Text>
+            <Text style={styles.lastScanEmpty}>Henüz ürün okutulmadı.</Text>
           )}
         </View>
         <ActionRow
@@ -298,8 +324,8 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
                 <Pressable onPress={() => changeQuantity(line.lineId, 1)} style={styles.lineButton}>
                   <Text style={styles.lineButtonText}>+</Text>
                 </Pressable>
-                <Pressable onPress={() => removeLine(line.lineId)} style={[styles.lineButton, styles.deleteButton]}>
-                  <Text style={styles.deleteText}>Sil</Text>
+                <Pressable onPress={() => removeLine(line.lineId)} style={[styles.lineButton, styles.deleteButton, pendingDeleteLineId === line.lineId && styles.deleteConfirmButton]}>
+                  <Text style={styles.deleteText}>{pendingDeleteLineId === line.lineId ? 'Onay' : 'Sil'}</Text>
                 </Pressable>
               </View>
             </View>
@@ -385,16 +411,16 @@ const styles = StyleSheet.create({
   lastScanBox: {
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.line,
+    borderColor: colors.red,
     borderLeftWidth: 4,
     borderLeftColor: colors.red,
-    backgroundColor: colors.surfaceSoft,
-    padding: spacing.xs,
+    backgroundColor: colors.surface,
+    padding: spacing.sm,
     gap: 2,
   },
-  lastScanLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
-  lastScanBody: { gap: 1 },
-  lastScanCode: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
+  lastScanLabel: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
+  lastScanBody: { gap: 2 },
+  lastScanCode: { color: colors.red, fontSize: typography.body, fontWeight: '900' },
   lastScanName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
   lastScanMeta: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
   lastScanEmpty: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
@@ -454,5 +480,6 @@ const styles = StyleSheet.create({
   },
   lineButtonText: { color: colors.anthracite, fontSize: typography.section, fontWeight: '900' },
   deleteButton: { backgroundColor: colors.red, borderColor: colors.redDark },
+  deleteConfirmButton: { backgroundColor: colors.anthracite, borderColor: colors.anthracite },
   deleteText: { color: colors.surface, fontSize: typography.small, fontWeight: '900' },
 });
