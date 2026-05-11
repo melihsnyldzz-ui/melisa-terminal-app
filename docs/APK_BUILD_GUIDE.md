@@ -1,72 +1,130 @@
 # APK Build Rehberi
 
-Bu doküman Melisa Bebe Terminal uygulamasını Expo Go testinden APK kurulum testine taşımak için hazırlanmıştır. Bu sürümde EAS bağımlılığı eklenmez ve gerçek build çalıştırmak zorunlu değildir.
+Bu dokuman Melisa Bebe Terminal uygulamasini Expo Go testinden Honeywell terminale kurulabilir APK testine tasimak icin hazirlanmistir. Bu asamada EAS bagimliligi eklenmez, EAS kurulumu yapilmaz ve build komutu zorunlu calistirilmaz.
 
-## Expo Go Test ile APK Test Arasındaki Fark
+## Expo Go Test Akisi
 
-Expo Go testinde uygulama Metro sunucusundan çalışır ve geliştirme sırasında hızlı güncellenir. APK testinde uygulama Android paketine alınır, Honeywell terminale kurulur ve Expo Go olmadan açılır.
+Expo Go, hizli gelistirme ve Honeywell ekran uyumu kontrolu icin kullanilir. Uygulama Metro sunucusundan calisir ve kod degisiklikleri hizli gorulur.
 
-Expo Go testi hızlı geliştirme içindir. APK testi kurulum, cihaz izinleri, uygulama adı, paket adı, geri tuşu, scanner-wedge ve cihaz performansı için yapılır.
+```powershell
+cd C:\Users\User\Documents\GitHub\melisa-terminal-app
+npm run start:lan
+```
 
-## APK Build İçin Önerilen Yol
+Ag kisiti varsa tunel denenebilir:
 
-1. `package.json` version ve `app.json` expo.version aynı olmalıdır.
-2. `app.json` içinde `name`, `slug` ve `android.package` kontrol edilmelidir.
-3. `npm run typecheck` başarılı olmalıdır.
-4. Honeywell Expo Go testi tamamlanmalıdır.
-5. Kurumun tercih ettiği Android build hattı seçilmelidir.
-6. APK kurulum testi release checklist ile yapılmalıdır.
+```powershell
+npm run start:tunnel
+```
+
+Expo Go testinde kontrol edilecekler:
+
+- Sag ust versiyon etiketi `package.json` ile uyumlu mu?
+- Login, Dashboard ve Yeni Fis ekranlari Honeywell ekrana sigiyor mu?
+- Barkod scanner-wedge inputa kod dusuruyor mu?
+- Android geri tusu cift basista cikis davranisini koruyor mu?
+- Titresim tercihleri acikken onemli islemlerde geri bildirim var mi?
+
+## APK Build'e Gecmeden Once
+
+APK build hazirligi icin su kontroller tamamlanmalidir:
+
+1. `package.json` version ve `app.json` expo.version ayni olmalidir.
+2. `app.json` icinde `name`, `slug`, `orientation` ve `android.package` dogrulanmalidir.
+3. `npm run typecheck` ve `npm run check` basarili olmalidir.
+4. Honeywell Expo Go testi tamamlanmalidir.
+5. `docs/RELEASE_CHECKLIST.md` gozden gecirilmelidir.
+6. `docs/APK_FIRST_TEST_PLAN.md` ilk APK testi icin hazir tutulmalidir.
 
 Mevcut app config:
 
-- Uygulama adı: `Melisa Bebe Terminal`
+- Uygulama adi: `Melisa Bebe Terminal`
 - Slug: `melisa-terminal-app`
 - Android package: `com.melisabebe.terminal`
+- Orientation: `portrait`
 
-## EAS Build Kullanılacaksa
+## EAS Build Kullanilirsa On Hazirlik
 
-EAS Build kullanılacaksa önce EAS CLI, Expo hesabı, proje bağlantısı ve build profilleri ayrıca hazırlanmalıdır. Bu repo şu an EAS dependency veya EAS build scripti içermez.
+EAS Build tercih edilirse once EAS CLI, Expo hesabi, proje baglantisi ve build profilleri ayrica hazirlanmalidir. Bu repo su an EAS dependency veya EAS build scripti icermez.
 
-Hazırlık tamamlandıktan sonra tipik komut akışı şu şekildedir:
+EAS hazirlandiktan sonra tipik komut akisi su sekildedir:
 
 ```powershell
-npm run typecheck
+npm run check
 npx eas build:configure
 npx eas build -p android --profile preview
 ```
 
-Bu komutlar sadece EAS kurulumu tamamlandıktan sonra kullanılmalıdır. EAS kurulumu yapılmadan build komutunu zorlamak doğru değildir.
+Bu komutlar yalnizca EAS kurulumu tamamlandiktan sonra kullanilmalidir. EAS kurulumu yapilmadan build komutunu zorlamak dogru degildir.
 
-## Honeywell Cihazda APK Kurulum Adımları
+## Honeywell Terminalde APK Kurulum Adimlari
 
-1. APK dosyasını Honeywell terminale aktar.
-2. Cihaz güvenlik politikasına göre bilinmeyen kaynaklardan yükleme iznini aç.
-3. APK dosyasını kur.
-4. Uygulamayı `Melisa Bebe Terminal` adıyla aç.
-5. Sağ üst versiyon etiketini kontrol et.
-6. Login, ana menü, yeni fiş, QR albüm, mesajlar, gönderilemeyenler ve ayarlar ekranlarını kontrol et.
+1. APK dosyasini Honeywell terminale aktar.
+2. Cihaz politikasina gore bilinmeyen kaynaklardan yukleme iznini ac.
+3. APK dosyasini kur.
+4. Uygulamayi `Melisa Bebe Terminal` adiyla ac.
+5. Ilk acilista sag ust versiyon etiketini kontrol et.
+6. Login, Dashboard, Yeni Fis, QR Album, Mesajlar, Acik Fisler, Gonderilemeyenler ve Ayarlar ekranlarini sirayla kontrol et.
 
-## Bilinmeyen Kaynak İzni
+## Bilinmeyen Kaynak Izni
 
-APK manuel kurulacaksa Honeywell cihazda dosya yöneticisi veya kurulum kaynağı için bilinmeyen uygulama yükleme izni gerekebilir. Bu izin kurum güvenlik politikasına göre açılmalıdır.
+APK manuel kurulacaksa Honeywell cihazda dosya yoneticisi, tarayici veya aktarim uygulamasi icin bilinmeyen uygulama yukleme izni gerekebilir. Bu izin kurum guvenlik politikasina gore acilmalidir ve test bittikten sonra gerekirse tekrar kapatilmalidir.
 
-## APK Sonrası Kontrol Listesi
+## APK Kurulum Sonrasi Ilk Acilis Kontrolu
 
-- Uygulama adı doğru mu?
-- Sağ üst versiyon etiketi doğru mu?
-- Giriş ekranı status bar ile çakışmıyor mu?
-- Ana menü alt tuş alanına taşmıyor mu?
-- Android geri tuşu kontrollü çalışıyor mu?
-- Barkod okutma inputa düşüyor mu?
-- Ürün ekleme sonrası input tekrar odaklanıyor mu?
-- Çift okutma koruması çalışıyor mu?
-- Titreşim ayarları çalışıyor mu?
-- QR Albüm bağlantı ve ürün kartları görünüyor mu?
+- Uygulama Expo Go olmadan aciliyor mu?
+- Uygulama adi `Melisa Bebe Terminal` olarak gorunuyor mu?
+- Sag ust versiyon etiketi beklenen surumu gosteriyor mu?
+- Login ekrani status bar ile cakismiyor mu?
+- Ana menu alt tus alanina tasmiyor mu?
+- Veriler cihazda korunur mesaji profesyonel gorunuyor mu?
+
+## APK Kaldirma / Yeniden Kurma Notlari
+
+- Yeni APK ayni Android package ile kurulursa cihaz mevcut uygulamayi guncelleyebilir.
+- Kurulum hatasi alinirsa once eski uygulama kaldirilip tekrar kurulum denenebilir.
+- Uygulama kaldirildiginda cihazdaki uygulama verileri de silinebilir; test sonucu buna gore not alinmalidir.
+- Yeniden kurulumdan sonra versiyon etiketi ve ilk acilis tekrar kontrol edilmelidir.
+
+## Surum Etiketi Kontrolu
+
+Uygulama versiyonu TerminalHeader sag ustunde `vX.Y.Z` biciminde gorunur. APK testinde bu etiket GitHub'daki `package.json` version ve `app.json` expo.version ile uyumlu olmalidir.
+
+## Barkod Scanner-Wedge Kontrolu
+
+- Yeni Fis ekraninda once musteri secilip fis baslatilir.
+- Scanner ile okutulan kod Barkod / QR input alanina dusmelidir.
+- Enter/Submit davranisi urunu fise eklemelidir.
+- Urun eklendikten sonra input temizlenip yeniden odaklanmalidir.
+- Ayni kod 500 ms icinde tekrar okutulursa tekrarli okutma engellenmelidir.
+
+## Geri Tusu Kontrolu
+
+- Alt ekranlarda Honeywell fiziksel geri tusu ana menuye donmelidir.
+- Ana ekranda ilk geri tusu uygulamayi kapatmamalidir.
+- Ana ekranda 2 saniye icinde ikinci geri tusu uygulamadan cikis yapmalidir.
+
+## Titresim Kontrolu
+
+- Ayarlar ekraninda titresim acik olmalidir.
+- Urun ekleme, uyari ve acil mesaj gibi onemli islemlerde titresim geri bildirimi alinmalidir.
+- Titresim kapatildiginda geri bildirim sessiz kalmalidir.
+
+## Wi-Fi / Ag Gerekmeyen Durumlar
+
+APK kurulduktan sonra uygulama Expo Go veya Metro sunucusuna bagli olmadan acilir. Mevcut surumde gercek API baglantisi olmadigi icin temel ekran gezintisi, fis taslagi, QR album onizlemesi, mesaj merkezi, ayarlar ve cihaz ici geri bildirimler Wi-Fi olmadan da kontrol edilebilir.
+
+Wi-Fi sadece su durumlarda gerekir:
+
+- APK dosyasini ag uzerinden cihaza aktarmak
+- Ileriki fazda gercek API veya senkron baglantilarini test etmek
+- Expo Go ile gelistirme testine geri donmek
 
 ## Sorun Giderme
 
-- APK kurulmazsa Android package ve cihaz güvenlik politikası kontrol edilmelidir.
-- Uygulama açılırken kapanırsa son build logları ve Expo SDK uyumu kontrol edilmelidir.
-- Scanner okutma inputa düşmüyorsa Honeywell scanner-wedge klavye modu kontrol edilmelidir.
-- Versiyon etiketi beklenen sürümü göstermiyorsa `package.json` version kontrol edilmelidir.
-- Ekran taşması varsa safe area ve alt tuş boşluğu gerçek cihazda tekrar kontrol edilmelidir.
+- APK kurulmazsa Android package, imza uyumu ve cihaz guvenlik politikasi kontrol edilmelidir.
+- Uygulama acilirken kapanirsa build loglari, Expo SDK uyumu ve app config kontrol edilmelidir.
+- Scanner inputa dusmuyorsa Honeywell scanner-wedge klavye modu kontrol edilmelidir.
+- Versiyon etiketi beklenen surumu gostermiyorsa `package.json` ve `app.json` version degerleri kontrol edilmelidir.
+- Geri tusu dogrudan cikis yapiyorsa Android BackHandler davranisi yeniden test edilmelidir.
+- Titresim calismiyorsa Ayarlar ekranindaki bildirim/titresim tercihleri kontrol edilmelidir.

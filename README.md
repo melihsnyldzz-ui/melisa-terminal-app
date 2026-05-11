@@ -139,6 +139,7 @@ Detaylı APK akışı için `docs/APK_BUILD_GUIDE.md` kullanılmalıdır.
 - `v0.4.4`: APK hazırlık dokümantasyonu, Honeywell kurulum notları ve release checklist eklendi
 - `v0.5.0`: APK build hazırlığı, APK build rehberi, versiyon uyumu ve Honeywell APK kontrol maddeleri eklendi
 - `v0.5.1`: APK öncesi Honeywell kalite turu; safe area, alt tuş boşluğu, kompakt buton/kart düzeni ve UI metin temizliği kontrol edildi
+- `v0.5.2`: APK build hattı hazırlığı, APK ilk test planı ve Honeywell APK kurulum sonrası kontrol akışı netleştirildi
 - Sonraki fazlar: gerçek ERP API bağlantısı, offline kuyruk sertleştirme, bildirim/ses/titreşim, QR albüm servis bağlantısı
 
 Uygulama versiyonu TerminalHeader sağ üstünde gösterilir. Honeywell testlerinde ekranda görünen versiyon, GitHub'daki `package.json` version alanıyla uyumlu olmalıdır.

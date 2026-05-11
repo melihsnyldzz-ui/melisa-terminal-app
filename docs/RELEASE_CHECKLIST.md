@@ -22,4 +22,10 @@ Her sürümden önce aşağıdaki liste tamamlanmalıdır.
 - [ ] Android geri tuşu davranışı kontrol edildi mi?
 - [ ] Honeywell alt tuş alanına taşma olmadığı kontrol edildi mi?
 - [ ] v0.5.1 APK öncesi Honeywell kalite turu tamamlandı mı?
+- [ ] `docs/APK_FIRST_TEST_PLAN.md` dolduruldu mu?
+- [ ] APK ilk açılış testi yapıldı mı?
+- [ ] APK kaldır/yükle testi yapıldı mı?
+- [ ] Expo Go olmadan uygulama açıldı mı?
+- [ ] Scanner-wedge APK içinde inputa düşüyor mu?
+- [ ] Titreşim APK içinde çalışıyor mu?
 - [ ] README sürüm notu güncellendi mi?
