@@ -51,6 +51,36 @@ cd C:\Users\User\Documents\GitHub\melisa-terminal-app
 npm run preview:honeywell
 ```
 
+## APK Hazırlık ve Honeywell Kurulum
+
+Expo Go test akışı korunur:
+
+```powershell
+cd C:\Users\User\Documents\GitHub\melisa-terminal-app
+npm run start:lan
+```
+
+Ağ kısıtı varsa:
+
+```powershell
+npm run start:tunnel
+```
+
+APK test akışı ileriki fazda EAS veya kurumun seçtiği Android build hattıyla hazırlanacaktır. Bu sürümde EAS bağımlılığı eklenmez ve gerçek APK build zorunlu değildir. Honeywell terminale APK kurulurken cihaz ayarlarında bilinmeyen kaynaklardan uygulama yükleme izni kurum politikasına uygun şekilde açılmalıdır.
+
+Kurulum sonrası kontrol listesi:
+
+- Sağ üst versiyon etiketi `package.json` sürümüyle aynı mı?
+- Giriş ekranı safe area içinde mi?
+- Android geri tuşu doğrudan uygulamadan çıkarmıyor mu?
+- Yeni Fiş ekranında barkod okutma inputa düşüyor mu?
+- Ürün ekleme, çift okutma koruması ve silme onayı çalışıyor mu?
+- Titreşim açıkken önemli işlemlerde geri bildirim alınıyor mu?
+- QR Albüm ekranında ürünler ve güvenli bağlantı görünüyor mu?
+- Mesajlar, Gönderilemeyenler ve Ayarlar ekranları alt tuş alanına taşmıyor mu?
+
+Daha ayrıntılı kurulum notları için `docs/HONEYWELL_INSTALLATION.md`, sürüm öncesi kontrol için `docs/RELEASE_CHECKLIST.md` kullanılmalıdır.
+
 ## Klasör Yapısı
 
 - `app/`: Ekranlar ve tema
@@ -84,6 +114,7 @@ npm run preview:honeywell
 - `v0.4.1`: Honeywell okutma deneyimi, son okutulan ürün paneli, çift okutma koruması ve fiş aksiyon güvenliği iyileştirildi
 - `v0.4.2`: Uygulama içi titreşim altyapısı, acil mesaj uyarı hissi, bildirim/titreşim ayarları ve ileriki faz push bildirimi hazırlığı
 - `v0.4.3`: QR albüm müşteri vitrini, WhatsApp mesaj önizlemesi, ürün görsel kartları ve feedback aksiyonları güçlendirildi
+- `v0.4.4`: APK hazırlık dokümantasyonu, Honeywell kurulum notları ve release checklist eklendi
 - Sonraki fazlar: gerçek ERP API bağlantısı, offline kuyruk sertleştirme, bildirim/ses/titreşim, QR albüm servis bağlantısı
 
 Uygulama versiyonu TerminalHeader sağ üstünde gösterilir. Honeywell testlerinde ekranda görünen versiyon, GitHub'daki `package.json` version alanıyla uyumlu olmalıdır.
