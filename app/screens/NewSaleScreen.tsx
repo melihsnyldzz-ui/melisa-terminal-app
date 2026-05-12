@@ -79,8 +79,13 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
         if (firstStarts !== secondStarts) return firstStarts - secondStarts;
         return firstName.localeCompare(secondName, 'tr-TR');
       })
-      .slice(0, 6);
+      .slice(0, 5);
   }, [customerQuery]);
+  const customerMetaLabel = selectedCustomer
+    ? `${selectedCustomer.code} · ${selectedCustomer.city}`
+    : customer.trim()
+      ? 'Yeni müşteri adı ile devam edilecek'
+      : 'Müşteri seçilmedi';
 
   useEffect(() => {
     loadActiveSaleDraft().then((draft) => {
@@ -309,7 +314,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
           <Text style={styles.stepBadge}>1</Text>
           <View style={styles.sectionHeaderTextBlock}>
             <Text style={styles.label}>Müşteri ara</Text>
-            <Text style={styles.helperText}>İsim harfleri yazıldıkça uygun müşteriler listelenir.</Text>
+            <Text style={styles.helperText}>{documentNo ? 'Müşteri fişe bağlandı; barkod okutmaya devam et.' : 'İsim harfleri yazıldıkça uygun müşteriler listelenir.'}</Text>
           </View>
         </View>
         <TextInput
@@ -317,21 +322,32 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
           onChangeText={setCustomer}
           placeholder="Müşteri adı yaz"
           placeholderTextColor={colors.muted}
-          style={styles.input}
+          style={[styles.input, documentNo && styles.lockedInput]}
           editable={!documentNo}
         />
+        {customer.trim() ? (
+          <View style={[styles.selectedCustomerCard, documentNo && styles.selectedCustomerCardLocked]}>
+            <View style={styles.selectedCustomerTextBlock}>
+              <Text style={styles.selectedCustomerLabel}>{documentNo ? 'Fiş müşterisi' : 'Seçilecek müşteri'}</Text>
+              <Text style={styles.selectedCustomerName} numberOfLines={1}>{customer.trim()}</Text>
+              <Text style={styles.selectedCustomerMeta}>{customerMetaLabel}</Text>
+            </View>
+            <StatusPill label={documentNo ? 'Kilitli' : 'Hazır'} tone={documentNo ? 'success' : 'info'} />
+          </View>
+        ) : null}
         {!documentNo && (
           <View style={styles.suggestionList}>
             {customerSuggestions.length > 0 ? (
               customerSuggestions.map((item) => {
                 const selected = selectedCustomer?.id === item.id;
+                const isManual = item.code === 'MANUEL';
                 return (
-                  <Pressable key={item.id} onPress={() => selectCustomer(item)} style={[styles.suggestionRow, selected && styles.suggestionRowSelected]}>
+                  <Pressable key={item.id} onPress={() => selectCustomer(item)} style={[styles.suggestionRow, selected && styles.suggestionRowSelected, isManual && styles.manualSuggestionRow]}>
                     <View style={styles.suggestionMain}>
                       <Text style={[styles.suggestionName, selected && styles.suggestionNameSelected]} numberOfLines={1}>{item.name}</Text>
                       <Text style={[styles.suggestionMeta, selected && styles.suggestionMetaSelected]}>{item.code} · {item.city}</Text>
                     </View>
-                    <Text style={[styles.suggestionAction, selected && styles.suggestionActionSelected]}>{selected ? 'Seçili' : 'Seç'}</Text>
+                    <Text style={[styles.suggestionAction, selected && styles.suggestionActionSelected]}>{selected ? 'Seçili' : isManual ? 'Elle Yaz' : 'Seç'}</Text>
                   </Pressable>
                 );
               })
@@ -497,11 +513,30 @@ const styles = StyleSheet.create({
   label: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
   helperText: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
   input: { minHeight: 42, borderRadius: radius.md, backgroundColor: colors.surfaceSoft, borderWidth: 1, borderColor: colors.line, color: colors.ink, fontSize: typography.body, paddingHorizontal: spacing.md, fontWeight: '800' },
+  lockedInput: { backgroundColor: colors.surface, borderColor: colors.anthracite },
   scanInput: { borderColor: colors.anthracite, backgroundColor: colors.surface },
   disabledInput: { opacity: 0.72 },
+  selectedCustomerCard: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.red,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.red,
+    backgroundColor: colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    padding: spacing.sm,
+  },
+  selectedCustomerCardLocked: { borderColor: colors.anthracite, borderLeftColor: colors.anthracite },
+  selectedCustomerTextBlock: { flex: 1, gap: 2 },
+  selectedCustomerLabel: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
+  selectedCustomerName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  selectedCustomerMeta: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
   suggestionList: { gap: spacing.xs },
   suggestionRow: {
-    minHeight: 44,
+    minHeight: 40,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.line,
@@ -511,9 +546,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: 5,
   },
   suggestionRowSelected: { backgroundColor: colors.anthracite, borderColor: colors.anthracite },
+  manualSuggestionRow: { borderStyle: 'dashed' },
   suggestionMain: { flex: 1, gap: 2 },
   suggestionName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
   suggestionNameSelected: { color: colors.surface },
