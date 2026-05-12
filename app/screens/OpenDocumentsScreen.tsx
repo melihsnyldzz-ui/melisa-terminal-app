@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ActionRow } from '../../components/ActionRow';
 import { EmptyState } from '../../components/EmptyState';
 import { ScreenShell } from '../../components/ScreenShell';
@@ -18,21 +18,36 @@ type OpenDocumentsScreenProps = {
 type DocumentFilter = 'Tümü' | OpenDocumentStatus | 'Hatalı';
 
 const filters: DocumentFilter[] = ['Tümü', 'Açık', 'Beklemede', 'Hatalı'];
+const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase('tr-TR');
 
 export function OpenDocumentsScreen({ onBack, onNavigate }: OpenDocumentsScreenProps) {
   const [documents, setDocuments] = useState<OpenDocument[]>([]);
   const [filter, setFilter] = useState<DocumentFilter>('Tümü');
+  const [searchQuery, setSearchQuery] = useState('');
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
 
   useEffect(() => {
     getOpenDocumentsMock().then(setDocuments);
   }, []);
 
-  const filteredDocuments = useMemo(() => {
+  const statusFilteredDocuments = useMemo(() => {
     if (filter === 'Tümü') return documents;
     if (filter === 'Hatalı') return documents.filter((document) => document.status === 'Gönderilemedi');
     return documents.filter((document) => document.status === filter);
   }, [documents, filter]);
+
+  const filteredDocuments = useMemo(() => {
+    const query = normalizeSearchText(searchQuery);
+    if (!query) return statusFilteredDocuments;
+
+    return statusFilteredDocuments.filter((document) => {
+      const searchable = `${document.id} ${document.customerName} ${document.status}`;
+      return normalizeSearchText(searchable).includes(query);
+    });
+  }, [searchQuery, statusFilteredDocuments]);
+
+  const totalItems = useMemo(() => filteredDocuments.reduce((sum, document) => sum + document.itemCount, 0), [filteredDocuments]);
+  const failedCount = useMemo(() => documents.filter((document) => document.status === 'Gönderilemedi').length, [documents]);
 
   const openDocument = (documentNo: string) => {
     setBanner({ message: `${documentNo} fişi açılıyor.`, tone: 'info' });
@@ -41,6 +56,7 @@ export function OpenDocumentsScreen({ onBack, onNavigate }: OpenDocumentsScreenP
 
   const prepareAlbum = (documentNo: string) => {
     setBanner({ message: `${documentNo} için QR albüm yönlendirmesi hazır.`, tone: 'info' });
+    onNavigate('qrAlbum');
   };
 
   const sendDocument = (document: OpenDocument) => {
@@ -54,6 +70,17 @@ export function OpenDocumentsScreen({ onBack, onNavigate }: OpenDocumentsScreenP
     <ScreenShell title="Açık Fişler" subtitle={`${filteredDocuments.length} fiş görüntüleniyor`} onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
 
+      <View style={styles.searchPanel}>
+        <Text style={styles.searchLabel}>Fiş / müşteri ara</Text>
+        <TextInput
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Fiş no veya müşteri adı yaz"
+          placeholderTextColor={colors.muted}
+          style={styles.searchInput}
+        />
+      </View>
+
       <View style={styles.filterRow}>
         {filters.map((item) => (
           <Pressable key={item} onPress={() => setFilter(item)} style={({ pressed }) => [styles.filterButton, filter === item && styles.filterActive, pressed && styles.pressed]}>
@@ -63,12 +90,21 @@ export function OpenDocumentsScreen({ onBack, onNavigate }: OpenDocumentsScreenP
       </View>
 
       <View style={styles.summaryPanel}>
-        <Text style={styles.summaryTitle}>Fiş operasyonları</Text>
-        <Text style={styles.summaryText}>Fişleri hızlıca kontrol edin.</Text>
+        <View style={styles.summaryTopRow}>
+          <View style={styles.summaryMainText}>
+            <Text style={styles.summaryTitle}>Fiş operasyonları</Text>
+            <Text style={styles.summaryText}>Arama ve durum filtresiyle açık işleri hızlı kontrol et.</Text>
+          </View>
+          <StatusPill label={failedCount > 0 ? `${failedCount} risk` : 'Temiz'} tone={failedCount > 0 ? 'warning' : 'success'} />
+        </View>
+        <View style={styles.summaryMetricRow}>
+          <InfoItem label="Görünen fiş" value={filteredDocuments.length.toString()} />
+          <InfoItem label="Toplam ürün" value={totalItems.toString()} />
+        </View>
       </View>
 
       {filteredDocuments.length === 0 ? (
-        <EmptyState badge="FİŞ" title="Açık fiş yok" description="Yeni satış başlatarak ilk fişi oluşturabilirsin." />
+        <EmptyState badge="FİŞ" title="Uygun fiş bulunamadı" description="Arama metnini veya filtreyi değiştirerek tekrar dene." />
       ) : (
         filteredDocuments.map((document) => (
           <View key={document.id} style={[styles.card, document.status === 'Gönderilemedi' && styles.failedCard]}>
@@ -78,7 +114,7 @@ export function OpenDocumentsScreen({ onBack, onNavigate }: OpenDocumentsScreenP
                 <Text style={styles.documentCodeText}>{document.id}</Text>
               </View>
               <View style={styles.detail}>
-                <Text style={styles.customer}>{document.customerName}</Text>
+                <Text style={styles.customer} numberOfLines={1}>{document.customerName}</Text>
                 <Text style={styles.meta}>{document.itemCount} ürün · {document.updatedAt}</Text>
               </View>
               <StatusPill label={document.status} tone={statusToneFor(document.status)} />
@@ -111,11 +147,31 @@ function InfoItem({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
+  searchPanel: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.sm,
+    gap: spacing.xs,
+  },
+  searchLabel: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
+  searchInput: {
+    minHeight: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: colors.line,
+    color: colors.ink,
+    fontSize: typography.body,
+    paddingHorizontal: spacing.sm,
+    fontWeight: '800',
+  },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   filterButton: {
     flexGrow: 1,
     minWidth: '23%',
-    minHeight: 38,
+    minHeight: 36,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.line,
@@ -135,10 +191,13 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: colors.red,
     padding: spacing.sm,
-    gap: 2,
+    gap: spacing.xs,
   },
+  summaryTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
+  summaryMainText: { flex: 1, gap: 2 },
   summaryTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
   summaryText: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
+  summaryMetricRow: { flexDirection: 'row', gap: spacing.xs },
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,
