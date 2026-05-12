@@ -143,6 +143,7 @@ Detaylı APK akışı için `docs/APK_BUILD_GUIDE.md` kullanılmalıdır.
 - `v0.5.3`: APK build ortam kontrol dokümanı, build öncesi doğrulama adımları ve EAS hazırlık öncesi kontrol eklendi
 - `v0.5.4`: EAS karar dokümanı, `eas.json` preview APK profili ve APK build komutu dokümantasyonu eklendi
 - `v0.5.5`: EAS CLI/login readiness doğrulandı; APK build manuel onayla başlatılacak
+- `v0.5.6`: Yeni Fiş ekranında müşteri arama/autocomplete, seçili müşteri kartı, müşteri kilitleme ve daha kompakt müşteri seçim akışı eklendi
 - Sonraki fazlar: gerçek ERP API bağlantısı, offline kuyruk sertleştirme, bildirim/ses/titreşim, QR albüm servis bağlantısı
 
 Uygulama versiyonu TerminalHeader sağ üstünde gösterilir. Honeywell testlerinde ekranda görünen versiyon, GitHub'daki `package.json` version alanıyla uyumlu olmalıdır.
