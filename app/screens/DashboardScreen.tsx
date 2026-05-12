@@ -63,6 +63,7 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
   const hasActiveDraft = Boolean(activeDraft);
   const activeLineCount = activeDraft?.lines.length ?? 0;
   const activeTotalQuantity = activeDraft?.lines.reduce((sum, line) => sum + line.quantity, 0) ?? 0;
+  const activeProgressLabel = hasActiveDraft && activeLineCount > 0 ? 'Ürünlü fiş' : hasActiveDraft ? 'Müşteri seçildi' : 'Başlanmadı';
 
   return (
     <View style={styles.container}>
@@ -113,7 +114,7 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
         <View style={styles.activeCard}>
           <View style={styles.activeCardTop}>
             <Text style={styles.activeCardTitle}>Son aktif fiş</Text>
-            {hasActiveDraft ? <StatusPill label="Hazır" tone="success" /> : <StatusPill label="Boş" tone="dark" />}
+            {hasActiveDraft ? <StatusPill label={activeProgressLabel} tone="success" /> : <StatusPill label="Boş" tone="dark" />}
           </View>
           {hasActiveDraft && activeDraft ? (
             <>
@@ -128,6 +129,14 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
                 </View>
                 <Pressable onPress={() => onNavigate('newSale')} style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
                   <Text style={styles.continueText}>Devam Et</Text>
+                </Pressable>
+              </View>
+              <View style={styles.activeShortcutRow}>
+                <Pressable onPress={() => onNavigate('qrAlbum')} style={({ pressed }) => [styles.shortcutButton, pressed && styles.pressed]}>
+                  <Text style={styles.shortcutText}>QR Albüm</Text>
+                </Pressable>
+                <Pressable onPress={() => onNavigate('openDocuments')} style={({ pressed }) => [styles.shortcutButton, pressed && styles.pressed]}>
+                  <Text style={styles.shortcutText}>Açık Fişler</Text>
                 </Pressable>
               </View>
             </>
@@ -493,6 +502,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
   },
+  activeShortcutRow: { flexDirection: 'row', gap: spacing.xs },
+  shortcutButton: {
+    flex: 1,
+    minHeight: 34,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.anthracite,
+    backgroundColor: colors.surfaceSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  shortcutText: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
   documentHeader: {
     flexDirection: 'row',
     alignItems: 'center',
