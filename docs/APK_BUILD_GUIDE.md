@@ -43,6 +43,27 @@ Mevcut app config:
 - Android package: `com.melisabebe.terminal`
 - Orientation: `portrait`
 
+## Build Oncesi Ortam Kontrolu
+
+APK build veya EAS hazirligina gecmeden once lokal ortam kontrolu yapilmalidir:
+
+```powershell
+cd C:\Users\User\Documents\GitHub\melisa-terminal-app
+npm install
+npm run check
+npm run doctor
+```
+
+Kontrol edilecekler:
+
+- `package.json` version ve `app.json` expo.version ayni mi?
+- `app.json` icinde Android package `com.melisabebe.terminal` olarak duruyor mu?
+- Uygulama adi `Melisa Bebe Terminal` olarak korunuyor mu?
+- Expo Go ile son Honeywell testi yapildi mi?
+- `docs/BUILD_ENVIRONMENT_CHECK.md` uzerindeki karar listesi tamamlandi mi?
+
+EAS kurulumu gerekiyorsa bu is ayri bir adimda ve ayrica onaylanarak yapilmalidir. Bu rehber EAS hazirlanmadan build komutu calistirilmasini onermez.
+
 ## EAS Build Kullanilirsa On Hazirlik
 
 EAS Build tercih edilirse once EAS CLI, Expo hesabi, proje baglantisi ve build profilleri ayrica hazirlanmalidir. Bu repo su an EAS dependency veya EAS build scripti icermez.

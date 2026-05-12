@@ -28,4 +28,9 @@ Her sürümden önce aşağıdaki liste tamamlanmalıdır.
 - [ ] Expo Go olmadan uygulama açıldı mı?
 - [ ] Scanner-wedge APK içinde inputa düşüyor mu?
 - [ ] Titreşim APK içinde çalışıyor mu?
+- [ ] Build ortam kontrolü yapıldı mı?
+- [ ] `npm run doctor` sonucu kontrol edildi mi?
+- [ ] `app.json` ve `package.json` version eşit mi?
+- [ ] EAS kurulumu gerekiyorsa ayrıca onaylandı mı?
+- [ ] APK build başlatmadan önce Honeywell Expo Go son test yapıldı mı?
 - [ ] README sürüm notu güncellendi mi?
