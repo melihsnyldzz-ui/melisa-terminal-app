@@ -414,12 +414,16 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
         <EmptyState badge="ÜRÜN" title="Fişte ürün yok" description="Müşteri seçilip fiş başlatıldıktan sonra kod okut." />
       ) : (
         <View style={styles.productList}>
+          <View style={styles.productListHeader}>
+            <Text style={styles.productListTitle}>Fiş ürünleri</Text>
+            <Text style={styles.productListCount}>{lines.length} kalem · {totalQuantity} adet</Text>
+          </View>
           {lines.map((line) => (
             <View key={line.lineId} style={styles.productRow}>
               <View style={styles.productMain}>
                 <Text style={styles.productCode}>{line.code}</Text>
-                <Text style={styles.productName}>{line.name}</Text>
-                <Text style={styles.productMeta}>{line.color} · {line.size}</Text>
+                <Text style={styles.productName} numberOfLines={1}>{line.name}</Text>
+                <Text style={styles.productMeta} numberOfLines={1}>{line.color} · {line.size}</Text>
               </View>
               <View style={styles.quantityBlock}>
                 <Text style={styles.quantityLabel}>Adet</Text>
@@ -597,49 +601,58 @@ const styles = StyleSheet.create({
   },
   quickCodeButtonDisabled: { opacity: 0.45 },
   quickCodeText: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
-  productList: { gap: spacing.sm },
+  productList: { gap: spacing.xs },
+  productListHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  productListTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  productListCount: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
   productRow: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.line,
     borderLeftWidth: 4,
     borderLeftColor: colors.red,
     padding: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.xs,
   },
-  productMain: { gap: 2, paddingRight: 76 },
+  productMain: { flex: 1, gap: 1 },
   productCode: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
   productName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
   productMeta: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
   quantityBlock: {
-    position: 'absolute',
-    right: spacing.sm,
-    top: spacing.sm,
+    minWidth: 44,
     alignItems: 'center',
     backgroundColor: colors.surfaceSoft,
     borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.line,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.xs,
     paddingVertical: 3,
   },
   quantityLabel: { color: colors.muted, fontSize: 10, fontWeight: '900' },
   quantityValue: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
-  lineActions: { flexDirection: 'row', gap: spacing.xs, paddingRight: 72 },
+  lineActions: { flexDirection: 'row', gap: 4 },
   lineButton: {
-    minHeight: 34,
-    minWidth: 40,
-    borderRadius: radius.md,
+    minHeight: 30,
+    minWidth: 32,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.anthracite,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.xs,
   },
-  lineButtonText: { color: colors.anthracite, fontSize: typography.section, fontWeight: '900' },
+  lineButtonText: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
   deleteButton: { backgroundColor: colors.red, borderColor: colors.redDark },
   deleteConfirmButton: { backgroundColor: colors.anthracite, borderColor: colors.anthracite },
-  deleteText: { color: colors.surface, fontSize: typography.small, fontWeight: '900' },
+  deleteText: { color: colors.surface, fontSize: 10, fontWeight: '900' },
 });
