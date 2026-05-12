@@ -16,8 +16,12 @@ type NewSaleScreenProps = {
   onBack: () => void;
 };
 
-const quickCustomers = ['ABC Baby Store', 'Mini Kids', 'Nova Baby', 'Yeni Müşteri'];
-const quickCodes = ['MB-1001', 'MB-1002', 'MB-1003'];
+type CustomerSuggestion = {
+  id: string;
+  name: string;
+  code: string;
+  city: string;
+};
 
 type LastScannedProduct = {
   code: string;
@@ -27,6 +31,21 @@ type LastScannedProduct = {
   quantity: number;
   time: string;
 };
+
+const mockCustomers: CustomerSuggestion[] = [
+  { id: 'cus-1', name: 'ABC Baby Store', code: 'C-1001', city: 'İstanbul' },
+  { id: 'cus-2', name: 'Mini Kids', code: 'C-1002', city: 'İstanbul' },
+  { id: 'cus-3', name: 'Nova Baby', code: 'C-1003', city: 'Ankara' },
+  { id: 'cus-4', name: 'Melisa Baby Boutique', code: 'C-1004', city: 'İzmir' },
+  { id: 'cus-5', name: 'Bebek Dünyası', code: 'C-1005', city: 'Bursa' },
+  { id: 'cus-6', name: 'Happy Mini Store', code: 'C-1006', city: 'Antalya' },
+  { id: 'cus-7', name: 'Luna Kids Wear', code: 'C-1007', city: 'Gaziantep' },
+  { id: 'cus-8', name: 'Yeni Müşteri', code: 'MANUEL', city: 'Elle giriş' },
+];
+
+const quickCodes = ['MB-1001', 'MB-1002', 'MB-1003'];
+
+const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase('tr-TR');
 
 export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   const barcodeInputRef = useRef<TextInput>(null);
@@ -42,6 +61,26 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   const totalQuantity = useMemo(() => lines.reduce((sum, line) => sum + line.quantity, 0), [lines]);
   const status: SaleStatus = documentNo && lines.length > 0 ? 'Hazır' : 'Taslak';
   const canScan = Boolean(documentNo);
+  const customerQuery = normalizeSearchText(customer);
+  const selectedCustomer = useMemo(
+    () => mockCustomers.find((item) => normalizeSearchText(item.name) === customerQuery),
+    [customerQuery],
+  );
+  const customerSuggestions = useMemo(() => {
+    if (!customerQuery) return mockCustomers.slice(0, 4);
+
+    return mockCustomers
+      .filter((item) => normalizeSearchText(item.name).includes(customerQuery) || normalizeSearchText(item.code).includes(customerQuery))
+      .sort((first, second) => {
+        const firstName = normalizeSearchText(first.name);
+        const secondName = normalizeSearchText(second.name);
+        const firstStarts = firstName.startsWith(customerQuery) ? 0 : 1;
+        const secondStarts = secondName.startsWith(customerQuery) ? 0 : 1;
+        if (firstStarts !== secondStarts) return firstStarts - secondStarts;
+        return firstName.localeCompare(secondName, 'tr-TR');
+      })
+      .slice(0, 6);
+  }, [customerQuery]);
 
   useEffect(() => {
     loadActiveSaleDraft().then((draft) => {
@@ -55,7 +94,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   }, []);
 
   useEffect(() => {
-    if (!documentNo) return;
+    if (!documentNo) return undefined;
     const timer = setTimeout(() => barcodeInputRef.current?.focus(), 120);
     return () => clearTimeout(timer);
   }, [documentNo]);
@@ -72,8 +111,10 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     await saveActiveSaleDraft(draft);
   };
 
-  const selectCustomer = (nextCustomer: string) => {
-    setCustomer(nextCustomer === 'Yeni Müşteri' ? '' : nextCustomer);
+  const selectCustomer = (nextCustomer: CustomerSuggestion) => {
+    const nextName = nextCustomer.name === 'Yeni Müşteri' ? '' : nextCustomer.name;
+    setCustomer(nextName);
+    setBanner({ message: nextName ? `${nextName} seçildi.` : 'Yeni müşteri adı yazılabilir.', tone: 'info' });
   };
 
   const focusScanner = () => {
@@ -87,18 +128,17 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       return;
     }
 
-    const selectedCustomer = customer.trim();
-    if (!selectedCustomer) {
-      setBanner({ message: 'Önce müşteri seç.', tone: 'warning' });
+    const selectedCustomerName = customer.trim();
+    if (!selectedCustomerName) {
+      setBanner({ message: 'Önce müşteri adı yaz veya listeden seç.', tone: 'warning' });
       notifyWarning();
-      focusScanner();
       return;
     }
 
-    const sale = await createSaleMock(selectedCustomer);
+    const sale = await createSaleMock(selectedCustomerName);
     setDocumentNo(sale.documentNo);
-    await persistDraft(lines, sale.documentNo, selectedCustomer);
-    setBanner({ message: `${sale.documentNo} aktif fiş hazır.`, tone: 'success' });
+    await persistDraft(lines, sale.documentNo, selectedCustomerName);
+    setBanner({ message: `${sale.documentNo} aktif fiş hazır. Barkod okutabilirsin.`, tone: 'success' });
     notifySuccess();
     focusScanner();
   };
@@ -248,7 +288,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   };
 
   return (
-    <ScreenShell title="Yeni Fiş" subtitle="Hızlı satış akışı" onBack={onBack}>
+    <ScreenShell title="Yeni Fiş" subtitle="Müşteri seç, barkod okut" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
 
       <View style={styles.statusPanel}>
@@ -265,26 +305,60 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       </View>
 
       <View style={styles.formPanel}>
-        <Text style={styles.label}>Müşteri</Text>
-        <View style={styles.customerGrid}>
-          {quickCustomers.map((item) => {
-            const selected = customer === item;
-            return (
-              <Pressable key={item} onPress={() => selectCustomer(item)} style={[styles.customerChip, selected && styles.customerChipSelected]}>
-                <Text style={[styles.customerChipText, selected && styles.customerChipTextSelected]}>{item}</Text>
-              </Pressable>
-            );
-          })}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.stepBadge}>1</Text>
+          <View style={styles.sectionHeaderTextBlock}>
+            <Text style={styles.label}>Müşteri ara</Text>
+            <Text style={styles.helperText}>İsim harfleri yazıldıkça uygun müşteriler listelenir.</Text>
+          </View>
         </View>
-        <TextInput value={customer} onChangeText={setCustomer} placeholder="Müşteri etiketi" placeholderTextColor={colors.muted} style={styles.input} />
-        <AppButton label={documentNo ? 'Fiş Başlatıldı' : 'Fiş Başlat'} onPress={startSale} variant={documentNo ? 'dark' : 'primary'} />
+        <TextInput
+          value={customer}
+          onChangeText={setCustomer}
+          placeholder="Müşteri adı yaz"
+          placeholderTextColor={colors.muted}
+          style={styles.input}
+          editable={!documentNo}
+        />
+        {!documentNo && (
+          <View style={styles.suggestionList}>
+            {customerSuggestions.length > 0 ? (
+              customerSuggestions.map((item) => {
+                const selected = selectedCustomer?.id === item.id;
+                return (
+                  <Pressable key={item.id} onPress={() => selectCustomer(item)} style={[styles.suggestionRow, selected && styles.suggestionRowSelected]}>
+                    <View style={styles.suggestionMain}>
+                      <Text style={[styles.suggestionName, selected && styles.suggestionNameSelected]} numberOfLines={1}>{item.name}</Text>
+                      <Text style={[styles.suggestionMeta, selected && styles.suggestionMetaSelected]}>{item.code} · {item.city}</Text>
+                    </View>
+                    <Text style={[styles.suggestionAction, selected && styles.suggestionActionSelected]}>{selected ? 'Seçili' : 'Seç'}</Text>
+                  </Pressable>
+                );
+              })
+            ) : (
+              <View style={styles.noSuggestionBox}>
+                <Text style={styles.noSuggestionTitle}>Eşleşen müşteri yok</Text>
+                <Text style={styles.noSuggestionText}>Bu isimle yeni müşteri fişi başlatılabilir.</Text>
+              </View>
+            )}
+          </View>
+        )}
+        <AppButton label={documentNo ? 'Fiş Başlatıldı' : 'Müşteriyi Seç ve Fiş Başlat'} onPress={startSale} variant={documentNo ? 'dark' : 'primary'} />
+      </View>
 
-        <Text style={styles.label}>Barkod / QR</Text>
+      <View style={[styles.formPanel, !canScan && styles.lockedPanel]}>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.stepBadge}>2</Text>
+          <View style={styles.sectionHeaderTextBlock}>
+            <Text style={styles.label}>Barkod okut</Text>
+            <Text style={styles.helperText}>{canScan ? 'Scanner hazır. Okutulan ürün fişe eklenir.' : 'Barkod alanı fiş başlatılınca açılır.'}</Text>
+          </View>
+        </View>
         <TextInput
           ref={barcodeInputRef}
           value={barcode}
           onChangeText={handleBarcodeChange}
-          placeholder={canScan ? 'Kod okut veya yaz' : 'Önce fiş başlat'}
+          placeholder={canScan ? 'Kod okut veya yaz' : 'Önce müşteri seç ve fiş başlat'}
           placeholderTextColor={colors.muted}
           style={[styles.input, canScan && styles.scanInput, !canScan && styles.disabledInput]}
           autoCapitalize="characters"
@@ -308,12 +382,12 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
         </View>
         <ActionRow
           actions={[
-            { label: 'Ekle', onPress: () => addProduct(), variant: 'primary' },
+            { label: 'Ürünü Ekle', onPress: () => addProduct(), variant: 'primary' },
           ]}
         />
         <View style={styles.quickCodeRow}>
           {quickCodes.map((code) => (
-            <Pressable key={code} onPress={() => addProduct(code)} style={styles.quickCodeButton}>
+            <Pressable key={code} onPress={() => addProduct(code)} style={[styles.quickCodeButton, !canScan && styles.quickCodeButtonDisabled]}>
               <Text style={styles.quickCodeText}>{code}</Text>
             </Pressable>
           ))}
@@ -321,7 +395,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       </View>
 
       {lines.length === 0 ? (
-        <EmptyState badge="ÜRÜN" title="Fişte ürün yok" description="Kod okut ya da hızlı kod seç." />
+        <EmptyState badge="ÜRÜN" title="Fişte ürün yok" description="Müşteri seçilip fiş başlatıldıktan sonra kod okut." />
       ) : (
         <View style={styles.productList}>
           {lines.map((line) => (
@@ -405,27 +479,58 @@ const styles = StyleSheet.create({
   metricValue: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900', textAlign: 'center' },
   metricLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900', textAlign: 'center' },
   formPanel: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: spacing.sm, gap: spacing.xs },
+  lockedPanel: { opacity: 0.92 },
   actionPanel: { gap: spacing.xs },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  sectionHeaderTextBlock: { flex: 1, gap: 2 },
+  stepBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.anthracite,
+    color: colors.surface,
+    fontSize: typography.body,
+    fontWeight: '900',
+    textAlign: 'center',
+    lineHeight: 30,
+  },
   label: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
-  customerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  customerChip: {
-    minHeight: 32,
-    minWidth: '48%',
-    flexGrow: 1,
+  helperText: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
+  input: { minHeight: 42, borderRadius: radius.md, backgroundColor: colors.surfaceSoft, borderWidth: 1, borderColor: colors.line, color: colors.ink, fontSize: typography.body, paddingHorizontal: spacing.md, fontWeight: '800' },
+  scanInput: { borderColor: colors.anthracite, backgroundColor: colors.surface },
+  disabledInput: { opacity: 0.72 },
+  suggestionList: { gap: spacing.xs },
+  suggestionRow: {
+    minHeight: 44,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.line,
     backgroundColor: colors.surfaceSoft,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
     paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
-  customerChipSelected: { backgroundColor: colors.anthracite, borderColor: colors.anthracite },
-  customerChipText: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900', textAlign: 'center' },
-  customerChipTextSelected: { color: colors.surface },
-  input: { minHeight: 42, borderRadius: radius.md, backgroundColor: colors.surfaceSoft, borderWidth: 1, borderColor: colors.line, color: colors.ink, fontSize: typography.body, paddingHorizontal: spacing.md, fontWeight: '800' },
-  scanInput: { borderColor: colors.anthracite, backgroundColor: colors.surface },
-  disabledInput: { opacity: 0.72 },
+  suggestionRowSelected: { backgroundColor: colors.anthracite, borderColor: colors.anthracite },
+  suggestionMain: { flex: 1, gap: 2 },
+  suggestionName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  suggestionNameSelected: { color: colors.surface },
+  suggestionMeta: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
+  suggestionMetaSelected: { color: colors.surface },
+  suggestionAction: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
+  suggestionActionSelected: { color: colors.surface },
+  noSuggestionBox: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surfaceSoft,
+    padding: spacing.sm,
+    gap: 2,
+  },
+  noSuggestionTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  noSuggestionText: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
   lastScanBox: {
     borderRadius: radius.md,
     borderWidth: 1,
@@ -454,6 +559,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.xs,
   },
+  quickCodeButtonDisabled: { opacity: 0.45 },
   quickCodeText: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
   productList: { gap: spacing.sm },
   productRow: {
