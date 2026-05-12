@@ -117,3 +117,17 @@ EAS hazirlanmadan APK build komutu calistirilmaz.
 - Expo Doctor warning verirse rapora yazilmali, gereksiz otomatik fix yapilmamalidir.
 - App config yanlissa build komutuna gecilmemelidir.
 - Honeywell Expo Go son test yapilmadiysa once `npm run start:lan` ile cihaz kontrolu tamamlanmalidir.
+
+## v0.5.5 EAS CLI Kontrol Notu
+
+- EAS CLI kontrol edildi: `eas-cli/18.11.0 win32-x64 node-v24.15.0`.
+- Global `eas` komutu bilgisayarda calisir hale getirildi.
+- `eas whoami` sonucu: login yok.
+- Expo hesabi henuz olmadigi icin EAS login tamamlanmadi.
+- `eas.json` preview profili Android APK icin hazir.
+- APK build baslatilmadi.
+- Ilk build komutu ancak Expo hesabi olusturulup `eas login` tamamlandiktan sonra manuel onayla calistirilmelidir:
+
+```powershell
+npx eas build -p android --profile preview
+```

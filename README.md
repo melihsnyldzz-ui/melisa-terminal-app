@@ -147,6 +147,10 @@ Detaylı APK akışı için `docs/APK_BUILD_GUIDE.md` kullanılmalıdır.
 Uygulama versiyonu TerminalHeader sağ üstünde gösterilir. Honeywell testlerinde ekranda görünen versiyon, GitHub'daki `package.json` version alanıyla uyumlu olmalıdır.
 Uygulama içi titreşim geri bildirimi `services/feedback.ts` üzerinden yönetilir; gerçek push notification ileriki fazdadır.
 
+## EAS CLI Durumu
+
+EAS CLI bilgisayarda kontrol edildi ve global `eas` komutu çalışır durumdadır. Expo hesabı henüz olmadığı için `eas login` tamamlanmadı; APK build komutu kullanıcı onayı ve Expo hesabı login işlemi sonrası çalıştırılmalıdır.
+
 ## v0.2 Kullanım Notları
 
 - Ana ekran: `+ Yeni Fiş Başlat` ana aksiyonudur; açık fiş, okunmamış mesaj, gönderilemeyen işlem ve son senkron özeti gösterilir.
