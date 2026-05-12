@@ -79,6 +79,17 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
     <ScreenShell title="Ayarlar" subtitle="Terminal ayar paneli" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
 
+      <Section title="Terminal Sağlığı">
+        <View style={styles.healthGrid}>
+          <HealthCard label="Terminal" value={settings.terminalId || 'Eksik'} tone={settings.terminalId.trim() ? 'success' : 'warning'} />
+          <HealthCard label="Depo" value={settings.branch} tone="success" />
+        </View>
+        <View style={styles.healthGrid}>
+          <HealthCard label="Bağlantı" value={settings.apiBaseUrl.trim() ? 'Hazır' : 'Bekliyor'} tone={settings.apiBaseUrl.trim() ? 'success' : 'warning'} />
+          <HealthCard label="Titreşim" value={settings.vibrationEnabled ? 'Açık' : 'Kapalı'} tone={settings.vibrationEnabled ? 'success' : 'warning'} />
+        </View>
+      </Section>
+
       <Section title="Terminal Bilgisi">
         <Field label="Terminal ID" value={settings.terminalId} onChangeText={(value) => update('terminalId', value)} />
         <View style={styles.field}>
@@ -160,6 +171,21 @@ function Section({ title, children }: SectionProps) {
   );
 }
 
+type HealthCardProps = {
+  label: string;
+  value: string;
+  tone: 'success' | 'warning';
+};
+
+function HealthCard({ label, value, tone }: HealthCardProps) {
+  return (
+    <View style={styles.healthCard}>
+      <Text style={[styles.healthValue, tone === 'warning' && styles.healthWarning]} numberOfLines={1}>{value}</Text>
+      <Text style={styles.healthLabel}>{label}</Text>
+    </View>
+  );
+}
+
 type FieldProps = {
   label: string;
   value: string;
@@ -203,6 +229,21 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   sectionTitle: { color: colors.red, fontSize: typography.body, fontWeight: '900' },
+  healthGrid: { flexDirection: 'row', gap: spacing.xs },
+  healthCard: {
+    flex: 1,
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderTopWidth: 3,
+    borderTopColor: colors.anthracite,
+    borderRadius: radius.md,
+    padding: spacing.xs,
+    gap: 2,
+  },
+  healthValue: { color: colors.success, fontSize: typography.body, fontWeight: '900' },
+  healthWarning: { color: colors.amber },
+  healthLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
   field: { gap: spacing.xs },
   label: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
   input: {
