@@ -64,6 +64,19 @@ Kontrol edilecekler:
 
 EAS kurulumu gerekiyorsa bu is ayri bir adimda ve ayrica onaylanarak yapilmalidir. Bu rehber EAS hazirlanmadan build komutu calistirilmasini onermez.
 
+## EAS Preview APK Profili
+
+`eas.json` eklendi ve ilk Honeywell test APK'si icin `preview` profili Android APK uretecek sekilde hazirlandi. Production profili ileride AAB/app-bundle stratejisi icin ayrica tutulur.
+
+EAS login, proje baglantisi ve gerekli hesap hazirliklari tamamlandiktan sonra manuel onayla calistirilacak ilk build komutu:
+
+```powershell
+npm run prebuild:check
+npx eas build -p android --profile preview
+```
+
+Bu komutlar dokumantasyon amaclidir; bu hazirlik surumunde otomatik calistirilmaz. EAS hazirligi icin karar notlari `docs/EAS_DECISION.md` dosyasindadir.
+
 ## EAS Build Kullanilirsa On Hazirlik
 
 EAS Build tercih edilirse once EAS CLI, Expo hesabi, proje baglantisi ve build profilleri ayrica hazirlanmalidir. Bu repo su an EAS dependency veya EAS build scripti icermez.

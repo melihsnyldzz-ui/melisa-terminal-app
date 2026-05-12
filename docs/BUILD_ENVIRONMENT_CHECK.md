@@ -84,6 +84,11 @@ APK guncelleme ve yeniden kurulum akisi icin bu deger keyfi degistirilmemelidir.
 
 Bu repo su anda EAS dependency, EAS build scripti veya EAS login durumu varsaymaz. EAS kullanilacaksa ayrica onaylanacak adimlar:
 
+- `npx eas --version` ile CLI erisimi kontrolu
+- EAS login durumunun dogrulanmasi
+- `eas.json` dosyasinin varligi
+- `preview` profilinin Android APK uretmesi
+- `production` profilinin preview'dan ayri tutulmasi
 - EAS CLI kullanimi
 - Expo hesap/proje baglantisi
 - Build profilleri
@@ -100,6 +105,8 @@ EAS hazirlanmadan APK build komutu calistirilmaz.
 - [ ] `package.json` ve `app.json` version esit mi?
 - [ ] Android package dogru mu?
 - [ ] APK ilk test plani hazir mi?
+- [ ] `eas.json` kontrol edildi mi?
+- [ ] Preview profili Android APK icin hazir mi?
 - [ ] EAS kurulumu gerekiyorsa ayrica onaylandi mi?
 - [ ] APK build baslatma zamani net mi?
 

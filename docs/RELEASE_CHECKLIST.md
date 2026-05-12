@@ -33,4 +33,9 @@ Her sürümden önce aşağıdaki liste tamamlanmalıdır.
 - [ ] `app.json` ve `package.json` version eşit mi?
 - [ ] EAS kurulumu gerekiyorsa ayrıca onaylandı mı?
 - [ ] APK build başlatmadan önce Honeywell Expo Go son test yapıldı mı?
+- [ ] `eas.json` kontrol edildi mi?
+- [ ] Preview APK profili doğru mu?
+- [ ] `npx eas --version` kontrol edildi mi?
+- [ ] EAS login/proje bağlantısı onaylandı mı?
+- [ ] İlk APK build komutu manuel onayla mı çalıştırılacak?
 - [ ] README sürüm notu güncellendi mi?
