@@ -149,7 +149,7 @@ Uygulama içi titreşim geri bildirimi `services/feedback.ts` üzerinden yöneti
 
 ## EAS CLI Durumu
 
-EAS CLI bilgisayarda kontrol edildi ve global `eas` komutu çalışır durumdadır. Expo hesabı henüz olmadığı için `eas login` tamamlanmadı; APK build komutu kullanıcı onayı ve Expo hesabı login işlemi sonrası çalıştırılmalıdır.
+EAS CLI bilgisayarda kontrol edildi ve global `eas` komutu çalışır durumdadır. Expo hesabı ile `eas login` tamamlandı; APK build komutu ayrıca kullanıcı onayıyla çalıştırılmalıdır.
 
 ## v0.2 Kullanım Notları
 

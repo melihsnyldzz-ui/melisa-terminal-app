@@ -122,11 +122,11 @@ EAS hazirlanmadan APK build komutu calistirilmaz.
 
 - EAS CLI kontrol edildi: `eas-cli/18.11.0 win32-x64 node-v24.15.0`.
 - Global `eas` komutu bilgisayarda calisir hale getirildi.
-- `eas whoami` sonucu: login yok.
-- Expo hesabi henuz olmadigi icin EAS login tamamlanmadi.
+- `eas whoami` sonucu: login tamamlandi.
+- Expo hesabi ile EAS oturumu acildi.
 - `eas.json` preview profili Android APK icin hazir.
 - APK build baslatilmadi.
-- Ilk build komutu ancak Expo hesabi olusturulup `eas login` tamamlandiktan sonra manuel onayla calistirilmelidir:
+- Ilk build komutu manuel onayla calistirilmelidir:
 
 ```powershell
 npx eas build -p android --profile preview
