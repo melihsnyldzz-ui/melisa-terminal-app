@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ActionRow } from '../../components/ActionRow';
 import { EmptyState } from '../../components/EmptyState';
@@ -51,15 +51,28 @@ export function FailedQueueScreen({ onBack }: FailedQueueScreenProps) {
     notifySuccess();
   };
 
+  const operationSummary = useMemo(() => {
+    const documentCount = new Set(operations.map((operation) => operation.documentNo)).size;
+    const typeCount = new Set(operations.map((operation) => operation.operationType)).size;
+    return { documentCount, typeCount };
+  }, [operations]);
+
   return (
     <ScreenShell title="Gönderilemeyenler" subtitle={`${operations.length} bekleyen işlem`} onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
 
       {operations.length > 0 ? (
         <View style={styles.topPanel}>
-          <View>
-            <Text style={styles.topTitle}>Offline kuyruk</Text>
-            <Text style={styles.topText}>Bağlantı hazır olduğunda yeniden gönderilir.</Text>
+          <View style={styles.topHeaderRow}>
+            <View style={styles.topTextBlock}>
+              <Text style={styles.topTitle}>Offline kuyruk</Text>
+              <Text style={styles.topText}>Bağlantı hazır olduğunda yeniden gönderilir.</Text>
+            </View>
+            <StatusPill label="Kontrol" tone="warning" />
+          </View>
+          <View style={styles.summaryRow}>
+            <InfoItem label="Belge" value={operationSummary.documentCount.toString()} />
+            <InfoItem label="İşlem tipi" value={operationSummary.typeCount.toString()} />
           </View>
           <ActionRow actions={[{ label: 'Tümünü Tekrar Dene', onPress: retryAll, variant: 'primary' }]} />
         </View>
@@ -80,9 +93,13 @@ export function FailedQueueScreen({ onBack }: FailedQueueScreenProps) {
             </View>
 
             <Text style={styles.title}>{operation.title}</Text>
+            <View style={styles.reasonBox}>
+              <Text style={styles.reasonLabel}>Hata nedeni</Text>
+              <Text style={styles.reasonText}>{operation.reason}</Text>
+            </View>
             <View style={styles.infoGrid}>
-              <InfoItem label="Sebep" value={operation.reason} />
               <InfoItem label="Saat" value={operation.createdAt} />
+              <InfoItem label="Aksiyon" value="Tekrar dene" />
             </View>
 
             <Pressable onPress={() => retryOperation(operation)} style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
@@ -115,8 +132,11 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     gap: spacing.sm,
   },
+  topHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm },
+  topTextBlock: { flex: 1, gap: 2 },
   topTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
   topText: { color: colors.muted, fontSize: typography.small, fontWeight: '800', marginTop: 2 },
+  summaryRow: { flexDirection: 'row', gap: spacing.xs },
   queueCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -133,8 +153,19 @@ const styles = StyleSheet.create({
   documentNo: { color: colors.red, fontSize: typography.section, fontWeight: '900' },
   operationType: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
   title: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
-  infoGrid: { gap: spacing.xs },
+  reasonBox: {
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.red,
+    padding: spacing.xs,
+    gap: 2,
+  },
+  reasonLabel: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
+  reasonText: { color: colors.text, fontSize: typography.small, fontWeight: '800', lineHeight: 15 },
+  infoGrid: { flexDirection: 'row', gap: spacing.xs },
   infoItem: {
+    flex: 1,
     backgroundColor: colors.surfaceSoft,
     borderRadius: radius.md,
     borderWidth: 1,
