@@ -1,6 +1,8 @@
 import type { FailedOperation, Message, OpenDocument, Product, QRAlbum, TerminalSettings, UserSession } from '../types';
+import { loadSettings } from '../storage/localStorage';
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const LOCAL_PRICE_TIMEOUT_MS = 1800;
 
 const productTemplates: Product[] = [
   { code: 'MB-1001', name: 'Bebek Takım', price: 485 },
@@ -12,6 +14,62 @@ const productTemplates: Product[] = [
   { code: 'MB-1007', name: 'Organik Body Set', price: 330 },
   { code: 'MB-1008', name: 'Kız Bebek Takım', price: 575 },
 ];
+
+function getMockProductFallback(code: string): Product {
+  const normalizedCode = code.trim().toUpperCase();
+  const knownProduct = productTemplates.find((product) => product.code === normalizedCode);
+  if (knownProduct) return knownProduct;
+
+  const index = Math.abs([...normalizedCode].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % productTemplates.length;
+  const product = productTemplates[index];
+  return {
+    ...product,
+    code: normalizedCode || product.code,
+  };
+}
+
+function normalizeApiBaseUrl(value: string) {
+  const trimmed = value.trim();
+  if (!/^https?:\/\//i.test(trimmed)) return '';
+  return trimmed.replace(/\/+$/, '');
+}
+
+type LocalPriceServiceResponse = {
+  found?: boolean;
+  code?: string;
+  name?: string;
+  price?: number;
+};
+
+async function getProductFromLocalPriceService(code: string): Promise<Product | null> {
+  const settings = await loadSettings();
+  const baseUrl = normalizeApiBaseUrl(settings.apiBaseUrl);
+  if (!baseUrl) return null;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), LOCAL_PRICE_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${baseUrl}/product-price?code=${encodeURIComponent(code)}`, {
+      method: 'GET',
+      signal: controller.signal,
+    });
+    if (!response.ok) return null;
+
+    const payload = (await response.json()) as LocalPriceServiceResponse;
+    if (!payload.found || !payload.name || typeof payload.price !== 'number') return null;
+
+    return {
+      code: (payload.code || code).trim().toUpperCase(),
+      name: payload.name,
+      price: payload.price,
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 export async function loginMock(username: string, branch: string, offlineMode: boolean): Promise<UserSession> {
   await wait(250);
@@ -61,15 +119,8 @@ export async function createSaleMock(customerName: string) {
 export async function getMockProductByCode(code: string): Promise<Product> {
   await wait(120);
   const normalizedCode = code.trim().toUpperCase();
-  const knownProduct = productTemplates.find((product) => product.code === normalizedCode);
-  if (knownProduct) return knownProduct;
-
-  const index = Math.abs([...normalizedCode].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % productTemplates.length;
-  const product = productTemplates[index];
-  return {
-    ...product,
-    code: normalizedCode || product.code,
-  };
+  const serviceProduct = await getProductFromLocalPriceService(normalizedCode);
+  return serviceProduct ?? getMockProductFallback(normalizedCode);
 }
 
 export async function getQRAlbumMock(): Promise<QRAlbum> {
@@ -113,9 +164,27 @@ export async function getFailedOperationsMock(): Promise<FailedOperation[]> {
 
 export async function testConnectionMock(settings: TerminalSettings) {
   await wait(300);
-  const ready = Boolean(settings.terminalId.trim() && settings.apiBaseUrl.trim());
-  return {
-    ok: ready,
-    message: ready ? 'Bağlantı kontrolü başarılı' : 'Bağlantı bekliyor',
-  };
+  const baseUrl = normalizeApiBaseUrl(settings.apiBaseUrl);
+  const ready = Boolean(settings.terminalId.trim() && baseUrl);
+  if (!ready) {
+    return {
+      ok: false,
+      message: 'Bağlantı bekliyor',
+    };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), LOCAL_PRICE_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${baseUrl}/health`, { method: 'GET', signal: controller.signal });
+    if (!response.ok) {
+      return { ok: false, message: 'Local fiyat servisi cevap vermedi' };
+    }
+    return { ok: true, message: 'Local fiyat servisi bağlantısı başarılı' };
+  } catch {
+    return { ok: false, message: 'Local fiyat servisine ulaşılamadı; mock fiyat sistemi korunur' };
+  } finally {
+    clearTimeout(timeout);
+  }
 }
