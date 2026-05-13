@@ -111,24 +111,26 @@ export function QRAlbumScreen({ onBack, onNavigate }: QRAlbumScreenProps) {
             <Text style={styles.productSectionCount}>{draft.lines.length} kalem · {totalQuantity} adet</Text>
           </View>
           <View style={styles.grid}>
-            {draft.lines.map((item) => (
-              <View key={item.lineId} style={styles.productCard}>
-                <View style={styles.imageBox}>
-                  <Text style={styles.imageCode}>{item.code}</Text>
-                  <View style={styles.imageAccent} />
-                  <Text style={styles.imageText}>Ürün görseli</Text>
-                </View>
-                <View style={styles.productInfo}>
-                  <Text style={styles.productCode}>{item.code}</Text>
-                  <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
-                  <View style={styles.productMetaRow}>
-                    <Text style={styles.productMeta}>{item.color}</Text>
-                    <Text style={styles.productMeta}>{item.size}</Text>
-                    <Text style={styles.quantityBadge}>Adet {item.quantity}</Text>
+            {draft.lines.map((item) => {
+              const productMeta = [item.color, item.size].filter(Boolean).join(' · ');
+              return (
+                <View key={item.lineId} style={styles.productCard}>
+                  <View style={styles.imageBox}>
+                    <Text style={styles.imageCode}>{item.code}</Text>
+                    <View style={styles.imageAccent} />
+                    <Text style={styles.imageText}>Ürün görseli</Text>
+                  </View>
+                  <View style={styles.productInfo}>
+                    <Text style={styles.productCode}>{item.code}</Text>
+                    <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
+                    <View style={styles.productMetaRow}>
+                      {productMeta ? <Text style={styles.productMeta}>{productMeta}</Text> : null}
+                      <Text style={styles.quantityBadge}>Adet {item.quantity}</Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
 
           <View style={styles.actionGrid}>
