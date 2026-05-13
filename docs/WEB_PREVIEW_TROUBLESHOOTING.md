@@ -4,13 +4,13 @@
 
 https://melihsnyldzz-ui.github.io/melisa-terminal-app/
 
-## 404 görülürse
+## 404 veya eski sürüm görülürse
 
 1. GitHub repository ayarlarından Pages bölümüne girin.
 2. Source alanının GitHub Actions olduğundan emin olun.
 3. Actions sekmesinde Web Preview workflow sonucunu kontrol edin.
-4. Workflow tamamlanmadan link 404 verebilir.
-5. Private repository ve hesap planı GitHub Pages yayınını kısıtlayabilir.
+4. Workflow tamamlanmadan link 404 verebilir veya eski sürüm görünebilir.
+5. Tarayıcı eski dosyaları cache'lemiş olabilir; Ctrl + F5 veya gizli sekme deneyin.
 
 ## Bu repoda kullanılan web export
 
@@ -18,11 +18,11 @@ https://melihsnyldzz-ui.github.io/melisa-terminal-app/
 npm run export:web
 ```
 
-Bu komut Expo Web çıktısını GitHub Pages altında `/melisa-terminal-app/` yolu ile çalışacak şekilde üretir.
+Bu komut Expo Web çıktısını GitHub Pages için üretir.
 
 ## Kontrol zamanı
 
-Workflow tetiklemek ve Pages durumunu yeniden kontrol etmek için bu not güncellendi.
+v0.8.4 sonrası Web Preview workflow'unu yeniden tetiklemek için bu not güncellendi.
 
 ## Not
 
