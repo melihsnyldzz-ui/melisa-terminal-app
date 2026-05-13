@@ -2,7 +2,7 @@
   "expo": {
     "name": "Melisa Bebe Terminal",
     "slug": "melisa-terminal-app",
-    "version": "1.0.0",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
