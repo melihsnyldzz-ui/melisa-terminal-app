@@ -31,11 +31,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Show app version
+        run: node -e "const p=require('./package.json'); console.log('Melisa Terminal Web Preview version:', p.version)"
+
       - name: Type check
         run: npm run check
 
       - name: Export Expo web
         run: npm run export:web
+
+      - name: List exported files
+        run: ls -la dist
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
