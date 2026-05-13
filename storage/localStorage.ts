@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ActiveSaleDraft, FailedOperation, OpenDocument, TerminalSettings, UserSession } from '../types';
+import type { ActiveSaleDraft, FailedOperation, OpenDocument, SaleLine, TerminalSettings, UserSession } from '../types';
 
 const KEYS = {
   settings: 'melisa-terminal:settings',
@@ -15,6 +15,26 @@ const defaultSettings: TerminalSettings = {
   apiBaseUrl: 'Hazırlık Bağlantısı',
   vibrationEnabled: true,
   urgentVibrationEnabled: true,
+};
+
+const normalizeSaleLine = (line: SaleLine): SaleLine => {
+  const quantity = Number.isFinite(line.quantity) && line.quantity > 0 ? line.quantity : 1;
+  const price = Number.isFinite(line.price) && line.price >= 0 ? line.price : 0;
+  return {
+    ...line,
+    quantity,
+    price,
+  };
+};
+
+const normalizeActiveSaleDraft = (draft: ActiveSaleDraft | null): ActiveSaleDraft | null => {
+  if (!draft) return null;
+  return {
+    ...draft,
+    customerName: draft.customerName || 'Seçili müşteri yok',
+    status: draft.lines?.length ? 'Hazır' : 'Taslak',
+    lines: Array.isArray(draft.lines) ? draft.lines.map(normalizeSaleLine) : [],
+  };
 };
 
 async function readJson<T>(key: string, fallback: T): Promise<T> {
@@ -70,11 +90,12 @@ export async function saveDraftDocuments(documents: OpenDocument[]): Promise<voi
 }
 
 export async function loadActiveSaleDraft(): Promise<ActiveSaleDraft | null> {
-  return readJson<ActiveSaleDraft | null>(KEYS.activeSaleDraft, null);
+  const draft = await readJson<ActiveSaleDraft | null>(KEYS.activeSaleDraft, null);
+  return normalizeActiveSaleDraft(draft);
 }
 
 export async function saveActiveSaleDraft(draft: ActiveSaleDraft): Promise<void> {
-  await writeJson(KEYS.activeSaleDraft, draft);
+  await writeJson(KEYS.activeSaleDraft, normalizeActiveSaleDraft(draft));
 }
 
 export async function clearActiveSaleDraft(): Promise<void> {
