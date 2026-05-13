@@ -9,7 +9,7 @@ import { ToastMessage, ToastTone } from '../../components/ToastMessage';
 import { createSaleMock, getMockProductByCode } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
 import { loadActiveSaleDraft, saveActiveSaleDraft } from '../../storage/localStorage';
-import type { ActiveSaleDraft, SaleLine, SaleStatus } from '../../types';
+import type { ActiveSaleDraft, Product, SaleLine, SaleStatus } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
 type NewSaleScreenProps = {
@@ -23,12 +23,7 @@ type CustomerSuggestion = {
   city: string;
 };
 
-type LastScannedProduct = {
-  code: string;
-  name: string;
-  color: string;
-  size: string;
-  quantity: number;
+type PendingProduct = Product & {
   time: string;
 };
 
@@ -46,19 +41,30 @@ const mockCustomers: CustomerSuggestion[] = [
 const quickCodes = ['MB-1001', 'MB-1002', 'MB-1003', 'MB-1004', 'MB-1005', 'MB-1006', 'MB-1007', 'MB-1008'];
 
 const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase('tr-TR');
+const formatPrice = (price: number) => `${price.toLocaleString('tr-TR')} TL`;
+const parseQuantity = (value: string) => {
+  const parsed = Number(value.replace(/[^0-9]/g, ''));
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  return parsed;
+};
 
 export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   const barcodeInputRef = useRef<TextInput>(null);
+  const quantityInputRef = useRef<TextInput>(null);
   const lastScanRef = useRef<{ code: string; time: number } | null>(null);
   const [customer, setCustomer] = useState('');
   const [documentNo, setDocumentNo] = useState('');
   const [barcode, setBarcode] = useState('');
+  const [quantityInput, setQuantityInput] = useState('1');
+  const [pendingProduct, setPendingProduct] = useState<PendingProduct | null>(null);
   const [lines, setLines] = useState<SaleLine[]>([]);
-  const [lastScanned, setLastScanned] = useState<LastScannedProduct | null>(null);
   const [pendingDeleteLineId, setPendingDeleteLineId] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
 
   const totalQuantity = useMemo(() => lines.reduce((sum, line) => sum + line.quantity, 0), [lines]);
+  const totalAmount = useMemo(() => lines.reduce((sum, line) => sum + line.quantity * line.price, 0), [lines]);
+  const pendingQuantity = useMemo(() => parseQuantity(quantityInput), [quantityInput]);
+  const pendingTotal = pendingProduct ? pendingProduct.price * pendingQuantity : 0;
   const status: SaleStatus = documentNo && lines.length > 0 ? 'Hazır' : 'Taslak';
   const canScan = Boolean(documentNo);
   const customerQuery = normalizeSearchText(customer);
@@ -126,6 +132,10 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     setTimeout(() => barcodeInputRef.current?.focus(), 80);
   };
 
+  const focusQuantity = () => {
+    setTimeout(() => quantityInputRef.current?.focus(), 80);
+  };
+
   const startSale = async () => {
     if (documentNo) {
       setBanner({ message: 'Fiş zaten aktif.', tone: 'info' });
@@ -148,7 +158,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     focusScanner();
   };
 
-  const addProduct = async (rawCode?: string) => {
+  const scanProduct = async (rawCode?: string) => {
     if (!documentNo) {
       setBanner({ message: 'Önce fişi başlat.', tone: 'warning' });
       notifyWarning();
@@ -174,25 +184,32 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     lastScanRef.current = { code, time: now };
 
     const product = await getMockProductByCode(code);
-    const existingLine = lines.find((line) => line.code === product.code);
-    const nextLines = existingLine
-      ? lines.map((line) => (line.lineId === existingLine.lineId ? { ...line, quantity: line.quantity + 1 } : line))
-      : [...lines, { ...product, lineId: `${product.code}-${Date.now()}`, quantity: 1 }];
-
-    setLines(nextLines);
+    setPendingProduct({ ...product, time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) });
+    setQuantityInput('1');
     setBarcode('');
     setPendingDeleteLineId(null);
+    setBanner({ message: `${product.code} bulundu. Fiyat: ${formatPrice(product.price)}. Adet gir.`, tone: 'success' });
+    notifySuccess();
+    focusQuantity();
+  };
+
+  const addPendingProduct = async () => {
+    if (!pendingProduct) {
+      await scanProduct();
+      return;
+    }
+
+    const quantity = parseQuantity(quantityInput);
+    const existingLine = lines.find((line) => line.code === pendingProduct.code);
+    const nextLines = existingLine
+      ? lines.map((line) => (line.lineId === existingLine.lineId ? { ...line, quantity: line.quantity + quantity, price: pendingProduct.price } : line))
+      : [...lines, { ...pendingProduct, lineId: `${pendingProduct.code}-${Date.now()}`, quantity }];
+
+    setLines(nextLines);
+    setPendingProduct(null);
+    setQuantityInput('1');
     await persistDraft(nextLines);
-    const nextQuantity = nextLines.find((line) => line.code === product.code)?.quantity ?? 1;
-    setLastScanned({
-      code: product.code,
-      name: product.name,
-      color: product.color,
-      size: product.size,
-      quantity: nextQuantity,
-      time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-    });
-    setBanner({ message: `${product.code} fişe eklendi.`, tone: 'success' });
+    setBanner({ message: `${pendingProduct.code} · ${quantity} adet · ${formatPrice(pendingProduct.price)} fiyatla fişe eklendi.`, tone: 'success' });
     notifySuccess();
     focusScanner();
   };
@@ -201,7 +218,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     if (value.includes('\n') || value.includes('\r')) {
       const scannedCode = value.replace(/[\r\n]/g, '').trim();
       setBarcode(scannedCode);
-      void addProduct(scannedCode);
+      void scanProduct(scannedCode);
       return;
     }
     setBarcode(value);
@@ -293,7 +310,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   };
 
   return (
-    <ScreenShell title="Yeni Fiş" subtitle="Müşteri seç, barkod okut" onBack={onBack}>
+    <ScreenShell title="Yeni Fiş" subtitle="Barkod okut, fiyatı gör, adet gir" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
 
       <View style={styles.statusPanel}>
@@ -304,8 +321,8 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
         <Text style={styles.statusCustomer} numberOfLines={1}>{customer || 'Müşteri seçilmedi'}</Text>
         <View style={styles.statusMetricRow}>
           <Metric label="Kalem" value={lines.length.toString()} />
-          <Metric label="Toplam" value={totalQuantity.toString()} />
-          <Metric label="Okutma" value={canScan ? 'Hazır' : 'Kapalı'} />
+          <Metric label="Adet" value={totalQuantity.toString()} />
+          <Metric label="Tutar" value={formatPrice(totalAmount)} />
         </View>
       </View>
 
@@ -366,8 +383,8 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.stepBadge}>2</Text>
           <View style={styles.sectionHeaderTextBlock}>
-            <Text style={styles.label}>Barkod okut</Text>
-            <Text style={styles.helperText}>{canScan ? 'Scanner hazır. Okutulan ürün fişe eklenir.' : 'Barkod alanı fiş başlatılınca açılır.'}</Text>
+            <Text style={styles.label}>Barkod okut / fiyat gör</Text>
+            <Text style={styles.helperText}>{canScan ? 'Önce ürünü okut, fiyatı gör, sonra adet gir.' : 'Barkod alanı fiş başlatılınca açılır.'}</Text>
           </View>
         </View>
         <TextInput
@@ -381,29 +398,55 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
           editable={canScan}
           blurOnSubmit={false}
           returnKeyType="done"
-          onSubmitEditing={() => addProduct()}
+          onSubmitEditing={() => scanProduct()}
         />
-        <View style={styles.lastScanBox}>
-          <Text style={styles.lastScanLabel}>Son okutulan</Text>
-          {lastScanned ? (
-            <View style={styles.lastScanBody}>
-              <Text style={styles.lastScanCode}>{lastScanned.code}</Text>
-              <Text style={styles.lastScanName} numberOfLines={1}>{lastScanned.name}</Text>
-              <Text style={styles.lastScanMeta}>{lastScanned.color} · {lastScanned.size}</Text>
-              <Text style={styles.lastScanMeta}>Adet {lastScanned.quantity} · {lastScanned.time}</Text>
+
+        <View style={styles.pricePreviewBox}>
+          <Text style={styles.lastScanLabel}>Okutulan ürün</Text>
+          {pendingProduct ? (
+            <View style={styles.pricePreviewBody}>
+              <View style={styles.pricePreviewTopRow}>
+                <View style={styles.pricePreviewMain}>
+                  <Text style={styles.lastScanCode}>{pendingProduct.code}</Text>
+                  <Text style={styles.lastScanName} numberOfLines={1}>{pendingProduct.name}</Text>
+                  <Text style={styles.lastScanMeta}>Okutma: {pendingProduct.time}</Text>
+                </View>
+                <View style={styles.priceBadge}>
+                  <Text style={styles.priceBadgeLabel}>Fiyat</Text>
+                  <Text style={styles.priceBadgeValue}>{formatPrice(pendingProduct.price)}</Text>
+                </View>
+              </View>
+              <View style={styles.quantityEntryRow}>
+                <View style={styles.quantityInputBlock}>
+                  <Text style={styles.quantityInputLabel}>Adet gir</Text>
+                  <TextInput
+                    ref={quantityInputRef}
+                    value={quantityInput}
+                    onChangeText={setQuantityInput}
+                    keyboardType="number-pad"
+                    selectTextOnFocus
+                    style={styles.quantityInput}
+                  />
+                </View>
+                <View style={styles.pendingTotalBox}>
+                  <Text style={styles.pendingTotalLabel}>Satır tutarı</Text>
+                  <Text style={styles.pendingTotalValue}>{formatPrice(pendingTotal)}</Text>
+                </View>
+              </View>
             </View>
           ) : (
-            <Text style={styles.lastScanEmpty}>Henüz ürün okutulmadı.</Text>
+            <Text style={styles.lastScanEmpty}>Ürünü okuttuğunda adı ve fiyatı burada görünür.</Text>
           )}
         </View>
+
         <ActionRow
           actions={[
-            { label: 'Ürünü Ekle', onPress: () => addProduct(), variant: 'primary' },
+            { label: pendingProduct ? 'Adetle Fişe Ekle' : 'Ürünü Bul', onPress: pendingProduct ? addPendingProduct : () => scanProduct(), variant: 'primary' },
           ]}
         />
         <View style={styles.quickCodeRow}>
           {quickCodes.map((code) => (
-            <Pressable key={code} onPress={() => addProduct(code)} style={[styles.quickCodeButton, !canScan && styles.quickCodeButtonDisabled]}>
+            <Pressable key={code} onPress={() => scanProduct(code)} style={[styles.quickCodeButton, !canScan && styles.quickCodeButtonDisabled]}>
               <Text style={styles.quickCodeText}>{code}</Text>
             </Pressable>
           ))}
@@ -411,19 +454,19 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       </View>
 
       {lines.length === 0 ? (
-        <EmptyState badge="ÜRÜN" title="Fişte ürün yok" description="Müşteri seçilip fiş başlatıldıktan sonra kod okut." />
+        <EmptyState badge="ÜRÜN" title="Fişte ürün yok" description="Müşteri seçilip fiş başlatıldıktan sonra kod okut, fiyatı gör ve adet gir." />
       ) : (
         <View style={styles.productList}>
           <View style={styles.productListHeader}>
             <Text style={styles.productListTitle}>Fiş ürünleri</Text>
-            <Text style={styles.productListCount}>{lines.length} kalem · {totalQuantity} adet</Text>
+            <Text style={styles.productListCount}>{lines.length} kalem · {totalQuantity} adet · {formatPrice(totalAmount)}</Text>
           </View>
           {lines.map((line) => (
             <View key={line.lineId} style={styles.productRow}>
               <View style={styles.productMain}>
                 <Text style={styles.productCode}>{line.code}</Text>
                 <Text style={styles.productName} numberOfLines={1}>{line.name}</Text>
-                <Text style={styles.productMeta} numberOfLines={1}>{line.color} · {line.size}</Text>
+                <Text style={styles.productMeta} numberOfLines={1}>Birim {formatPrice(line.price)} · Satır {formatPrice(line.price * line.quantity)}</Text>
               </View>
               <View style={styles.quantityBlock}>
                 <Text style={styles.quantityLabel}>Adet</Text>
@@ -571,7 +614,7 @@ const styles = StyleSheet.create({
   },
   noSuggestionTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
   noSuggestionText: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
-  lastScanBox: {
+  pricePreviewBox: {
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.red,
@@ -579,14 +622,52 @@ const styles = StyleSheet.create({
     borderLeftColor: colors.red,
     backgroundColor: colors.surface,
     padding: spacing.sm,
-    gap: 2,
+    gap: spacing.xs,
   },
+  pricePreviewBody: { gap: spacing.xs },
+  pricePreviewTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  pricePreviewMain: { flex: 1, gap: 2 },
   lastScanLabel: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
-  lastScanBody: { gap: 2 },
   lastScanCode: { color: colors.red, fontSize: typography.body, fontWeight: '900' },
   lastScanName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
   lastScanMeta: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
   lastScanEmpty: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
+  priceBadge: {
+    minWidth: 92,
+    borderRadius: radius.md,
+    backgroundColor: colors.anthracite,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    alignItems: 'center',
+  },
+  priceBadgeLabel: { color: colors.line, fontSize: 10, fontWeight: '900' },
+  priceBadgeValue: { color: colors.surface, fontSize: typography.body, fontWeight: '900' },
+  quantityEntryRow: { flexDirection: 'row', gap: spacing.xs, alignItems: 'stretch' },
+  quantityInputBlock: { flex: 1, gap: 2 },
+  quantityInputLabel: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
+  quantityInput: {
+    minHeight: 42,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.anthracite,
+    backgroundColor: colors.surfaceSoft,
+    color: colors.ink,
+    fontSize: typography.section,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  pendingTotalBox: {
+    flex: 1,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surfaceSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  pendingTotalLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
+  pendingTotalValue: { color: colors.red, fontSize: typography.body, fontWeight: '900' },
   quickCodeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   quickCodeButton: {
     flexBasis: '23%',
@@ -611,7 +692,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   productListTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
-  productListCount: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
+  productListCount: { color: colors.muted, fontSize: typography.small, fontWeight: '900', flex: 1, textAlign: 'right' },
   productRow: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
