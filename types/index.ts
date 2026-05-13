@@ -42,8 +42,9 @@ export type OpenDocument = {
 export type Product = {
   code: string;
   name: string;
-  color: string;
-  size: string;
+  price: number;
+  color?: string;
+  size?: string;
 };
 
 export type SaleLine = Product & {
@@ -65,8 +66,8 @@ export type QRAlbumItem = {
   id: string;
   code: string;
   name: string;
-  color: string;
-  size: string;
+  color?: string;
+  size?: string;
 };
 
 export type QRAlbum = {
