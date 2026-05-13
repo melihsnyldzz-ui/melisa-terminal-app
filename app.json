@@ -26,6 +26,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "4ae021f9-32cf-4bd8-8bea-d58403788b9b"
+      }
+    },
+    "owner": "semihsenyildiz"
   }
 }
