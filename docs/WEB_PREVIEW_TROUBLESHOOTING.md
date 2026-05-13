@@ -20,6 +20,10 @@ npm run export:web
 
 Bu komut Expo Web çıktısını GitHub Pages altında `/melisa-terminal-app/` yolu ile çalışacak şekilde üretir.
 
+## Kontrol zamanı
+
+Workflow tetiklemek ve Pages durumunu yeniden kontrol etmek için bu not güncellendi.
+
 ## Not
 
 Web preview, Honeywell barkod okuyucu davranışını birebir test etmez. Görsel akış ve mock ekran kontrolü içindir.
