@@ -587,9 +587,10 @@ const styles = StyleSheet.create({
   lastScanName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
   lastScanMeta: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
   lastScanEmpty: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
-  quickCodeRow: { flexDirection: 'row', gap: spacing.xs },
+  quickCodeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   quickCodeButton: {
-    flex: 1,
+    flexBasis: '23%',
+    flexGrow: 1,
     minHeight: 34,
     borderRadius: radius.md,
     borderWidth: 1,
