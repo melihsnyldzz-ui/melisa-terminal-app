@@ -104,6 +104,17 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
           </View>
         </Pressable>
 
+        <Pressable onPress={() => onNavigate('newSale')} style={({ pressed }) => [styles.demoRouteCard, pressed && styles.pressed]}>
+          <View style={styles.demoRouteTextBlock}>
+            <Text style={styles.demoRouteKicker}>Web Preview</Text>
+            <Text style={styles.demoRouteTitle}>Demo Test Rotası</Text>
+            <Text style={styles.demoRouteText}>Yeni Fiş ile başla; QR Albüm, Açık Fişler, Mesajlar ve Ayarlar ekranlarını tek turda kontrol et.</Text>
+          </View>
+          <View style={styles.demoRouteBadge}>
+            <Text style={styles.demoRouteBadgeText}>Başlat</Text>
+          </View>
+        </Pressable>
+
         <View style={styles.summaryGrid}>
           <SummaryBox label="Açık Fiş" value={documents.length.toString()} />
           <SummaryBox label="Mesaj" value={unreadCount.toString()} tone={unreadCount > 0 ? 'danger' : 'dark'} />
@@ -340,6 +351,33 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.anthracite,
     ...shadows.subtle,
   },
+  demoRouteCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.red,
+    padding: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    ...shadows.subtle,
+  },
+  demoRouteTextBlock: { flex: 1, gap: 2 },
+  demoRouteKicker: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
+  demoRouteTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  demoRouteText: { color: colors.muted, fontSize: typography.small, fontWeight: '800', lineHeight: 15 },
+  demoRouteBadge: {
+    backgroundColor: colors.anthracite,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    minHeight: 32,
+    justifyContent: 'center',
+  },
+  demoRouteBadgeText: { color: colors.surface, fontSize: typography.small, fontWeight: '900' },
   pressed: {
     opacity: 0.86,
   },
