@@ -2,11 +2,14 @@
   "expo": {
     "name": "Melisa Bebe Terminal",
     "slug": "melisa-terminal-app",
-    "version": "0.7.9",
+    "version": "0.8.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "experiments": {
+      "baseUrl": "/melisa-terminal-app"
+    },
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -25,6 +28,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
+      "output": "single",
       "favicon": "./assets/favicon.png"
     },
     "extra": {
