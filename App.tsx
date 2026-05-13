@@ -13,6 +13,7 @@ import { QRAlbumScreen } from './app/screens/QRAlbumScreen';
 import { SettingsScreen } from './app/screens/SettingsScreen';
 import { colors } from './app/theme';
 import { HoneywellPreviewFrame } from './components/HoneywellPreviewFrame';
+import { ScreenErrorBoundary } from './components/ScreenErrorBoundary';
 import { clearSession, loadSession, saveSession } from './storage/localStorage';
 import type { AppScreen, UserSession } from './types';
 
@@ -73,6 +74,11 @@ export default function App() {
     setScreen(nextScreen);
   };
 
+  const recoverToDashboard = () => {
+    setBackHint('Ekran güvenli moda alındı. Gerekirse Ayarlar > Aktif Taslağı Sıfırla yap.');
+    setScreen(session ? 'dashboard' : 'login');
+  };
+
   const handleLogout = async () => {
     await clearSession();
     setSession(null);
@@ -96,7 +102,9 @@ export default function App() {
     <SafeAreaProvider>
       <View style={styles.container}>
         <StatusBar style="light" backgroundColor={colors.anthracite} />
-        {renderScreen()}
+        <ScreenErrorBoundary screenName={screen} onRecover={recoverToDashboard}>
+          {renderScreen()}
+        </ScreenErrorBoundary>
       </View>
     </SafeAreaProvider>
   );
