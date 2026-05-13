@@ -9,7 +9,7 @@ import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
 import { testConnectionMock } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
-import { loadSettings, saveSettings } from '../../storage/localStorage';
+import { clearActiveSaleDraft, loadSettings, saveSettings } from '../../storage/localStorage';
 import type { TerminalSettings, UserSession } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
@@ -73,6 +73,12 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
     const nextSync = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
     setLastSync(`Bugün ${nextSync}`);
     setBanner({ message: 'Veri güncelleme tamamlandı. Bekleyen belgeler korunur.', tone: 'success' });
+  };
+
+  const resetActiveDraft = async () => {
+    await clearActiveSaleDraft();
+    setBanner({ message: 'Aktif fiş taslağı sıfırlandı. Yeni Fiş artık temiz açılacak.', tone: 'success' });
+    notifySuccess();
   };
 
   return (
@@ -144,8 +150,9 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
       <Section title="Güvenlik">
         <View style={styles.securityBox}>
           <Text style={styles.securityTitle}>Güvenli çalışma modu</Text>
-          <Text style={styles.securityText}>Taslaklar cihazda saklanır. Oturum kapatılsa da kayıtlı ayarlar korunur.</Text>
+          <Text style={styles.securityText}>Taslaklar cihazda saklanır. Yeni Fiş açılmazsa aktif taslağı sıfırlayarak temiz başlangıç yapabilirsiniz.</Text>
         </View>
+        <AppButton label="Aktif Taslağı Sıfırla" onPress={resetActiveDraft} variant="secondary" compact />
         <ActionRow
           actions={[
             { label: 'Kaydet', onPress: save, variant: 'secondary' },
