@@ -38,8 +38,14 @@ const normalizeActiveSaleDraft = (draft: ActiveSaleDraft | null): ActiveSaleDraf
 };
 
 async function readJson<T>(key: string, fallback: T): Promise<T> {
-  const value = await AsyncStorage.getItem(key);
-  return value ? (JSON.parse(value) as T) : fallback;
+  try {
+    const value = await AsyncStorage.getItem(key);
+    if (!value) return fallback;
+    return JSON.parse(value) as T;
+  } catch {
+    await AsyncStorage.removeItem(key);
+    return fallback;
+  }
 }
 
 async function writeJson<T>(key: string, value: T): Promise<void> {
@@ -73,8 +79,7 @@ export async function loadFailedOperations(): Promise<FailedOperation[]> {
 }
 
 export async function loadFailedOperationsSnapshot(): Promise<FailedOperation[] | null> {
-  const value = await AsyncStorage.getItem(KEYS.failedOperations);
-  return value ? (JSON.parse(value) as FailedOperation[]) : null;
+  return readJson<FailedOperation[] | null>(KEYS.failedOperations, null);
 }
 
 export async function saveFailedOperations(operations: FailedOperation[]): Promise<void> {
