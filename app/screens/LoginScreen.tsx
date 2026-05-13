@@ -85,6 +85,11 @@ export function LoginScreen({ onLogin, systemMessage }: LoginScreenProps) {
           <Text style={styles.cardHint}>PIN ile güvenli giriş · {branch}</Text>
         </Pressable>
 
+        <View style={styles.previewGuide}>
+          <Text style={styles.previewGuideTitle}>Web preview test modu</Text>
+          <Text style={styles.previewGuideText}>Hızlı test için kullanıcı adını boş bırakıp PIN alanına herhangi bir sayı yazabilirsin.</Text>
+        </View>
+
         <ToastMessage message={systemMessage || banner?.message} tone={systemMessage ? 'info' : banner?.tone} />
 
         <View style={styles.panel}>
@@ -262,6 +267,18 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     fontWeight: '800',
   },
+  previewGuide: {
+    backgroundColor: colors.successSoft,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: '#bce7c8',
+    borderLeftWidth: 4,
+    borderLeftColor: colors.success,
+    padding: spacing.sm,
+    gap: 2,
+  },
+  previewGuideTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  previewGuideText: { color: colors.text, fontSize: typography.small, fontWeight: '800', lineHeight: 16 },
   panel: {
     padding: spacing.sm,
     borderRadius: radius.lg,
