@@ -1,6 +1,6 @@
 {
   "name": "melisa-terminal-app",
-  "version": "0.8.0",
+  "version": "0.8.4",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
