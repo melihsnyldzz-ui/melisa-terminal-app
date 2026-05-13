@@ -106,6 +106,10 @@ export function QRAlbumScreen({ onBack, onNavigate }: QRAlbumScreenProps) {
             </View>
           </View>
 
+          <View style={styles.productSectionHeader}>
+            <Text style={styles.productSectionTitle}>Albüm ürünleri</Text>
+            <Text style={styles.productSectionCount}>{draft.lines.length} kalem · {totalQuantity} adet</Text>
+          </View>
           <View style={styles.grid}>
             {draft.lines.map((item) => (
               <View key={item.lineId} style={styles.productCard}>
@@ -252,6 +256,15 @@ const styles = StyleSheet.create({
   },
   messageText: { color: colors.text, fontSize: typography.body, fontWeight: '700', lineHeight: 17 },
   messageLink: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
+  productSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  productSectionTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  productSectionCount: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
   grid: { gap: spacing.sm },
   productCard: {
     backgroundColor: colors.surface,
