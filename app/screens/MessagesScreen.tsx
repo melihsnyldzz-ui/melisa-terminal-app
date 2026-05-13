@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ActionRow } from '../../components/ActionRow';
 import { EmptyState } from '../../components/EmptyState';
 import { ScreenShell } from '../../components/ScreenShell';
@@ -18,10 +18,12 @@ type MessagesScreenProps = {
 type MessageFilter = 'Tümü' | 'Acil' | 'Fiş Notu' | 'Okunmamış';
 
 const filters: MessageFilter[] = ['Tümü', 'Acil', 'Fiş Notu', 'Okunmamış'];
+const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase('tr-TR');
 
 export function MessagesScreen({ onBack }: MessagesScreenProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [filter, setFilter] = useState<MessageFilter>('Tümü');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
 
@@ -34,12 +36,22 @@ export function MessagesScreen({ onBack }: MessagesScreenProps) {
     });
   }, []);
 
-  const filteredMessages = useMemo(() => {
+  const statusFilteredMessages = useMemo(() => {
     if (filter === 'Acil') return messages.filter((message) => message.type === 'Acil');
     if (filter === 'Fiş Notu') return messages.filter((message) => message.type === 'Fiş Notu');
     if (filter === 'Okunmamış') return messages.filter((message) => !message.read);
     return messages;
   }, [filter, messages]);
+
+  const filteredMessages = useMemo(() => {
+    const query = normalizeSearchText(searchQuery);
+    if (!query) return statusFilteredMessages;
+
+    return statusFilteredMessages.filter((message) => {
+      const searchable = `${message.title} ${message.body} ${message.sender} ${message.type} ${message.relatedDocument ?? ''}`;
+      return normalizeSearchText(searchable).includes(query);
+    });
+  }, [searchQuery, statusFilteredMessages]);
 
   useEffect(() => {
     if (filter === 'Acil' && filteredMessages.some((message) => message.type === 'Acil' && !message.read)) {
@@ -50,6 +62,7 @@ export function MessagesScreen({ onBack }: MessagesScreenProps) {
   const selectedMessage = messages.find((message) => message.id === selectedId);
   const unreadCount = messages.filter((message) => !message.read).length;
   const urgentCount = messages.filter((message) => message.type === 'Acil' && !message.read).length;
+  const documentLinkedCount = messages.filter((message) => Boolean(message.relatedDocument)).length;
 
   const markSelectedRead = () => {
     if (!selectedMessage) {
@@ -88,6 +101,23 @@ export function MessagesScreen({ onBack }: MessagesScreenProps) {
         </View>
       ) : null}
 
+      <View style={styles.searchPanel}>
+        <Text style={styles.searchLabel}>Mesaj / fiş ara</Text>
+        <TextInput
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Başlık, fiş no veya gönderen yaz"
+          placeholderTextColor={colors.muted}
+          style={styles.searchInput}
+        />
+      </View>
+
+      <View style={styles.operationSummary}>
+        <MessageMetric label="Görünen" value={filteredMessages.length.toString()} />
+        <MessageMetric label="Fişe bağlı" value={documentLinkedCount.toString()} />
+        <MessageMetric label="Acil" value={urgentCount.toString()} tone={urgentCount > 0 ? 'warning' : 'dark'} />
+      </View>
+
       <View style={styles.filterRow}>
         {filters.map((item) => (
           <Pressable key={item} onPress={() => setFilter(item)} style={[styles.filterButton, filter === item && styles.activeFilter]}>
@@ -97,7 +127,7 @@ export function MessagesScreen({ onBack }: MessagesScreenProps) {
       </View>
 
       {filteredMessages.length === 0 ? (
-        <EmptyState badge="MSG" title="Mesaj yok" description="Başka filtre seçebilirsin." />
+        <EmptyState badge="MSG" title="Mesaj bulunamadı" description="Arama metnini veya filtreyi değiştir." />
       ) : (
         filteredMessages.map((message) => (
           <Pressable key={message.id} onPress={() => selectMessage(message)} style={[styles.messageRow, message.type === 'Acil' && styles.urgentRow, selectedId === message.id && styles.selectedRow]}>
@@ -143,7 +173,51 @@ export function MessagesScreen({ onBack }: MessagesScreenProps) {
   );
 }
 
+function MessageMetric({ label, value, tone = 'dark' }: { label: string; value: string; tone?: 'dark' | 'warning' }) {
+  return (
+    <View style={styles.messageMetric}>
+      <Text style={[styles.messageMetricValue, tone === 'warning' && styles.messageMetricWarning]}>{value}</Text>
+      <Text style={styles.messageMetricLabel}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  searchPanel: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.lg,
+    padding: spacing.sm,
+    gap: spacing.xs,
+  },
+  searchLabel: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
+  searchInput: {
+    minHeight: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: colors.line,
+    color: colors.ink,
+    fontSize: typography.body,
+    paddingHorizontal: spacing.sm,
+    fontWeight: '800',
+  },
+  operationSummary: { flexDirection: 'row', gap: spacing.xs },
+  messageMetric: {
+    flex: 1,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderTopWidth: 3,
+    borderTopColor: colors.anthracite,
+    backgroundColor: colors.surface,
+    padding: spacing.xs,
+    gap: 2,
+  },
+  messageMetricValue: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  messageMetricWarning: { color: colors.red },
+  messageMetricLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   filterButton: {
     flexGrow: 1,
