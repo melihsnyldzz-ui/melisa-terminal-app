@@ -1,6 +1,6 @@
 {
   "name": "melisa-terminal-app",
-  "version": "0.7.8",
+  "version": "0.7.9",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -12,7 +12,7 @@
     "check": "npm run typecheck",
     "prebuild:check": "npm run check && npm run doctor",
     "web": "expo start --web",
-    "export:web": "npx expo export --platform web --base-url /melisa-terminal-app/",
+    "export:web": "npx expo export --platform web",
     "doctor": "npx expo-doctor",
     "preview:web": "expo start --web",
     "preview:honeywell": "expo start --web"
