@@ -3,14 +3,14 @@ import type { FailedOperation, Message, OpenDocument, Product, QRAlbum, Terminal
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const productTemplates: Product[] = [
-  { code: 'MB-1001', name: 'Bebek Takım', color: 'Pembe', size: '6-9 Ay' },
-  { code: 'MB-1002', name: 'Hastane Çıkışı', color: 'Ekru', size: '0-3 Ay' },
-  { code: 'MB-1003', name: 'Tulum', color: 'Mavi', size: '9-12 Ay' },
-  { code: 'MB-1004', name: 'Zıbın Seti', color: 'Beyaz', size: '3-6 Ay' },
-  { code: 'MB-1005', name: 'Çocuk Elbise', color: 'Kırmızı', size: '4 Yaş' },
-  { code: 'MB-1006', name: 'Kapitone Yelek', color: 'Bej', size: '12-18 Ay' },
-  { code: 'MB-1007', name: 'Organik Body Set', color: 'Mint', size: '0-3 Ay' },
-  { code: 'MB-1008', name: 'Kız Bebek Takım', color: 'Lila', size: '3-6 Ay' },
+  { code: 'MB-1001', name: 'Bebek Takım', price: 485 },
+  { code: 'MB-1002', name: 'Hastane Çıkışı', price: 620 },
+  { code: 'MB-1003', name: 'Tulum', price: 295 },
+  { code: 'MB-1004', name: 'Zıbın Seti', price: 210 },
+  { code: 'MB-1005', name: 'Çocuk Elbise', price: 540 },
+  { code: 'MB-1006', name: 'Kapitone Yelek', price: 390 },
+  { code: 'MB-1007', name: 'Organik Body Set', price: 330 },
+  { code: 'MB-1008', name: 'Kız Bebek Takım', price: 575 },
 ];
 
 export async function loginMock(username: string, branch: string, offlineMode: boolean): Promise<UserSession> {
@@ -79,10 +79,10 @@ export async function getQRAlbumMock(): Promise<QRAlbum> {
     customerLabel: 'ABC Baby Store',
     status: 'Hazır',
     items: [
-      { id: 'p-1', code: 'MB-ELB-104', name: 'Kız Çocuk Elbise', color: 'Kırmızı', size: '4 Yaş' },
-      { id: 'p-2', code: 'MB-TKM-212', name: 'Bebek Takım', color: 'Beyaz', size: '12 Ay' },
-      { id: 'p-3', code: 'MB-MNT-306', name: 'Çocuk Mont', color: 'Siyah', size: '6 Yaş' },
-      { id: 'p-4', code: 'MB-ZBN-118', name: 'Zıbın Seti', color: 'Ekru', size: '6 Ay' },
+      { id: 'p-1', code: 'MB-ELB-104', name: 'Kız Çocuk Elbise' },
+      { id: 'p-2', code: 'MB-TKM-212', name: 'Bebek Takım' },
+      { id: 'p-3', code: 'MB-MNT-306', name: 'Çocuk Mont' },
+      { id: 'p-4', code: 'MB-ZBN-118', name: 'Zıbın Seti' },
     ],
   };
 }
