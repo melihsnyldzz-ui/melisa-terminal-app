@@ -43,7 +43,7 @@ const mockCustomers: CustomerSuggestion[] = [
   { id: 'cus-8', name: 'Yeni Müşteri', code: 'MANUEL', city: 'Elle giriş' },
 ];
 
-const quickCodes = ['MB-1001', 'MB-1002', 'MB-1003'];
+const quickCodes = ['MB-1001', 'MB-1002', 'MB-1003', 'MB-1004', 'MB-1005', 'MB-1006', 'MB-1007', 'MB-1008'];
 
 const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase('tr-TR');
 
