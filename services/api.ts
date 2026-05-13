@@ -8,6 +8,9 @@ const productTemplates: Product[] = [
   { code: 'MB-1003', name: 'Tulum', color: 'Mavi', size: '9-12 Ay' },
   { code: 'MB-1004', name: 'Zıbın Seti', color: 'Beyaz', size: '3-6 Ay' },
   { code: 'MB-1005', name: 'Çocuk Elbise', color: 'Kırmızı', size: '4 Yaş' },
+  { code: 'MB-1006', name: 'Kapitone Yelek', color: 'Bej', size: '12-18 Ay' },
+  { code: 'MB-1007', name: 'Organik Body Set', color: 'Mint', size: '0-3 Ay' },
+  { code: 'MB-1008', name: 'Kız Bebek Takım', color: 'Lila', size: '3-6 Ay' },
 ];
 
 export async function loginMock(username: string, branch: string, offlineMode: boolean): Promise<UserSession> {
@@ -28,6 +31,8 @@ export async function getMessagesMock(): Promise<Message[]> {
     { id: 'msg-3', type: 'Muhasebe', sender: 'Muhasebe', title: 'Tahsilat hazırlığı', body: 'Bu sürümde kayıt yapılmaz; finans bilgisi sadece ileriki onaylı fazda ele alınacak.', read: true, timeLabel: 'Dün' },
     { id: 'msg-4', type: 'Depo', sender: 'Depo', title: 'Raf kontrolü', body: 'Barkodsuz ürünler için hazırlık listesi ayrıca doğrulanacak.', read: true, timeLabel: 'Dün' },
     { id: 'msg-5', type: 'Fiş Notu', sender: 'Satış', title: 'Müşteri fotoğraf talebi', body: 'QR albümde fiyat bilgisi gösterilmeyecek; sadece ürün görselleri paylaşılacak.', read: false, relatedDocument: 'FIS-1025', timeLabel: '08:40' },
+    { id: 'msg-6', type: 'Fiş Notu', sender: 'Sevkiyat', title: 'Nova Baby paket notu', body: 'FIS-1027 için ürünler ayrı poşetlenip müşteri adına göre etiketlenecek.', read: false, relatedDocument: 'FIS-1027', timeLabel: '11:05' },
+    { id: 'msg-7', type: 'Depo', sender: 'Depo', title: 'Yeni sezon rafı', body: 'Kapitone yelek ve organik body setleri ön raf mock kontrolüne alındı.', read: true, timeLabel: '11:20' },
   ];
 }
 
@@ -37,6 +42,9 @@ export async function getOpenDocumentsMock(): Promise<OpenDocument[]> {
     { id: 'FIS-1024', customerName: 'ABC Baby Store', itemCount: 8, status: 'Açık', updatedAt: 'Bugün 09:10' },
     { id: 'FIS-1025', customerName: 'Merkez müşteri', itemCount: 3, status: 'Beklemede', updatedAt: 'Bugün 09:35' },
     { id: 'FIS-1026', customerName: 'Depo teslim', itemCount: 2, status: 'Gönderilemedi', updatedAt: 'Dün 18:05' },
+    { id: 'FIS-1027', customerName: 'Nova Baby', itemCount: 11, status: 'Açık', updatedAt: 'Bugün 11:05' },
+    { id: 'FIS-1028', customerName: 'Bebek Dünyası', itemCount: 5, status: 'Beklemede', updatedAt: 'Bugün 11:40' },
+    { id: 'FIS-1029', customerName: 'Happy Mini Store', itemCount: 7, status: 'Açık', updatedAt: 'Bugün 12:15' },
   ];
 }
 
@@ -89,6 +97,15 @@ export async function getFailedOperationsMock(): Promise<FailedOperation[]> {
       title: 'Fiş gönderimi bekliyor',
       reason: 'Bağlantı hazırlık aşamasında olduğu için kuyrukta tutuluyor.',
       createdAt: 'Dün 18:05',
+      status: 'Gönderilemedi',
+    },
+    {
+      id: 'fail-2',
+      documentNo: 'FIS-1028',
+      operationType: 'QR albüm hazırlığı',
+      title: 'QR albüm tekrar denenecek',
+      reason: 'Mock bağlantı gecikmesi nedeniyle işlem kuyrukta tutuluyor.',
+      createdAt: 'Bugün 11:42',
       status: 'Gönderilemedi',
     },
   ];
