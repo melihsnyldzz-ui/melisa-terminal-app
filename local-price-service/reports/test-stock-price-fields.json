@@ -1,0 +1,40 @@
+{
+  "ok": true,
+  "found": true,
+  "barcode": "8697691102551",
+  "stokno": 100,
+  "name": "SALYY MALZEME ÇANTASI",
+  "stokKodu": "09 OGUL BEBE",
+  "priceFields": {
+    "SATISKOSULU": null,
+    "FIYATYOK": false,
+    "ALISFIYATI": 10.75,
+    "ALISFIYATIDEGISMETARIHI": "2015-02-02T00:00:00.000Z",
+    "ESKIALISFIYATI": 10.75,
+    "SONSATISTARIHI": "2016-03-04T00:00:00.000Z",
+    "DALISFIYATI": null,
+    "APB": null,
+    "ISKSATISFIYATI2": null,
+    "ISKSATISFIYATI3": null,
+    "DEFAULTALISFIYATI": null,
+    "DEFAULTALISFIYATIDEGISMESTARIHI": null,
+    "HEDEFSATISFIAYTI": null,
+    "IMALATCISATISFIYATI": null,
+    "MAXISKTUTAR": null,
+    "DAPB": null,
+    "ISKSATISFIYATI4": null,
+    "ISKSATISFIYATI5": null,
+    "ISKSATISFIYATI6": null
+  },
+  "nonZeroPriceFields": {
+    "ALISFIYATI": 10.75,
+    "ESKIALISFIYATI": 10.75
+  },
+  "currencyFields": {
+    "APB": null,
+    "DAPB": null,
+    "PB1": null,
+    "PB2": null,
+    "PB3": null
+  }
+}
