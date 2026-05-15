@@ -64,6 +64,22 @@ export type ActiveSaleDraft = {
   updatedAt: string;
 };
 
+export type PickingLine = {
+  id: string;
+  code: string;
+  name: string;
+  quantity: number;
+  picked: number;
+};
+
+export type ActivePickingDraft = {
+  documentNo: string;
+  customerName: string;
+  status: 'Toplanacak' | 'Toplanıyor' | 'Tamamlandı';
+  lines: PickingLine[];
+  updatedAt: string;
+};
+
 export type QRAlbumItem = {
   id: string;
   code: string;
