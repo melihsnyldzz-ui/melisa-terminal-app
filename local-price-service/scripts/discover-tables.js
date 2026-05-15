@@ -1,9 +1,13 @@
 const dotenv = require('dotenv');
+const fs = require('fs/promises');
+const path = require('path');
 const sql = require('mssql');
 
 dotenv.config();
 
 const TABLE_KEYWORDS = ['BARKOD', 'BARCODE', 'STOK', 'URUN', 'MAL', 'FIYAT', 'PRICE', 'SATIS'];
+const shouldSaveReport = process.argv.includes('--save');
+const reportsDir = path.resolve(__dirname, '..', 'reports');
 
 const sqlConfig = {
   server: process.env.SQL_SERVER || '',
@@ -21,9 +25,17 @@ function isSqlConfigured() {
   return Boolean(sqlConfig.server && sqlConfig.database && sqlConfig.user && sqlConfig.password);
 }
 
+async function saveReport(fileName, payload) {
+  if (!shouldSaveReport) return;
+  await fs.mkdir(reportsDir, { recursive: true });
+  await fs.writeFile(path.join(reportsDir, fileName), `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+}
+
 async function main() {
   if (!isSqlConfigured()) {
-    console.error(JSON.stringify({ ok: false, message: 'SQL bağlantı ayarları eksik' }, null, 2));
+    const payload = { ok: false, message: 'SQL bağlantı ayarları eksik' };
+    await saveReport('discovered-tables.json', payload);
+    console.error(JSON.stringify(payload, null, 2));
     process.exitCode = 1;
     return;
   }
@@ -46,12 +58,15 @@ async function main() {
     ORDER BY TABLE_SCHEMA, TABLE_NAME
   `);
 
-  console.log(JSON.stringify({
+  const payload = {
     ok: true,
     mode: 'metadata-only',
     keywords: TABLE_KEYWORDS,
     tables: result.recordset,
-  }, null, 2));
+  };
+
+  await saveReport('discovered-tables.json', payload);
+  console.log(JSON.stringify(payload, null, 2));
 
   await pool.close();
 }

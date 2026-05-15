@@ -1,9 +1,13 @@
 const dotenv = require('dotenv');
+const fs = require('fs/promises');
+const path = require('path');
 const sql = require('mssql');
 
 dotenv.config();
 
 const COLUMN_KEYWORDS = ['BARKOD', 'BARCODE', 'STOK', 'KOD', 'AD', 'ACIKLAMA', 'FIYAT', 'PRICE', 'SATIS'];
+const shouldSaveReport = process.argv.includes('--save');
+const reportsDir = path.resolve(__dirname, '..', 'reports');
 
 const sqlConfig = {
   server: process.env.SQL_SERVER || '',
@@ -41,16 +45,32 @@ function isHighlighted(columnName) {
   return COLUMN_KEYWORDS.some((keyword) => upper.includes(keyword));
 }
 
+function toSafeFilePart(value) {
+  return String(value || '').trim().replace(/[^A-Za-z0-9_.-]+/g, '_').replace(/\.+/g, '.');
+}
+
+async function saveReport(fileName, payload) {
+  if (!shouldSaveReport) return;
+  await fs.mkdir(reportsDir, { recursive: true });
+  await fs.writeFile(path.join(reportsDir, fileName), `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+}
+
 async function main() {
-  const target = parseTableName(process.argv[2]);
+  const tableArgument = process.argv.slice(2).find((argument) => argument !== '--save');
+  const target = parseTableName(tableArgument);
   if (!target) {
-    console.error(JSON.stringify({ ok: false, message: 'Kullanım: node scripts/discover-columns.js TABLO_ADI' }, null, 2));
+    const payload = { ok: false, message: 'Kullanım: node scripts/discover-columns.js TABLO_ADI' };
+    await saveReport('discovered-columns-unknown.json', payload);
+    console.error(JSON.stringify(payload, null, 2));
     process.exitCode = 1;
     return;
   }
 
   if (!isSqlConfigured()) {
-    console.error(JSON.stringify({ ok: false, message: 'SQL bağlantı ayarları eksik' }, null, 2));
+    const tableName = target.schema ? `${target.schema}.${target.table}` : target.table;
+    const payload = { ok: false, table: tableName, message: 'SQL bağlantı ayarları eksik' };
+    await saveReport(`discovered-columns-${toSafeFilePart(tableName)}.json`, payload);
+    console.error(JSON.stringify(payload, null, 2));
     process.exitCode = 1;
     return;
   }
@@ -76,13 +96,17 @@ async function main() {
     highlighted: isHighlighted(column.COLUMN_NAME),
   }));
 
-  console.log(JSON.stringify({
+  const tableName = target.schema ? `${target.schema}.${target.table}` : target.table;
+  const payload = {
     ok: true,
     mode: 'metadata-only',
-    table: target.schema ? `${target.schema}.${target.table}` : target.table,
+    table: tableName,
     highlightKeywords: COLUMN_KEYWORDS,
     columns,
-  }, null, 2));
+  };
+
+  await saveReport(`discovered-columns-${toSafeFilePart(tableName)}.json`, payload);
+  console.log(JSON.stringify(payload, null, 2));
 
   await pool.close();
 }

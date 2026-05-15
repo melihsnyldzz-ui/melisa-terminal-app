@@ -1,9 +1,13 @@
 const dotenv = require('dotenv');
+const fs = require('fs/promises');
+const path = require('path');
 const sql = require('mssql');
 
 dotenv.config();
 
 const BLOCKED_SQL_WORDS = /\b(INSERT|UPDATE|DELETE|ALTER|DROP|TRUNCATE|CREATE|MERGE|EXEC|GRANT|DENY|REVOKE)\b/i;
+const shouldSaveReport = process.argv.includes('--save');
+const reportsDir = path.resolve(__dirname, '..', 'reports');
 
 const sqlConfig = {
   server: process.env.SQL_SERVER || '',
@@ -30,19 +34,29 @@ function validateReadOnlyQuery(query) {
   return null;
 }
 
+async function saveReport(payload) {
+  if (!shouldSaveReport) return;
+  await fs.mkdir(reportsDir, { recursive: true });
+  await fs.writeFile(path.join(reportsDir, 'test-price-query.json'), `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+}
+
 async function main() {
   const query = String(process.env.SQL_PRICE_QUERY || '').trim();
   const code = String(process.env.SQL_TEST_BARCODE || 'MB-1001').trim().toUpperCase();
   const validationError = validateReadOnlyQuery(query);
 
   if (validationError) {
-    console.error(JSON.stringify({ ok: false, found: false, code, message: validationError }, null, 2));
+    const payload = { ok: false, found: false, code, message: validationError };
+    await saveReport(payload);
+    console.error(JSON.stringify(payload, null, 2));
     process.exitCode = 1;
     return;
   }
 
   if (!isSqlConfigured()) {
-    console.error(JSON.stringify({ ok: false, found: false, code, message: 'SQL bağlantı ayarları eksik' }, null, 2));
+    const payload = { ok: false, found: false, code, message: 'SQL bağlantı ayarları eksik' };
+    await saveReport(payload);
+    console.error(JSON.stringify(payload, null, 2));
     process.exitCode = 1;
     return;
   }
@@ -50,12 +64,15 @@ async function main() {
   const pool = await sql.connect(sqlConfig);
   const result = await pool.request().input('code', sql.NVarChar(80), code).query(query);
 
-  console.log(JSON.stringify({
+  const payload = {
     ok: true,
     mode: 'read-only-test',
     code,
     rows: result.recordset,
-  }, null, 2));
+  };
+
+  await saveReport(payload);
+  console.log(JSON.stringify(payload, null, 2));
 
   await pool.close();
 }
