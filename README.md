@@ -6,6 +6,10 @@ Melisa Bebe Android el terminalleri için React Native + Expo + TypeScript uygul
 
 Bu uygulama personelin saha, depo ve satış işlemlerini hızlı, sade ve güvenli şekilde yapması için hazırlanır. İlk sürüm gerçek Vega / SQL bağlantısı yapmaz; mock data ve local storage ile çalışır.
 
+## Local Price Service v2.9.0
+
+Local Price Service v2.9.0 hazırlığı başladı. Windows bilgisayarda çalışacak Express servis iskeleti `local-price-service/` klasörüne eklendi; terminal uygulaması için `/health` ve demo `/product-price` endpointleri hazırlanır.
+
 ## Kurulum
 
 ```powershell
