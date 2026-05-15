@@ -7,7 +7,8 @@ import { StatusPill, statusToneFor } from '../../components/StatusPill';
 import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
 import { getOpenDocumentsMock } from '../../services/api';
-import type { AppScreen, OpenDocument, OpenDocumentStatus } from '../../types';
+import { saveActivePickingDraft } from '../../storage/localStorage';
+import type { ActivePickingDraft, AppScreen, OpenDocument, OpenDocumentStatus, PickingLine } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
 type OpenDocumentsScreenProps = {
@@ -19,6 +20,28 @@ type DocumentFilter = 'Tümü' | OpenDocumentStatus | 'Hatalı';
 
 const filters: DocumentFilter[] = ['Tümü', 'Açık', 'Beklemede', 'Hatalı'];
 const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase('tr-TR');
+
+const pickingTemplates: Record<string, PickingLine[]> = {
+  'FIS-1024': [
+    { id: 'FIS-1024-1', code: '0000051461011', name: '12 Lİ FİGÜRLÜ PATİK', quantity: 2, picked: 0 },
+    { id: 'FIS-1024-2', code: '8697691102551', name: 'SALYY MALZEME ÇANTASI', quantity: 1, picked: 0 },
+    { id: 'FIS-1024-3', code: 'MB-1001', name: 'Bebek Takım', quantity: 5, picked: 0 },
+  ],
+  'FIS-1025': [
+    { id: 'FIS-1025-1', code: '0000051461011', name: '12 Lİ FİGÜRLÜ PATİK', quantity: 1, picked: 0 },
+    { id: 'FIS-1025-2', code: 'MB-1004', name: 'Zıbın Seti', quantity: 2, picked: 0 },
+  ],
+  'FIS-1027': [
+    { id: 'FIS-1027-1', code: '8697691102551', name: 'SALYY MALZEME ÇANTASI', quantity: 2, picked: 0 },
+    { id: 'FIS-1027-2', code: 'MB-1007', name: 'Organik Body Set', quantity: 6, picked: 0 },
+    { id: 'FIS-1027-3', code: 'MB-1008', name: 'Kız Bebek Takım', quantity: 3, picked: 0 },
+  ],
+};
+
+const makeFallbackPickingLines = (document: OpenDocument): PickingLine[] => [
+  { id: `${document.id}-1`, code: '0000051461011', name: '12 Lİ FİGÜRLÜ PATİK', quantity: Math.max(1, Math.min(document.itemCount, 2)), picked: 0 },
+  { id: `${document.id}-2`, code: '8697691102551', name: 'SALYY MALZEME ÇANTASI', quantity: Math.max(1, document.itemCount - 2), picked: 0 },
+];
 
 export function OpenDocumentsScreen({ onBack, onNavigate }: OpenDocumentsScreenProps) {
   const [documents, setDocuments] = useState<OpenDocument[]>([]);
@@ -54,8 +77,17 @@ export function OpenDocumentsScreen({ onBack, onNavigate }: OpenDocumentsScreenP
     onNavigate('newSale');
   };
 
-  const startPicking = (documentNo: string) => {
-    setBanner({ message: `${documentNo} toplama ekranına alındı.`, tone: 'success' });
+  const startPicking = async (document: OpenDocument) => {
+    const draft: ActivePickingDraft = {
+      documentNo: document.id,
+      customerName: document.customerName,
+      status: 'Toplanacak',
+      lines: pickingTemplates[document.id] ?? makeFallbackPickingLines(document),
+      updatedAt: document.updatedAt,
+    };
+
+    await saveActivePickingDraft(draft);
+    setBanner({ message: `${document.id} toplama ekranına alındı.`, tone: 'success' });
     onNavigate('picking');
   };
 
@@ -130,7 +162,7 @@ export function OpenDocumentsScreen({ onBack, onNavigate }: OpenDocumentsScreenP
             </View>
             <ActionRow
               actions={[
-                { label: 'Topla', onPress: () => startPicking(document.id), variant: 'primary' },
+                { label: 'Topla', onPress: () => startPicking(document), variant: 'primary' },
                 { label: 'Aç', onPress: () => openDocument(document.id), variant: 'quiet' },
                 { label: 'QR', onPress: () => prepareAlbum(document.id), variant: 'secondary' },
                 { label: 'Gönder', onPress: () => sendDocument(document), variant: 'secondary' },
