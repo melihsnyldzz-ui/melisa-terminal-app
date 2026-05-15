@@ -39,6 +39,7 @@ type LocalPriceServiceResponse = {
   code?: string;
   name?: string;
   price?: number;
+  currency?: string;
 };
 
 type LocalPriceLookupResult =
@@ -70,6 +71,7 @@ async function getProductFromLocalPriceService(code: string, apiBaseUrl: string)
         code: (payload.code || code).trim().toUpperCase(),
         name: payload.name,
         price: payload.price,
+        currency: payload.currency,
       },
     };
   } catch {

@@ -43,6 +43,7 @@ export type Product = {
   code: string;
   name: string;
   price: number;
+  currency?: string;
   color?: string;
   size?: string;
 };

@@ -167,3 +167,9 @@ node scripts/find-price-marker-value.js --save
 Script `.env` icinden `PRICE_MARKER_VALUE` ve `SQL_TEST_BARCODE` degerlerini okur. Yalnizca `INFORMATION_SCHEMA.COLUMNS` metadata okur ve numeric aday kolonlarda parametreli `SELECT` calistirir. `--save` verilirse sonuc `local-price-service/reports/find-price-marker-value.json` dosyasina yazilir.
 
 Guvenlik notu: Bu script veri yazmaz; `INSERT`, `UPDATE`, `DELETE`, `ALTER`, `DROP`, `TRUNCATE`, `MERGE` ve `EXEC` komutlarini calistiracak bir akis icermez.
+
+## v4.3.0 gercek Vega fiyat sorgusu
+
+`F0102TBLBIRIMLEREX.SATISFIYATI1` alani Vega'daki `1. Satis Fiyati` icin dogrulanan fiyat alanidir. Para birimi `F0102TBLBIRIMLEREX.PB1` uzerinden opsiyonel `currency` alanina tasinir.
+
+`.env.example` icindeki `SQL_PRICE_QUERY` ornegi barkoddan `code`, `name`, `price` ve `currency` dondurur. Gercek `.env` dosyasina alinmadan once saha bilgisayari uzerinde read-only test edilmelidir.

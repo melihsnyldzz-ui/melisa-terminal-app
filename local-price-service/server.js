@@ -16,6 +16,7 @@ const demoProducts = new Map([
       code: 'MB-1001',
       name: 'Bebek Takım',
       price: 485,
+      currency: 'TL',
     },
   ],
 ]);
@@ -67,6 +68,7 @@ function getDemoProduct(code) {
     code: product.code,
     name: product.name,
     price: product.price,
+    currency: product.currency,
   };
 }
 
@@ -99,6 +101,7 @@ async function getSqlProduct(code) {
     code: String(row.code || row.CODE || code),
     name: String(row.name || row.NAME || row.MALINCINSI || row.ACIKLAMA || ''),
     price: Number(row.price || row.PRICE || row.FIYAT || 0),
+    currency: String(row.currency || row.CURRENCY || row.PB1 || 'TL'),
   };
 }
 

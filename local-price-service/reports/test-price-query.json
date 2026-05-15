@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "mode": "read-only-test",
+  "code": "0000051461011",
+  "rows": [
+    {
+      "code": "0000051461011",
+      "name": "12 Lİ FİGÜRLÜ PATİK",
+      "price": 123456789,
+      "currency": "TL"
+    }
+  ]
+}
