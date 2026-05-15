@@ -14,7 +14,8 @@ import { SettingsScreen } from './app/screens/SettingsScreen';
 import { colors } from './app/theme';
 import { HoneywellPreviewFrame } from './components/HoneywellPreviewFrame';
 import { ScreenErrorBoundary } from './components/ScreenErrorBoundary';
-import { clearSession, loadSession, saveSession } from './storage/localStorage';
+import { checkLocalPriceService } from './services/api';
+import { clearSession, loadSession, loadSettings, saveSession } from './storage/localStorage';
 import type { AppScreen, UserSession } from './types';
 
 export default function App() {
@@ -29,6 +30,16 @@ export default function App() {
       if (savedSession) {
         setSession(savedSession);
         setScreen('dashboard');
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    loadSettings().then(async (settings) => {
+      if (settings.apiMode === 'mock') return;
+      const result = await checkLocalPriceService(settings);
+      if (!result.ok && settings.apiMode === 'real') {
+        setBackHint(`${result.message}. Ayarlar > Local fiyat servisi adresi: ${result.url}. ${result.reason || ''}`.trim());
       }
     });
   }, []);

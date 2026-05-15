@@ -12,7 +12,7 @@ const KEYS = {
 const defaultSettings: TerminalSettings = {
   terminalId: 'MB-TERM-001',
   branch: 'Merkez Depo',
-  apiBaseUrl: 'Hazırlık Bağlantısı',
+  apiBaseUrl: 'http://192.168.1.45:8787',
   apiMode: 'fallback',
   vibrationEnabled: true,
   urgentVibrationEnabled: true,
@@ -58,7 +58,11 @@ export async function loadSettings(): Promise<TerminalSettings> {
   const normalizedSettings = { ...defaultSettings, ...settings };
   const safeApiMode = ['mock', 'real', 'fallback'].includes(normalizedSettings.apiMode) ? normalizedSettings.apiMode : defaultSettings.apiMode;
   const safeSettings = { ...normalizedSettings, apiMode: safeApiMode };
-  return safeSettings.apiBaseUrl.toLowerCase().includes('mock') ? { ...safeSettings, apiBaseUrl: defaultSettings.apiBaseUrl } : safeSettings;
+  const apiBaseUrl = String(safeSettings.apiBaseUrl || '').trim();
+  if (!apiBaseUrl || apiBaseUrl.toLowerCase().includes('mock') || apiBaseUrl.toLowerCase().includes('haz')) {
+    return { ...safeSettings, apiBaseUrl: defaultSettings.apiBaseUrl };
+  }
+  return { ...safeSettings, apiBaseUrl };
 }
 
 export async function saveSettings(settings: TerminalSettings): Promise<void> {

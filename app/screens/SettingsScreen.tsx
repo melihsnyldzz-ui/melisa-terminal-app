@@ -7,7 +7,8 @@ import { ScreenShell } from '../../components/ScreenShell';
 import { StatusPill } from '../../components/StatusPill';
 import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
-import { testConnectionMock } from '../../services/api';
+import { checkLocalPriceService } from '../../services/api';
+import type { LocalPriceConnectionResult } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
 import { clearActiveSaleDraft, loadSettings, saveSettings } from '../../storage/localStorage';
 import type { TerminalSettings, UserSession } from '../../types';
@@ -36,13 +37,14 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
   const [settings, setSettings] = useState<TerminalSettings>({
     terminalId: 'MB-TERM-001',
     branch: session?.branch ?? 'Merkez Depo',
-    apiBaseUrl: 'Hazırlık Bağlantısı',
+    apiBaseUrl: 'http://192.168.1.45:8787',
     apiMode: 'fallback',
     vibrationEnabled: true,
     urgentVibrationEnabled: true,
   });
   const [lastSync, setLastSync] = useState('Bugün 09:40');
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
+  const [connectionResult, setConnectionResult] = useState<LocalPriceConnectionResult | null>(null);
 
   useEffect(() => {
     loadSettings().then(setSettings);
@@ -76,7 +78,9 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
   };
 
   const checkConnection = async () => {
-    const result = await testConnectionMock(settings);
+    await saveSettings(settings);
+    const result = await checkLocalPriceService(settings);
+    setConnectionResult(result);
     setBanner({ message: result.message, tone: result.ok ? 'success' : 'error' });
     if (result.ok) {
       notifySuccess();
@@ -132,7 +136,8 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
       </Section>
 
       <Section title="Bağlantı">
-        <Field label="API adresi" value={settings.apiBaseUrl} onChangeText={(value) => update('apiBaseUrl', value)} placeholder="http://192.168.1.50:8787" />
+        <Field label="Local fiyat servisi adresi" value={settings.apiBaseUrl} onChangeText={(value) => update('apiBaseUrl', value)} placeholder="http://192.168.1.45:8787" />
+        <Text style={styles.helperText}>Android terminalde localhost kullanma. PC IPv4 adresini yaz: http://192.168.1.45:8787</Text>
         <View style={styles.field}>
           <Text style={styles.label}>Fiyat Kaynağı</Text>
           <View style={styles.priceSourceGrid}>
@@ -151,6 +156,14 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
           <Text style={styles.rowLabel}>Durum</Text>
           <StatusPill label={settings.apiBaseUrl.trim() ? 'Hazır' : 'Bekliyor'} tone={settings.apiBaseUrl.trim() ? 'success' : 'warning'} />
         </View>
+        {connectionResult ? (
+          <View style={[styles.connectionBox, connectionResult.ok ? styles.connectionBoxOk : styles.connectionBoxError]}>
+            <Text style={styles.connectionTitle}>{connectionResult.ok ? 'Servis bağlı' : 'Local fiyat servisi bağlı değil'}</Text>
+            <Text style={styles.connectionText}>Adres: {connectionResult.url}</Text>
+            {connectionResult.endpoint ? <Text style={styles.connectionText}>Endpoint: {connectionResult.endpoint}</Text> : null}
+            {connectionResult.reason ? <Text style={styles.connectionText}>Neden: {connectionResult.reason}</Text> : null}
+          </View>
+        ) : null}
         <AppButton label="Bağlantıyı Kontrol Et" onPress={checkConnection} variant="secondary" compact />
       </Section>
 
@@ -330,6 +343,22 @@ const styles = StyleSheet.create({
   inlineRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
   rowLabel: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
   helperText: { color: colors.muted, fontSize: typography.small, fontWeight: '800', lineHeight: 16 },
+  connectionBox: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: spacing.sm,
+    gap: 2,
+  },
+  connectionBoxOk: {
+    backgroundColor: colors.successSoft,
+    borderColor: colors.success,
+  },
+  connectionBoxError: {
+    backgroundColor: colors.dangerSoft,
+    borderColor: colors.red,
+  },
+  connectionTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  connectionText: { color: colors.text, fontSize: typography.small, fontWeight: '800', lineHeight: 16 },
   toggleRow: {
     minHeight: 42,
     borderRadius: radius.md,

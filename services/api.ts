@@ -3,16 +3,17 @@ import { loadSettings } from '../storage/localStorage';
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const LOCAL_PRICE_TIMEOUT_MS = 1800;
+const HEALTH_ENDPOINTS = ['/health', '/status', '/'];
 
 const productTemplates: Product[] = [
-  { code: 'MB-1001', name: 'Bebek Takım', price: 485 },
-  { code: 'MB-1002', name: 'Hastane Çıkışı', price: 620 },
-  { code: 'MB-1003', name: 'Tulum', price: 295 },
-  { code: 'MB-1004', name: 'Zıbın Seti', price: 210 },
-  { code: 'MB-1005', name: 'Çocuk Elbise', price: 540 },
-  { code: 'MB-1006', name: 'Kapitone Yelek', price: 390 },
-  { code: 'MB-1007', name: 'Organik Body Set', price: 330 },
-  { code: 'MB-1008', name: 'Kız Bebek Takım', price: 575 },
+  { code: 'MB-1001', name: 'Bebek Takim', price: 485, currency: 'TL' },
+  { code: 'MB-1002', name: 'Hastane Cikisi', price: 620, currency: 'TL' },
+  { code: 'MB-1003', name: 'Tulum', price: 295, currency: 'TL' },
+  { code: 'MB-1004', name: 'Zibin Seti', price: 210, currency: 'TL' },
+  { code: 'MB-1005', name: 'Cocuk Elbise', price: 540, currency: 'TL' },
+  { code: 'MB-1006', name: 'Kapitone Yelek', price: 390, currency: 'TL' },
+  { code: 'MB-1007', name: 'Organik Body Set', price: 330, currency: 'TL' },
+  { code: 'MB-1008', name: 'Kiz Bebek Takim', price: 575, currency: 'TL' },
 ];
 
 function getMockProductFallback(code: string): Product {
@@ -30,27 +31,51 @@ function getMockProductFallback(code: string): Product {
 
 function normalizeApiBaseUrl(value: string) {
   const trimmed = value.trim();
-  if (!/^https?:\/\//i.test(trimmed)) return '';
+  if (!/^http:\/\//i.test(trimmed)) return '';
   return trimmed.replace(/\/+$/, '');
+}
+
+function getLoopbackReason(baseUrl: string) {
+  try {
+    const { hostname } = new URL(baseUrl);
+    if (['localhost', '127.0.0.1', '::1'].includes(hostname.toLowerCase())) {
+      return 'Android cihazda localhost bilgisayari degil cihazin kendisini gosterir. PC IPv4 adresini yazin.';
+    }
+  } catch {
+    return 'API adresi gecersiz.';
+  }
+  return '';
 }
 
 type LocalPriceServiceResponse = {
   found?: boolean;
   code?: string;
   name?: string;
-  price?: number;
+  price?: number | string;
   currency?: string;
+  message?: string;
 };
 
 type LocalPriceLookupResult =
   | { status: 'found'; product: Product }
-  | { status: 'not-found' }
-  | { status: 'invalid-url' }
-  | { status: 'service-unavailable' };
+  | { status: 'not-found'; reason: string }
+  | { status: 'invalid-url'; reason: string }
+  | { status: 'service-unavailable'; reason: string };
+
+export type LocalPriceConnectionResult = {
+  ok: boolean;
+  message: string;
+  url: string;
+  endpoint?: string;
+  reason?: string;
+};
 
 async function getProductFromLocalPriceService(code: string, apiBaseUrl: string): Promise<LocalPriceLookupResult> {
   const baseUrl = normalizeApiBaseUrl(apiBaseUrl);
-  if (!baseUrl) return { status: 'invalid-url' };
+  if (!baseUrl) return { status: 'invalid-url', reason: 'API adresi gecersiz. Adres http://192.168.1.45:8787 formatinda olmali.' };
+
+  const loopbackReason = getLoopbackReason(baseUrl);
+  if (loopbackReason) return { status: 'invalid-url', reason: loopbackReason };
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), LOCAL_PRICE_TIMEOUT_MS);
@@ -60,25 +85,93 @@ async function getProductFromLocalPriceService(code: string, apiBaseUrl: string)
       method: 'GET',
       signal: controller.signal,
     });
-    if (!response.ok) return { status: 'service-unavailable' };
+    if (!response.ok) return { status: 'service-unavailable', reason: `${baseUrl}/product-price HTTP ${response.status}` };
 
     const payload = (await response.json()) as LocalPriceServiceResponse;
-    if (!payload.found || !payload.name || typeof payload.price !== 'number') return { status: 'not-found' };
+    const price = typeof payload.price === 'number' ? payload.price : Number(payload.price);
+
+    if (!payload.found) return { status: 'not-found', reason: payload.message || 'Urun bulunamadi' };
+    if (!payload.name || !Number.isFinite(price)) return { status: 'not-found', reason: `${code} icin urun bulunamadi` };
 
     return {
       status: 'found',
       product: {
-        code: (payload.code || code).trim().toUpperCase(),
+        code: String(payload.code || code).trim().toUpperCase(),
         name: payload.name,
-        price: payload.price,
-        currency: payload.currency,
+        price,
+        currency: payload.currency || 'TL',
       },
     };
-  } catch {
-    return { status: 'service-unavailable' };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Baglanti hatasi';
+    return { status: 'service-unavailable', reason: `${baseUrl}/product-price erisilemedi: ${reason}` };
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function checkLocalPriceService(settings: TerminalSettings): Promise<LocalPriceConnectionResult> {
+  const baseUrl = normalizeApiBaseUrl(settings.apiBaseUrl);
+  if (!baseUrl) {
+    return {
+      ok: false,
+      url: settings.apiBaseUrl,
+      message: 'API adresi gecersiz',
+      reason: 'Adres http://192.168.1.45:8787 formatinda olmali.',
+    };
+  }
+
+  const loopbackReason = getLoopbackReason(baseUrl);
+  if (loopbackReason) {
+    return {
+      ok: false,
+      url: baseUrl,
+      message: `Local fiyat servisi bagli degil: ${baseUrl}`,
+      reason: loopbackReason,
+    };
+  }
+
+  let lastReason = 'Yanit alinamadi';
+  for (const endpoint of HEALTH_ENDPOINTS) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), LOCAL_PRICE_TIMEOUT_MS);
+    const url = `${baseUrl}${endpoint}`;
+
+    try {
+      const response = await fetch(url, { method: 'GET', signal: controller.signal });
+      const text = await response.text();
+      let payload: unknown = null;
+      try {
+        payload = text ? JSON.parse(text) : null;
+      } catch {
+        payload = null;
+      }
+
+      const healthOk = endpoint === '/health' && response.ok && Boolean((payload as { ok?: boolean } | null)?.ok);
+      const fallbackOk = endpoint !== '/health' && (response.ok || text.trim().length > 0);
+      if (healthOk || fallbackOk) {
+        return {
+          ok: true,
+          url: baseUrl,
+          endpoint,
+          message: 'Local fiyat servisi bağlı - Vega fiyat okuma hazır',
+        };
+      }
+
+      lastReason = endpoint === '/health' ? `${url} HTTP 200 veya ok:true donmedi` : `${url} bos yanit dondu`;
+    } catch (error) {
+      lastReason = `${url} erisilemedi: ${error instanceof Error ? error.message : 'Baglanti hatasi'}`;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  return {
+    ok: false,
+    url: baseUrl,
+    message: `Local fiyat servisi bagli degil: ${baseUrl}`,
+    reason: lastReason,
+  };
 }
 
 export async function loginMock(username: string, branch: string, offlineMode: boolean): Promise<UserSession> {
@@ -94,25 +187,25 @@ export async function loginMock(username: string, branch: string, offlineMode: b
 export async function getMessagesMock(): Promise<Message[]> {
   await wait(200);
   return [
-    { id: 'msg-1', type: 'Acil', sender: 'Merkez', title: 'Acil fiş kontrolü', body: 'FIS-1024 içindeki ürün görselleri müşteriye gitmeden kontrol edilecek.', read: false, relatedDocument: 'FIS-1024', timeLabel: '09:15' },
-    { id: 'msg-2', type: 'Merkez', sender: 'Operasyon', title: 'Gün sonu notu', body: 'Kapanıştan önce açık fiş ve gönderilemeyenler listesi kontrol edilecek.', read: false, timeLabel: '10:20' },
-    { id: 'msg-3', type: 'Muhasebe', sender: 'Muhasebe', title: 'Tahsilat hazırlığı', body: 'Bu sürümde kayıt yapılmaz; finans bilgisi sadece ileriki onaylı fazda ele alınacak.', read: true, timeLabel: 'Dün' },
-    { id: 'msg-4', type: 'Depo', sender: 'Depo', title: 'Raf kontrolü', body: 'Barkodsuz ürünler için hazırlık listesi ayrıca doğrulanacak.', read: true, timeLabel: 'Dün' },
-    { id: 'msg-5', type: 'Fiş Notu', sender: 'Satış', title: 'Müşteri fotoğraf talebi', body: 'QR albümde fiyat bilgisi gösterilmeyecek; sadece ürün görselleri paylaşılacak.', read: false, relatedDocument: 'FIS-1025', timeLabel: '08:40' },
-    { id: 'msg-6', type: 'Fiş Notu', sender: 'Sevkiyat', title: 'Nova Baby paket notu', body: 'FIS-1027 için ürünler ayrı poşetlenip müşteri adına göre etiketlenecek.', read: false, relatedDocument: 'FIS-1027', timeLabel: '11:05' },
-    { id: 'msg-7', type: 'Depo', sender: 'Depo', title: 'Yeni sezon rafı', body: 'Kapitone yelek ve organik body setleri ön raf mock kontrolüne alındı.', read: true, timeLabel: '11:20' },
+    { id: 'msg-1', type: 'Acil', sender: 'Merkez', title: 'Acil fis kontrolu', body: 'FIS-1024 icindeki urun gorselleri musteriyi gitmeden kontrol edilecek.', read: false, relatedDocument: 'FIS-1024', timeLabel: '09:15' },
+    { id: 'msg-2', type: 'Merkez', sender: 'Operasyon', title: 'Gun sonu notu', body: 'Kapanistan once acik fis ve gonderilemeyenler listesi kontrol edilecek.', read: false, timeLabel: '10:20' },
+    { id: 'msg-3', type: 'Muhasebe', sender: 'Muhasebe', title: 'Tahsilat hazirligi', body: 'Bu surumde kayit yapilmaz; finans bilgisi sadece ileriki onayli fazda ele alinacak.', read: true, timeLabel: 'Dun' },
+    { id: 'msg-4', type: 'Depo', sender: 'Depo', title: 'Raf kontrolu', body: 'Barkodsuz urunler icin hazirlik listesi ayrica dogrulanacak.', read: true, timeLabel: 'Dun' },
+    { id: 'msg-5', type: 'Fiş Notu', sender: 'Satis', title: 'Musteri fotograf talebi', body: 'QR albumde fiyat bilgisi gosterilmeyecek; sadece urun gorselleri paylasilacak.', read: false, relatedDocument: 'FIS-1025', timeLabel: '08:40' },
+    { id: 'msg-6', type: 'Fiş Notu', sender: 'Sevkiyat', title: 'Nova Baby paket notu', body: 'FIS-1027 icin urunler ayri posetlenip musteri adina gore etiketlenecek.', read: false, relatedDocument: 'FIS-1027', timeLabel: '11:05' },
+    { id: 'msg-7', type: 'Depo', sender: 'Depo', title: 'Yeni sezon rafi', body: 'Kapitone yelek ve organik body setleri on raf mock kontrolune alindi.', read: true, timeLabel: '11:20' },
   ];
 }
 
 export async function getOpenDocumentsMock(): Promise<OpenDocument[]> {
   await wait(200);
   return [
-    { id: 'FIS-1024', customerName: 'ABC Baby Store', itemCount: 8, status: 'Açık', updatedAt: 'Bugün 09:10' },
-    { id: 'FIS-1025', customerName: 'Merkez müşteri', itemCount: 3, status: 'Beklemede', updatedAt: 'Bugün 09:35' },
-    { id: 'FIS-1026', customerName: 'Depo teslim', itemCount: 2, status: 'Gönderilemedi', updatedAt: 'Dün 18:05' },
-    { id: 'FIS-1027', customerName: 'Nova Baby', itemCount: 11, status: 'Açık', updatedAt: 'Bugün 11:05' },
-    { id: 'FIS-1028', customerName: 'Bebek Dünyası', itemCount: 5, status: 'Beklemede', updatedAt: 'Bugün 11:40' },
-    { id: 'FIS-1029', customerName: 'Happy Mini Store', itemCount: 7, status: 'Açık', updatedAt: 'Bugün 12:15' },
+    { id: 'FIS-1024', customerName: 'ABC Baby Store', itemCount: 8, status: 'Açık', updatedAt: 'Bugun 09:10' },
+    { id: 'FIS-1025', customerName: 'Merkez musteri', itemCount: 3, status: 'Beklemede', updatedAt: 'Bugun 09:35' },
+    { id: 'FIS-1026', customerName: 'Depo teslim', itemCount: 2, status: 'Gönderilemedi', updatedAt: 'Dun 18:05' },
+    { id: 'FIS-1027', customerName: 'Nova Baby', itemCount: 11, status: 'Açık', updatedAt: 'Bugun 11:05' },
+    { id: 'FIS-1028', customerName: 'Bebek Dunyasi', itemCount: 5, status: 'Beklemede', updatedAt: 'Bugun 11:40' },
+    { id: 'FIS-1029', customerName: 'Happy Mini Store', itemCount: 7, status: 'Açık', updatedAt: 'Bugun 12:15' },
   ];
 }
 
@@ -121,7 +214,7 @@ export async function createSaleMock(customerName: string) {
   const suffix = Date.now().toString().slice(-5);
   return {
     documentNo: `FIS-${suffix}`,
-    customerName: customerName.trim() || 'Seçili müşteri yok',
+    customerName: customerName.trim() || 'Secili musteri yok',
     itemCount: 0,
   };
 }
@@ -139,8 +232,8 @@ export async function getMockProductByCode(code: string): Promise<Product | null
   if (serviceResult.status === 'found') return serviceResult.product;
 
   if (settings.apiMode === 'real') {
-    if (serviceResult.status === 'invalid-url') throw new Error('API adresi geçersiz');
-    if (serviceResult.status === 'service-unavailable') throw new Error('Local fiyat servisi bağlı değil');
+    if (serviceResult.status === 'invalid-url') throw new Error(`${serviceResult.reason} Adres: ${settings.apiBaseUrl}`);
+    if (serviceResult.status === 'service-unavailable') throw new Error(`Local fiyat servisi bagli degil. Adres: ${settings.apiBaseUrl}. Neden: ${serviceResult.reason}`);
     return null;
   }
 
@@ -154,10 +247,10 @@ export async function getQRAlbumMock(): Promise<QRAlbum> {
     customerLabel: 'ABC Baby Store',
     status: 'Hazır',
     items: [
-      { id: 'p-1', code: 'MB-ELB-104', name: 'Kız Çocuk Elbise' },
-      { id: 'p-2', code: 'MB-TKM-212', name: 'Bebek Takım' },
-      { id: 'p-3', code: 'MB-MNT-306', name: 'Çocuk Mont' },
-      { id: 'p-4', code: 'MB-ZBN-118', name: 'Zıbın Seti' },
+      { id: 'p-1', code: 'MB-ELB-104', name: 'Kiz Cocuk Elbise' },
+      { id: 'p-2', code: 'MB-TKM-212', name: 'Bebek Takim' },
+      { id: 'p-3', code: 'MB-MNT-306', name: 'Cocuk Mont' },
+      { id: 'p-4', code: 'MB-ZBN-118', name: 'Zibin Seti' },
     ],
   };
 }
@@ -168,19 +261,19 @@ export async function getFailedOperationsMock(): Promise<FailedOperation[]> {
     {
       id: 'fail-1',
       documentNo: 'FIS-1026',
-      operationType: 'Fiş gönderimi',
-      title: 'Fiş gönderimi bekliyor',
-      reason: 'Bağlantı hazırlık aşamasında olduğu için kuyrukta tutuluyor.',
-      createdAt: 'Dün 18:05',
+      operationType: 'Fis gonderimi',
+      title: 'Fis gonderimi bekliyor',
+      reason: 'Baglanti hazirlik asamasinda oldugu icin kuyrukta tutuluyor.',
+      createdAt: 'Dun 18:05',
       status: 'Gönderilemedi',
     },
     {
       id: 'fail-2',
       documentNo: 'FIS-1028',
-      operationType: 'QR albüm hazırlığı',
-      title: 'QR albüm tekrar denenecek',
-      reason: 'Mock bağlantı gecikmesi nedeniyle işlem kuyrukta tutuluyor.',
-      createdAt: 'Bugün 11:42',
+      operationType: 'QR album hazirligi',
+      title: 'QR album tekrar denenecek',
+      reason: 'Mock baglanti gecikmesi nedeniyle islem kuyrukta tutuluyor.',
+      createdAt: 'Bugun 11:42',
       status: 'Gönderilemedi',
     },
   ];
@@ -189,39 +282,24 @@ export async function getFailedOperationsMock(): Promise<FailedOperation[]> {
 export async function testConnectionMock(settings: TerminalSettings) {
   await wait(300);
   if (settings.apiMode === 'mock') {
-    return { ok: true, message: 'Servis yok, mock sistem kullanılacak' };
+    return { ok: true, message: 'Servis yok, mock sistem kullanilacak', url: settings.apiBaseUrl };
   }
 
-  const baseUrl = normalizeApiBaseUrl(settings.apiBaseUrl);
-  const ready = Boolean(settings.terminalId.trim());
-  if (!ready) {
+  if (!settings.terminalId.trim()) {
     return {
       ok: false,
-      message: 'Bağlantı bekliyor',
+      message: 'Baglanti bekliyor',
+      url: settings.apiBaseUrl,
+      reason: 'Terminal ID eksik',
     };
   }
-  if (!baseUrl) {
-    return { ok: false, message: 'API adresi geçersiz' };
-  }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), LOCAL_PRICE_TIMEOUT_MS);
+  const result = await checkLocalPriceService(settings);
+  if (result.ok || settings.apiMode === 'real') return result;
 
-  try {
-    const response = await fetch(`${baseUrl}/health`, { method: 'GET', signal: controller.signal });
-    if (!response.ok) {
-      return {
-        ok: settings.apiMode === 'fallback',
-        message: settings.apiMode === 'fallback' ? 'Servis yok, mock sistem kullanılacak' : 'Local fiyat servisi bağlı değil',
-      };
-    }
-    return { ok: true, message: 'Local fiyat servisi bağlı - Vega fiyat okuma hazır' };
-  } catch {
-    return {
-      ok: settings.apiMode === 'fallback',
-      message: settings.apiMode === 'fallback' ? 'Servis yok, mock sistem kullanılacak' : 'Local fiyat servisi bağlı değil',
-    };
-  } finally {
-    clearTimeout(timeout);
-  }
+  return {
+    ...result,
+    ok: true,
+    message: `Servis yok, mock sistem kullanilacak. Adres: ${result.url}. Neden: ${result.reason || 'Baglanti yok'}`,
+  };
 }
