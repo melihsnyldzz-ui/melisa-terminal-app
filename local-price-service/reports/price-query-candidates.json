@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "candidates": [
+    {
+      "table": "F0102TBLBIRIMLEREX",
+      "score": 142,
+      "barcodeColumn": "BARCODE",
+      "nameColumn": "ACIKLAMA",
+      "priceColumn": "SATISFIYATI"
+    },
+    {
+      "table": "F0102TBLSTOKLAR",
+      "score": 116,
+      "barcodeColumn": "STOKKODU",
+      "nameColumn": "MALINCINSI",
+      "priceColumn": "ISKSATISFIYATI2"
+    },
+    {
+      "table": "F0102TBLBARKODSERILISTESI",
+      "score": 40,
+      "barcodeColumn": "BARKODTIPI",
+      "nameColumn": null,
+      "priceColumn": null
+    },
+    {
+      "table": "F0102TBLOTSFIYATLISTESIDEGER",
+      "score": 35,
+      "barcodeColumn": null,
+      "nameColumn": null,
+      "priceColumn": "FIYATLISTESIFLDREF"
+    }
+  ]
+}

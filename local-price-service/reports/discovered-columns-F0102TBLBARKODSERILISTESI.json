@@ -1,0 +1,73 @@
+{
+  "ok": true,
+  "mode": "metadata-only",
+  "table": "F0102TBLBARKODSERILISTESI",
+  "highlightKeywords": [
+    "BARKOD",
+    "BARCODE",
+    "STOK",
+    "KOD",
+    "AD",
+    "ACIKLAMA",
+    "FIYAT",
+    "PRICE",
+    "SATIS"
+  ],
+  "columns": [
+    {
+      "TABLE_SCHEMA": "dbo",
+      "TABLE_NAME": "F0102TBLBARKODSERILISTESI",
+      "COLUMN_NAME": "IND",
+      "DATA_TYPE": "int",
+      "CHARACTER_MAXIMUM_LENGTH": null,
+      "NUMERIC_PRECISION": 10,
+      "NUMERIC_SCALE": 0,
+      "IS_NULLABLE": "NO",
+      "highlighted": false
+    },
+    {
+      "TABLE_SCHEMA": "dbo",
+      "TABLE_NAME": "F0102TBLBARKODSERILISTESI",
+      "COLUMN_NAME": "BARKODTIPI",
+      "DATA_TYPE": "int",
+      "CHARACTER_MAXIMUM_LENGTH": null,
+      "NUMERIC_PRECISION": 10,
+      "NUMERIC_SCALE": 0,
+      "IS_NULLABLE": "YES",
+      "highlighted": true
+    },
+    {
+      "TABLE_SCHEMA": "dbo",
+      "TABLE_NAME": "F0102TBLBARKODSERILISTESI",
+      "COLUMN_NAME": "SERI",
+      "DATA_TYPE": "nvarchar",
+      "CHARACTER_MAXIMUM_LENGTH": 10,
+      "NUMERIC_PRECISION": null,
+      "NUMERIC_SCALE": null,
+      "IS_NULLABLE": "YES",
+      "highlighted": false
+    },
+    {
+      "TABLE_SCHEMA": "dbo",
+      "TABLE_NAME": "F0102TBLBARKODSERILISTESI",
+      "COLUMN_NAME": "SERIOLUSTURMASEKLI",
+      "DATA_TYPE": "int",
+      "CHARACTER_MAXIMUM_LENGTH": null,
+      "NUMERIC_PRECISION": 10,
+      "NUMERIC_SCALE": 0,
+      "IS_NULLABLE": "YES",
+      "highlighted": false
+    },
+    {
+      "TABLE_SCHEMA": "dbo",
+      "TABLE_NAME": "F0102TBLBARKODSERILISTESI",
+      "COLUMN_NAME": "HANESAYISI",
+      "DATA_TYPE": "int",
+      "CHARACTER_MAXIMUM_LENGTH": null,
+      "NUMERIC_PRECISION": 10,
+      "NUMERIC_SCALE": 0,
+      "IS_NULLABLE": "YES",
+      "highlighted": false
+    }
+  ]
+}

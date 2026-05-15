@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "candidate": {
+    "table": "F0102TBLBIRIMLEREX",
+    "score": 142,
+    "barcodeColumn": "BARCODE",
+    "nameColumn": "ACIKLAMA",
+    "priceColumn": "SATISFIYATI"
+  },
+  "sqlPriceQuery": "SELECT TOP (1)\n  CAST([BARCODE] AS nvarchar(80)) AS code,\n  CAST([ACIKLAMA] AS nvarchar(255)) AS name,\n  CAST([SATISFIYATI] AS decimal(18, 2)) AS price\nFROM [F0102TBLBIRIMLEREX]\nWHERE [BARCODE] = @code"
+}
