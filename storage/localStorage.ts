@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ActiveSaleDraft, FailedOperation, OpenDocument, SaleLine, TerminalSettings, UserSession } from '../types';
+import type { ActivePickingDraft, ActiveSaleDraft, FailedOperation, OpenDocument, PickingLine, SaleLine, TerminalSettings, UserSession } from '../types';
 
 const KEYS = {
   settings: 'melisa-terminal:settings',
@@ -7,6 +7,7 @@ const KEYS = {
   failedOperations: 'melisa-terminal:failed-operations',
   draftDocuments: 'melisa-terminal:draft-documents',
   activeSaleDraft: 'melisa-terminal:active-sale-draft',
+  activePickingDraft: 'melisa-terminal:active-picking-draft',
 };
 
 const defaultSettings: TerminalSettings = {
@@ -21,10 +22,18 @@ const defaultSettings: TerminalSettings = {
 const normalizeSaleLine = (line: SaleLine): SaleLine => {
   const quantity = Number.isFinite(line.quantity) && line.quantity > 0 ? line.quantity : 1;
   const price = Number.isFinite(line.price) && line.price >= 0 ? line.price : 0;
+  return { ...line, quantity, price };
+};
+
+const normalizePickingLine = (line: PickingLine): PickingLine => {
+  const quantity = Number.isFinite(line.quantity) && line.quantity > 0 ? line.quantity : 1;
+  const picked = Number.isFinite(line.picked) && line.picked >= 0 ? Math.min(line.picked, quantity) : 0;
   return {
     ...line,
+    code: String(line.code || '').trim().toUpperCase(),
+    name: line.name || 'Ürün adı yok',
     quantity,
-    price,
+    picked,
   };
 };
 
@@ -35,6 +44,20 @@ const normalizeActiveSaleDraft = (draft: ActiveSaleDraft | null): ActiveSaleDraf
     customerName: draft.customerName || 'Seçili müşteri yok',
     status: draft.lines?.length ? 'Hazır' : 'Taslak',
     lines: Array.isArray(draft.lines) ? draft.lines.map(normalizeSaleLine) : [],
+  };
+};
+
+const normalizeActivePickingDraft = (draft: ActivePickingDraft | null): ActivePickingDraft | null => {
+  if (!draft) return null;
+  const lines = Array.isArray(draft.lines) ? draft.lines.map(normalizePickingLine) : [];
+  const totalRequired = lines.reduce((sum, line) => sum + line.quantity, 0);
+  const totalPicked = lines.reduce((sum, line) => sum + Math.min(line.picked, line.quantity), 0);
+  const status = totalRequired > 0 && totalPicked >= totalRequired ? 'Tamamlandı' : totalPicked > 0 ? 'Toplanıyor' : 'Toplanacak';
+  return {
+    ...draft,
+    customerName: draft.customerName || 'Seçili müşteri yok',
+    status,
+    lines,
   };
 };
 
@@ -112,4 +135,17 @@ export async function saveActiveSaleDraft(draft: ActiveSaleDraft): Promise<void>
 
 export async function clearActiveSaleDraft(): Promise<void> {
   await AsyncStorage.removeItem(KEYS.activeSaleDraft);
+}
+
+export async function loadActivePickingDraft(): Promise<ActivePickingDraft | null> {
+  const draft = await readJson<ActivePickingDraft | null>(KEYS.activePickingDraft, null);
+  return normalizeActivePickingDraft(draft);
+}
+
+export async function saveActivePickingDraft(draft: ActivePickingDraft): Promise<void> {
+  await writeJson(KEYS.activePickingDraft, normalizeActivePickingDraft(draft));
+}
+
+export async function clearActivePickingDraft(): Promise<void> {
+  await AsyncStorage.removeItem(KEYS.activePickingDraft);
 }
