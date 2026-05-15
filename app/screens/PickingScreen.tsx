@@ -1,44 +1,75 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ScreenShell } from '../../components/ScreenShell';
 import { StatusPill } from '../../components/StatusPill';
 import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
+import { loadActivePickingDraft, saveActivePickingDraft } from '../../storage/localStorage';
+import type { ActivePickingDraft, PickingLine } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
 type PickingScreenProps = {
   onBack: () => void;
 };
 
-type PickingLine = {
-  id: string;
-  code: string;
-  name: string;
-  quantity: number;
-  picked: number;
+const fallbackDraft: ActivePickingDraft = {
+  documentNo: 'FIS-PICK-001',
+  customerName: 'Test toplama fişi',
+  status: 'Toplanacak',
+  updatedAt: 'Mock',
+  lines: [
+    { id: 'pick-1', code: '0000051461011', name: '12 Lİ FİGÜRLÜ PATİK', quantity: 2, picked: 0 },
+    { id: 'pick-2', code: '8697691102551', name: 'SALYY MALZEME ÇANTASI', quantity: 1, picked: 0 },
+    { id: 'pick-3', code: 'MB-1001', name: 'Bebek Takım', quantity: 3, picked: 0 },
+  ],
 };
 
-const initialLines: PickingLine[] = [
-  { id: 'pick-1', code: '0000051461011', name: '12 Lİ FİGÜRLÜ PATİK', quantity: 2, picked: 0 },
-  { id: 'pick-2', code: '8697691102551', name: 'SALYY MALZEME ÇANTASI', quantity: 1, picked: 0 },
-  { id: 'pick-3', code: 'MB-1001', name: 'Bebek Takım', quantity: 3, picked: 0 },
-];
-
 const normalizeBarcode = (value: string) => value.replace(/[\r\n]/g, '').trim().toUpperCase();
+
+const getPickingStatus = (lines: PickingLine[]): ActivePickingDraft['status'] => {
+  const totalRequired = lines.reduce((sum, line) => sum + line.quantity, 0);
+  const totalPicked = lines.reduce((sum, line) => sum + Math.min(line.picked, line.quantity), 0);
+  if (totalRequired > 0 && totalPicked >= totalRequired) return 'Tamamlandı';
+  if (totalPicked > 0) return 'Toplanıyor';
+  return 'Toplanacak';
+};
 
 export function PickingScreen({ onBack }: PickingScreenProps) {
   const barcodeInputRef = useRef<TextInput>(null);
   const [barcode, setBarcode] = useState('');
-  const [lines, setLines] = useState<PickingLine[]>(initialLines);
+  const [draft, setDraft] = useState<ActivePickingDraft>(fallbackDraft);
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
 
+  const lines = draft.lines;
   const totalRequired = useMemo(() => lines.reduce((sum, line) => sum + line.quantity, 0), [lines]);
   const totalPicked = useMemo(() => lines.reduce((sum, line) => sum + Math.min(line.picked, line.quantity), 0), [lines]);
   const remaining = Math.max(0, totalRequired - totalPicked);
   const completed = totalRequired > 0 && remaining === 0;
 
+  useEffect(() => {
+    loadActivePickingDraft().then((savedDraft) => {
+      if (savedDraft) {
+        setDraft(savedDraft);
+        setBanner({ message: `${savedDraft.documentNo} toplama fişi açıldı.`, tone: 'info' });
+      }
+      setTimeout(() => barcodeInputRef.current?.focus(), 120);
+    });
+  }, []);
+
   const focusBarcode = () => setTimeout(() => barcodeInputRef.current?.focus(), 80);
+
+  const persistDraft = async (nextLines: PickingLine[], message?: string, tone: ToastTone = 'success') => {
+    const nextDraft: ActivePickingDraft = {
+      ...draft,
+      status: getPickingStatus(nextLines),
+      lines: nextLines,
+      updatedAt: 'Şimdi',
+    };
+    setDraft(nextDraft);
+    await saveActivePickingDraft(nextDraft);
+    if (message) setBanner({ message, tone });
+  };
 
   const scanBarcode = (rawCode = barcode) => {
     const code = normalizeBarcode(rawCode);
@@ -67,9 +98,8 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
     }
 
     const nextLines = lines.map((line) => (line.id === target.id ? { ...line, picked: Math.min(line.quantity, line.picked + 1) } : line));
-    setLines(nextLines);
     setBarcode('');
-    setBanner({ message: `✓ TOPLANDI: ${target.name}`, tone: 'success' });
+    void persistDraft(nextLines, `✓ TOPLANDI: ${target.name}`);
     notifySuccess();
     focusBarcode();
   };
@@ -89,7 +119,7 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
       if (line.id !== lineId) return line;
       return line.picked >= line.quantity ? { ...line, picked: 0 } : { ...line, picked: line.quantity };
     });
-    setLines(nextLines);
+    void persistDraft(nextLines, 'Toplama satırı güncellendi.', 'info');
     focusBarcode();
   };
 
@@ -99,14 +129,14 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
 
       <View style={styles.headerPanel}>
         <View style={styles.headerTopRow}>
-          <Text style={styles.documentNo}>FIS-PICK-001</Text>
+          <Text style={styles.documentNo}>{draft.documentNo}</Text>
           <StatusPill label={completed ? 'Tamamlandı' : `${totalPicked}/${totalRequired}`} tone={completed ? 'success' : 'warning'} />
         </View>
-        <Text style={styles.customerName}>Test toplama fişi</Text>
+        <Text style={styles.customerName}>{draft.customerName}</Text>
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${totalRequired ? Math.round((totalPicked / totalRequired) * 100) : 0}%` }]} />
         </View>
-        <Text style={styles.remainingText}>{completed ? 'TOPLAMA TAMAMLANDI' : `${remaining} adet kaldı`}</Text>
+        <Text style={styles.remainingText}>{completed ? 'TOPLAMA TAMAMLANDI' : `${remaining} adet kaldı · ${draft.status}`}</Text>
       </View>
 
       <View style={styles.scanPanel}>
