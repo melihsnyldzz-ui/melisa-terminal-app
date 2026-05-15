@@ -72,11 +72,27 @@ export type PickingLine = {
   picked: number;
 };
 
+export type PackingBoxLine = {
+  lineId: string;
+  code: string;
+  name: string;
+  quantity: number;
+};
+
+export type PackingBox = {
+  id: string;
+  label: string;
+  lines: PackingBoxLine[];
+};
+
 export type ActivePickingDraft = {
   documentNo: string;
   customerName: string;
   status: 'Toplanacak' | 'Toplanıyor' | 'Tamamlandı';
   lines: PickingLine[];
+  boxes?: PackingBox[];
+  activeBoxId?: string;
+  packingStatus?: 'Kolilenmedi' | 'Kolileniyor' | 'Kolilendi';
   updatedAt: string;
 };
 
