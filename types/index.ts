@@ -2,6 +2,7 @@ export type AppScreen =
   | 'login'
   | 'dashboard'
   | 'newSale'
+  | 'picking'
   | 'openDocuments'
   | 'qrAlbum'
   | 'messages'
