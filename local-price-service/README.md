@@ -72,6 +72,7 @@ v3.2.0 ile Vega SQL tablo, kolon ve fiyat sorgusu doğrulaması için read-only 
 node scripts/discover-tables.js
 node scripts/discover-columns.js TABLO_ADI
 node scripts/test-price-query.js
+node scripts/analyze-discovery-reports.js
 ```
 
 Rapor dosyası kaydetmek için `--save` parametresi eklenir:
@@ -80,6 +81,7 @@ Rapor dosyası kaydetmek için `--save` parametresi eklenir:
 node scripts/discover-tables.js --save
 node scripts/discover-columns.js TABLO_ADI --save
 node scripts/test-price-query.js --save
+node scripts/analyze-discovery-reports.js --save
 ```
 
 Scriptlerin amacı:
@@ -87,6 +89,7 @@ Scriptlerin amacı:
 - `discover-tables.js`: barkod, stok ve fiyat çağrışımı yapan tablo adlarını metadata üzerinden listeler.
 - `discover-columns.js`: verilen tablonun kolonlarını listeler; barkod, stok, kod, ad, açıklama, fiyat ve satış kelimelerini öne çıkarır.
 - `test-price-query.js`: `.env` içindeki `SQL_PRICE_QUERY` ve `SQL_TEST_BARCODE` ile parametreli read-only deneme yapar.
+- `analyze-discovery-reports.js`: `reports/discovered-tables.json` ve `reports/discovered-columns-*.json` çıktılarından fiyat sorgusu için en güçlü tablo/kolon adaylarını önerir.
 
 Güvenlik notu: Bu scriptler veri yazmaz; sadece SELECT ve metadata kontrolü yapar. `test-price-query.js` SELECT dışındaki yazma/yönetim komutlarını fail-closed reddeder. `--save` ile oluşan rapor dosyaları Vega/SQL verisi yazma işlemi değildir; yalnızca `local-price-service/reports/` altında tutulan lokal analiz çıktısıdır.
 
@@ -129,4 +132,4 @@ Güvenlik notu: Bu scriptler veri yazmaz; sadece SELECT ve metadata kontrolü ya
 
 ## Not
 
-Bu servis v3.3.0 hazırlık iskeletidir. Demo mod varsayılan olarak açıktır. Gerçek Vega tablo/ad alanı netleşmeden demo mod kapatılmamalıdır.
+Bu servis v3.4.0 hazırlık iskeletidir. Demo mod varsayılan olarak açıktır. Gerçek Vega tablo/ad alanı netleşmeden demo mod kapatılmamalıdır.
