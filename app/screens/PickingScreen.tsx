@@ -15,6 +15,8 @@ type PickingScreenProps = {
 
 type ScanAlert = { text: string; tone: 'success' | 'error' | 'info' } | null;
 
+type LineFilter = 'all' | 'remaining';
+
 const fallbackDraft: ActivePickingDraft = {
   documentNo: 'FIS-PICK-001',
   customerName: 'Test toplama fişi',
@@ -64,6 +66,7 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
   const [barcode, setBarcode] = useState('');
   const [draft, setDraft] = useState<ActivePickingDraft>(fallbackDraft);
   const [mode, setMode] = useState<'picking' | 'packing'>('picking');
+  const [lineFilter, setLineFilter] = useState<LineFilter>('remaining');
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
   const [scanAlert, setScanAlert] = useState<ScanAlert>(null);
 
@@ -77,6 +80,7 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
   const remaining = Math.max(0, totalRequired - totalPicked);
   const packRemaining = Math.max(0, totalPicked - totalPacked);
   const completed = totalRequired > 0 && remaining === 0;
+  const visibleLines = lineFilter === 'remaining' ? lines.filter((line) => line.picked < line.quantity) : lines;
 
   useEffect(() => {
     loadActivePickingDraft().then((savedDraft) => {
@@ -286,7 +290,15 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
         </View>
       ) : (
         <View style={styles.listPanel}>
-          {lines.map((line) => {
+          <View style={styles.filterBar}>
+            <Pressable onPress={() => setLineFilter('remaining')} style={({ pressed }) => [styles.filterButton, lineFilter === 'remaining' && styles.filterActive, pressed && styles.pressed]}>
+              <Text style={[styles.filterText, lineFilter === 'remaining' && styles.filterTextActive]}>EKSİKLER</Text>
+            </Pressable>
+            <Pressable onPress={() => setLineFilter('all')} style={({ pressed }) => [styles.filterButton, lineFilter === 'all' && styles.filterActive, pressed && styles.pressed]}>
+              <Text style={[styles.filterText, lineFilter === 'all' && styles.filterTextActive]}>TÜMÜ</Text>
+            </Pressable>
+          </View>
+          {visibleLines.length === 0 ? <Text style={styles.emptyBoxText}>Eksik ürün kalmadı.</Text> : visibleLines.map((line) => {
             const done = line.picked >= line.quantity;
             return (
               <Pressable key={line.id} onPress={() => toggleLine(line.id)} style={({ pressed }) => [styles.lineRow, done && styles.lineDone, pressed && styles.pressed]}>
@@ -331,6 +343,11 @@ const styles = StyleSheet.create({
   scanButton: { minHeight: 42, borderRadius: radius.md, backgroundColor: colors.red, alignItems: 'center', justifyContent: 'center' },
   scanButtonText: { color: colors.surface, fontSize: typography.body, fontWeight: '900' },
   listPanel: { gap: spacing.xs },
+  filterBar: { flexDirection: 'row', gap: spacing.xs },
+  filterButton: { flex: 1, minHeight: 34, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  filterActive: { backgroundColor: colors.anthracite, borderColor: colors.anthracite, borderBottomWidth: 2, borderBottomColor: colors.red },
+  filterText: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
+  filterTextActive: { color: colors.surface },
   lineRow: { minHeight: 58, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, padding: spacing.xs },
   lineDone: { backgroundColor: colors.successSoft, borderColor: colors.success },
   checkBox: { width: 32, color: colors.anthracite, fontSize: 24, fontWeight: '900', textAlign: 'center' },
