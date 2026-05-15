@@ -76,6 +76,7 @@ node scripts/analyze-discovery-reports.js
 node scripts/generate-price-query.js
 node scripts/run-generated-query.js
 node scripts/price-lookup-pipeline.js
+node scripts/test-vega-joined-price-query.js
 ```
 
 Rapor dosyası kaydetmek için `--save` parametresi eklenir:
@@ -87,6 +88,7 @@ node scripts/test-price-query.js --save
 node scripts/analyze-discovery-reports.js --save
 node scripts/generate-price-query.js --save
 node scripts/run-generated-query.js --save
+node scripts/test-vega-joined-price-query.js --save
 ```
 
 Gerçek test için önerilen sıralı akış:
@@ -108,8 +110,9 @@ Scriptlerin amacı:
 - `generate-price-query.js`: `reports/price-query-candidates.json` içindeki en yüksek skorlu adaydan güvenli bracket escape uygulanmış `SQL_PRICE_QUERY` önerisi üretir.
 - `run-generated-query.js`: `reports/generated-price-query.json` içindeki sorguyu `SQL_TEST_BARCODE` ile kontrollü olarak gerçek SQL Server bağlantısında dener.
 - `price-lookup-pipeline.js`: rapor ön koşullarını, `SQL_TEST_BARCODE` değerini ve generated sorguyu kontrol ederek tek komutla read-only fiyat sorgusu testi yapar.
+- `test-vega-joined-price-query.js`: `F0102TBLBIRIMLEREX.STOKNO = F0102TBLSTOKLAR.IND` join'i ile `MALINCINSI` ürün adını read-only test eder.
 
-Güvenlik notu: Bu scriptler veri yazmaz; sadece SELECT ve metadata kontrolü yapar. `test-price-query.js`, `run-generated-query.js` ve `price-lookup-pipeline.js` SELECT dışındaki yazma/yönetim komutlarını fail-closed reddeder. `--save` ile oluşan rapor dosyaları Vega/SQL verisi yazma işlemi değildir; yalnızca `local-price-service/reports/` altında tutulan lokal analiz çıktısıdır. `generate-price-query.js` ürettiği sorguyu otomatik olarak `.env` içine yazmaz; gerçek kullanımdan önce insan onayı gerekir.
+Güvenlik notu: Bu scriptler veri yazmaz; sadece SELECT ve metadata kontrolü yapar. `test-price-query.js`, `run-generated-query.js`, `price-lookup-pipeline.js` ve `test-vega-joined-price-query.js` SELECT dışındaki yazma/yönetim komutlarını fail-closed reddeder. `--save` ile oluşan rapor dosyaları Vega/SQL verisi yazma işlemi değildir; yalnızca `local-price-service/reports/` altında tutulan lokal analiz çıktısıdır. `generate-price-query.js` ürettiği sorguyu otomatik olarak `.env` içine yazmaz; gerçek kullanımdan önce insan onayı gerekir.
 
 ## Endpointler
 
@@ -150,4 +153,4 @@ Güvenlik notu: Bu scriptler veri yazmaz; sadece SELECT ve metadata kontrolü ya
 
 ## Not
 
-Bu servis v3.7.0 hazırlık iskeletidir. Demo mod varsayılan olarak açıktır. Gerçek Vega tablo/ad alanı netleşmeden demo mod kapatılmamalıdır.
+Bu servis v3.8.0 hazırlık iskeletidir. Demo mod varsayılan olarak açıktır. Gerçek Vega tablo/ad alanı netleşmeden demo mod kapatılmamalıdır.

@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "code": "8697691102551",
+  "rows": [
+    {
+      "code": "8697691102551",
+      "name": "SALYY MALZEME ÇANTASI",
+      "price": 0
+    }
+  ],
+  "summary": {
+    "found": true,
+    "barcode": "8697691102551",
+    "name": "SALYY MALZEME ÇANTASI",
+    "price": 0,
+    "isPriceZero": true,
+    "isNameEmpty": false
+  }
+}

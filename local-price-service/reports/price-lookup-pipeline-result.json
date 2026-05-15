@@ -1,5 +1,11 @@
 {
   "ok": true,
-  "code": "GERCEK_BARKOD",
-  "rows": []
+  "code": "8697691102551",
+  "rows": [
+    {
+      "code": "8697691102551",
+      "name": "FIYAT",
+      "price": 0
+    }
+  ]
 }
