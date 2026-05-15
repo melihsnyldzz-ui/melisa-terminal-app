@@ -9,6 +9,7 @@ import { LoginScreen } from './app/screens/LoginScreen';
 import { MessagesScreen } from './app/screens/MessagesScreen';
 import { NewSaleScreen } from './app/screens/NewSaleScreen';
 import { OpenDocumentsScreen } from './app/screens/OpenDocumentsScreen';
+import { PickingScreen } from './app/screens/PickingScreen';
 import { QRAlbumScreen } from './app/screens/QRAlbumScreen';
 import { SettingsScreen } from './app/screens/SettingsScreen';
 import { colors } from './app/theme';
@@ -100,6 +101,7 @@ export default function App() {
   const renderScreen = () => {
     if (screen === 'login') return <LoginScreen onLogin={handleLogin} systemMessage={backHint} />;
     if (screen === 'newSale') return <NewSaleScreen onBack={() => navigateTo('dashboard')} />;
+    if (screen === 'picking') return <PickingScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'openDocuments') return <OpenDocumentsScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
     if (screen === 'qrAlbum') return <QRAlbumScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
     if (screen === 'messages') return <MessagesScreen onBack={() => navigateTo('dashboard')} />;
