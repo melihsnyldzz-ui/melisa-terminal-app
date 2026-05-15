@@ -13,6 +13,8 @@ type PickingScreenProps = {
   onBack: () => void;
 };
 
+type ScanAlert = { text: string; tone: 'success' | 'error' | 'info' } | null;
+
 const fallbackDraft: ActivePickingDraft = {
   documentNo: 'FIS-PICK-001',
   customerName: 'Test toplama fişi',
@@ -58,10 +60,12 @@ const getPackingStatus = (lines: PickingLine[], boxes: PackingBox[]): ActivePick
 
 export function PickingScreen({ onBack }: PickingScreenProps) {
   const barcodeInputRef = useRef<TextInput>(null);
+  const alertTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [barcode, setBarcode] = useState('');
   const [draft, setDraft] = useState<ActivePickingDraft>(fallbackDraft);
   const [mode, setMode] = useState<'picking' | 'packing'>('picking');
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
+  const [scanAlert, setScanAlert] = useState<ScanAlert>(null);
 
   const safeDraft = ensureBoxes(draft);
   const lines = safeDraft.lines;
@@ -83,9 +87,19 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
       }
       setTimeout(() => barcodeInputRef.current?.focus(), 120);
     });
+
+    return () => {
+      if (alertTimerRef.current) clearTimeout(alertTimerRef.current);
+    };
   }, []);
 
   const focusBarcode = () => setTimeout(() => barcodeInputRef.current?.focus(), 80);
+
+  const flashAlert = (text: string, tone: NonNullable<ScanAlert>['tone']) => {
+    setScanAlert({ text, tone });
+    if (alertTimerRef.current) clearTimeout(alertTimerRef.current);
+    alertTimerRef.current = setTimeout(() => setScanAlert(null), 1300);
+  };
 
   const persistDraft = async (nextDraft: ActivePickingDraft, message?: string, tone: ToastTone = 'success') => {
     const draftWithBoxes = ensureBoxes(nextDraft);
@@ -108,6 +122,7 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
     const packedForLine = getPackedQuantity(boxes, line.id);
     if (packedForLine >= line.picked) {
       setBanner({ message: `${line.name} için kolilenecek adet kalmadı.`, tone: 'info' });
+      flashAlert('KOLİ ADETİ TAMAM', 'info');
       notifyWarning();
       focusBarcode();
       return;
@@ -123,6 +138,7 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
     });
 
     await persistDraft({ ...safeDraft, boxes: nextBoxes, packingStatus: 'Kolileniyor' }, `📦 ${activeBox.label}: ${line.name}`);
+    flashAlert('KOLİYE EKLENDİ', 'success');
     notifySuccess();
     focusBarcode();
   };
@@ -131,6 +147,7 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
     const code = normalizeBarcode(rawCode);
     if (!code) {
       setBanner({ message: 'Barkod okut veya yaz.', tone: 'warning' });
+      flashAlert('BARKOD BOŞ', 'info');
       notifyWarning();
       focusBarcode();
       return;
@@ -139,6 +156,7 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
     const target = lines.find((line) => line.code === code);
     if (!target) {
       setBanner({ message: `YANLIŞ ÜRÜN: ${code}`, tone: 'error' });
+      flashAlert('YANLIŞ ÜRÜN', 'error');
       notifyWarning();
       setBarcode('');
       focusBarcode();
@@ -153,6 +171,7 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
 
     if (target.picked >= target.quantity) {
       setBanner({ message: `${target.name} zaten tamamlandı.`, tone: 'info' });
+      flashAlert('ZATEN TAMAM', 'info');
       notifyWarning();
       focusBarcode();
       return;
@@ -160,6 +179,7 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
 
     const nextLines = lines.map((line) => (line.id === target.id ? { ...line, picked: Math.min(line.quantity, line.picked + 1) } : line));
     void persistLines(nextLines, `✓ TOPLANDI: ${target.name}`);
+    flashAlert('DOĞRU ÜRÜN', 'success');
     notifySuccess();
     focusBarcode();
   };
@@ -180,6 +200,7 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
       return line.picked >= line.quantity ? { ...line, picked: 0 } : { ...line, picked: line.quantity };
     });
     void persistLines(nextLines, 'Toplama satırı güncellendi.', 'info');
+    flashAlert('SATIR GÜNCELLENDİ', 'info');
     focusBarcode();
   };
 
@@ -187,12 +208,14 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
     const nextIndex = boxes.length + 1;
     const nextBox: PackingBox = { id: `box-${Date.now()}`, label: `Koli ${nextIndex}`, lines: [] };
     void persistDraft({ ...safeDraft, boxes: [...boxes, nextBox], activeBoxId: nextBox.id, packingStatus: 'Kolileniyor' }, `${nextBox.label} açıldı.`, 'info');
+    flashAlert(`${nextBox.label} AÇILDI`, 'info');
     focusBarcode();
   };
 
   return (
     <ScreenShell title="Toplama" subtitle="Scan-to-confirm hızlı depo modu" onBack={onBack}>
       <ToastMessage message={banner?.message} tone={banner?.tone} />
+      {scanAlert ? <View style={[styles.alertStrip, scanAlert.tone === 'error' && styles.alertError, scanAlert.tone === 'success' && styles.alertSuccess]}><Text style={styles.alertText}>{scanAlert.text}</Text></View> : null}
 
       <View style={styles.headerPanel}>
         <View style={styles.headerTopRow}>
@@ -286,6 +309,10 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
 }
 
 const styles = StyleSheet.create({
+  alertStrip: { minHeight: 44, borderRadius: radius.md, backgroundColor: colors.anthracite, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 3, borderBottomColor: colors.red },
+  alertError: { backgroundColor: colors.red, borderBottomColor: colors.anthracite },
+  alertSuccess: { backgroundColor: colors.success, borderBottomColor: colors.anthracite },
+  alertText: { color: colors.surface, fontSize: typography.section, fontWeight: '900' },
   headerPanel: { backgroundColor: colors.anthracite, borderRadius: radius.lg, padding: spacing.sm, gap: spacing.xs, borderBottomWidth: 3, borderBottomColor: colors.red },
   headerTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   documentNo: { color: colors.surface, fontSize: typography.section, fontWeight: '900' },
