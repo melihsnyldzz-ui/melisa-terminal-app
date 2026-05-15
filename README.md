@@ -10,6 +10,10 @@ Bu uygulama personelin saha, depo ve satış işlemlerini hızlı, sade ve güve
 
 Local Price Service v2.9.0 hazırlığı başladı. Windows bilgisayarda çalışacak Express servis iskeleti `local-price-service/` klasörüne eklendi; terminal uygulaması için `/health` ve demo `/product-price` endpointleri hazırlanır.
 
+## Local Price Service v3.0.0
+
+Local Price Service SQL Server hazırlığı başladı. `local-price-service/` içinde demo mod varsayılan korunur; Vega tablo, ürün kodu ve fiyat alanları netleşene kadar gerçek SQL sorgusu `SQL_PRICE_QUERY` placeholder ayarıyla devreye alınmaz.
+
 ## Kurulum
 
 ```powershell
