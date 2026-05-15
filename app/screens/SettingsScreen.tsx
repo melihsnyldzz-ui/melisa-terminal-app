@@ -29,7 +29,7 @@ const apiModeOptions: Array<{ value: TerminalSettings['apiMode']; label: string 
 const apiModeLabels: Record<TerminalSettings['apiMode'], string> = {
   mock: 'Mock Demo',
   real: 'Gerçek Servis',
-  fallback: 'Fallback',
+  fallback: 'Servis varsa kullan, yoksa mock',
 };
 
 export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProps) {
@@ -132,7 +132,7 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
       </Section>
 
       <Section title="Bağlantı">
-        <Field label="API adresi" value={settings.apiBaseUrl} onChangeText={(value) => update('apiBaseUrl', value)} />
+        <Field label="API adresi" value={settings.apiBaseUrl} onChangeText={(value) => update('apiBaseUrl', value)} placeholder="http://192.168.1.50:8787" />
         <View style={styles.field}>
           <Text style={styles.label}>Fiyat Kaynağı</Text>
           <View style={styles.priceSourceGrid}>
@@ -226,14 +226,15 @@ function HealthCard({ label, value, tone }: HealthCardProps) {
 type FieldProps = {
   label: string;
   value: string;
+  placeholder?: string;
   onChangeText: (value: string) => void;
 };
 
-function Field({ label, value, onChangeText }: FieldProps) {
+function Field({ label, value, placeholder, onChangeText }: FieldProps) {
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput value={value} onChangeText={onChangeText} style={styles.input} />
+      <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={colors.muted} style={styles.input} />
     </View>
   );
 }

@@ -215,7 +215,7 @@ export async function testConnectionMock(settings: TerminalSettings) {
         message: settings.apiMode === 'fallback' ? 'Servis yok, mock sistem kullanılacak' : 'Local fiyat servisi bağlı değil',
       };
     }
-    return { ok: true, message: 'Local fiyat servisi bağlı' };
+    return { ok: true, message: 'Local fiyat servisi bağlı - Vega fiyat okuma hazır' };
   } catch {
     return {
       ok: settings.apiMode === 'fallback',

@@ -41,7 +41,7 @@ const mockCustomers: CustomerSuggestion[] = [
 const quickCodes = ['MB-1001', 'MB-1002', 'MB-1003', 'MB-1004', 'MB-1005', 'MB-1006', 'MB-1007', 'MB-1008'];
 
 const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase('tr-TR');
-const formatPrice = (price: number) => `${price.toLocaleString('tr-TR')} TL`;
+const formatPrice = (price: number, currency = 'TL') => `${price.toLocaleString('tr-TR')} ${currency}`;
 const parseQuantity = (value: string) => {
   const parsed = Number(value.replace(/[^0-9]/g, ''));
   if (!Number.isFinite(parsed) || parsed < 1) return 1;
@@ -197,7 +197,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       setPendingProduct({ ...product, time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) });
       setQuantityInput('1');
       setPendingDeleteLineId(null);
-      setBanner({ message: `${product.code} bulundu. Fiyat: ${formatPrice(product.price)}. Adet gir.`, tone: 'success' });
+      setBanner({ message: `${product.code} bulundu. Fiyat: ${formatPrice(product.price, product.currency)}. Adet gir.`, tone: 'success' });
       notifySuccess();
       focusQuantity();
     } catch (error) {
@@ -219,14 +219,14 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     const quantity = parseQuantity(quantityInput);
     const existingLine = lines.find((line) => line.code === pendingProduct.code);
     const nextLines = existingLine
-      ? lines.map((line) => (line.lineId === existingLine.lineId ? { ...line, quantity: line.quantity + quantity, price: pendingProduct.price } : line))
+      ? lines.map((line) => (line.lineId === existingLine.lineId ? { ...line, quantity: line.quantity + quantity, price: pendingProduct.price, currency: pendingProduct.currency } : line))
       : [...lines, { ...pendingProduct, lineId: `${pendingProduct.code}-${Date.now()}`, quantity }];
 
     setLines(nextLines);
     setPendingProduct(null);
     setQuantityInput('1');
     await persistDraft(nextLines);
-    setBanner({ message: `${pendingProduct.code} · ${quantity} adet · ${formatPrice(pendingProduct.price)} fiyatla fişe eklendi.`, tone: 'success' });
+    setBanner({ message: `${pendingProduct.code} · ${quantity} adet · ${formatPrice(pendingProduct.price, pendingProduct.currency)} fiyatla fişe eklendi.`, tone: 'success' });
     notifySuccess();
     focusScanner();
   };
@@ -430,7 +430,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
                 </View>
                 <View style={styles.priceBadge}>
                   <Text style={styles.priceBadgeLabel}>Fiyat</Text>
-                  <Text style={styles.priceBadgeValue}>{formatPrice(pendingProduct.price)}</Text>
+                  <Text style={styles.priceBadgeValue}>{formatPrice(pendingProduct.price, pendingProduct.currency)}</Text>
                 </View>
               </View>
               <View style={styles.quantityEntryRow}>
@@ -447,7 +447,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
                 </View>
                 <View style={styles.pendingTotalBox}>
                   <Text style={styles.pendingTotalLabel}>Satır tutarı</Text>
-                  <Text style={styles.pendingTotalValue}>{formatPrice(pendingTotal)}</Text>
+                  <Text style={styles.pendingTotalValue}>{formatPrice(pendingTotal, pendingProduct.currency)}</Text>
                 </View>
               </View>
             </View>
@@ -483,7 +483,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
               <View style={styles.productMain}>
                 <Text style={styles.productCode}>{line.code}</Text>
                 <Text style={styles.productName} numberOfLines={1}>{line.name}</Text>
-                <Text style={styles.productMeta} numberOfLines={1}>Birim {formatPrice(line.price)} · Satır {formatPrice(line.price * line.quantity)}</Text>
+                <Text style={styles.productMeta} numberOfLines={1}>Birim {formatPrice(line.price, line.currency)} · Satır {formatPrice(line.price * line.quantity, line.currency)}</Text>
               </View>
               <View style={styles.quantityBlock}>
                 <Text style={styles.quantityLabel}>Adet</Text>
