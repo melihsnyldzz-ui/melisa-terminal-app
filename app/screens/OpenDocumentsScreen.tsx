@@ -54,6 +54,11 @@ export function OpenDocumentsScreen({ onBack, onNavigate }: OpenDocumentsScreenP
     onNavigate('newSale');
   };
 
+  const startPicking = (documentNo: string) => {
+    setBanner({ message: `${documentNo} toplama ekranına alındı.`, tone: 'success' });
+    onNavigate('picking');
+  };
+
   const prepareAlbum = (documentNo: string) => {
     setBanner({ message: `${documentNo} için QR albüm yönlendirmesi hazır.`, tone: 'info' });
     onNavigate('qrAlbum');
@@ -93,7 +98,7 @@ export function OpenDocumentsScreen({ onBack, onNavigate }: OpenDocumentsScreenP
         <View style={styles.summaryTopRow}>
           <View style={styles.summaryMainText}>
             <Text style={styles.summaryTitle}>Fiş operasyonları</Text>
-            <Text style={styles.summaryText}>Arama ve durum filtresiyle açık işleri hızlı kontrol et.</Text>
+            <Text style={styles.summaryText}>Fişi aç veya barkodla toplama ekranına gönder.</Text>
           </View>
           <StatusPill label={failedCount > 0 ? `${failedCount} risk` : 'Temiz'} tone={failedCount > 0 ? 'warning' : 'success'} />
         </View>
@@ -125,9 +130,10 @@ export function OpenDocumentsScreen({ onBack, onNavigate }: OpenDocumentsScreenP
             </View>
             <ActionRow
               actions={[
+                { label: 'Topla', onPress: () => startPicking(document.id), variant: 'primary' },
                 { label: 'Aç', onPress: () => openDocument(document.id), variant: 'quiet' },
-                { label: 'QR Albüm', onPress: () => prepareAlbum(document.id), variant: 'secondary' },
-                { label: 'Gönder', onPress: () => sendDocument(document), variant: 'primary' },
+                { label: 'QR', onPress: () => prepareAlbum(document.id), variant: 'secondary' },
+                { label: 'Gönder', onPress: () => sendDocument(document), variant: 'secondary' },
               ]}
             />
           </View>
