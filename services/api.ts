@@ -41,10 +41,15 @@ type LocalPriceServiceResponse = {
   price?: number;
 };
 
-async function getProductFromLocalPriceService(code: string): Promise<Product | null> {
-  const settings = await loadSettings();
-  const baseUrl = normalizeApiBaseUrl(settings.apiBaseUrl);
-  if (!baseUrl) return null;
+type LocalPriceLookupResult =
+  | { status: 'found'; product: Product }
+  | { status: 'not-found' }
+  | { status: 'invalid-url' }
+  | { status: 'service-unavailable' };
+
+async function getProductFromLocalPriceService(code: string, apiBaseUrl: string): Promise<LocalPriceLookupResult> {
+  const baseUrl = normalizeApiBaseUrl(apiBaseUrl);
+  if (!baseUrl) return { status: 'invalid-url' };
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), LOCAL_PRICE_TIMEOUT_MS);
@@ -54,18 +59,21 @@ async function getProductFromLocalPriceService(code: string): Promise<Product | 
       method: 'GET',
       signal: controller.signal,
     });
-    if (!response.ok) return null;
+    if (!response.ok) return { status: 'service-unavailable' };
 
     const payload = (await response.json()) as LocalPriceServiceResponse;
-    if (!payload.found || !payload.name || typeof payload.price !== 'number') return null;
+    if (!payload.found || !payload.name || typeof payload.price !== 'number') return { status: 'not-found' };
 
     return {
-      code: (payload.code || code).trim().toUpperCase(),
-      name: payload.name,
-      price: payload.price,
+      status: 'found',
+      product: {
+        code: (payload.code || code).trim().toUpperCase(),
+        name: payload.name,
+        price: payload.price,
+      },
     };
   } catch {
-    return null;
+    return { status: 'service-unavailable' };
   } finally {
     clearTimeout(timeout);
   }
@@ -116,11 +124,25 @@ export async function createSaleMock(customerName: string) {
   };
 }
 
-export async function getMockProductByCode(code: string): Promise<Product> {
+export async function getMockProductByCode(code: string): Promise<Product | null> {
   await wait(120);
   const normalizedCode = code.trim().toUpperCase();
-  const serviceProduct = await getProductFromLocalPriceService(normalizedCode);
-  return serviceProduct ?? getMockProductFallback(normalizedCode);
+  const settings = await loadSettings();
+
+  if (settings.apiMode === 'mock') {
+    return getMockProductFallback(normalizedCode);
+  }
+
+  const serviceResult = await getProductFromLocalPriceService(normalizedCode, settings.apiBaseUrl);
+  if (serviceResult.status === 'found') return serviceResult.product;
+
+  if (settings.apiMode === 'real') {
+    if (serviceResult.status === 'invalid-url') throw new Error('API adresi geçersiz');
+    if (serviceResult.status === 'service-unavailable') throw new Error('Local fiyat servisi bağlı değil');
+    return null;
+  }
+
+  return getMockProductFallback(normalizedCode);
 }
 
 export async function getQRAlbumMock(): Promise<QRAlbum> {
@@ -164,13 +186,20 @@ export async function getFailedOperationsMock(): Promise<FailedOperation[]> {
 
 export async function testConnectionMock(settings: TerminalSettings) {
   await wait(300);
+  if (settings.apiMode === 'mock') {
+    return { ok: true, message: 'Servis yok, mock sistem kullanılacak' };
+  }
+
   const baseUrl = normalizeApiBaseUrl(settings.apiBaseUrl);
-  const ready = Boolean(settings.terminalId.trim() && baseUrl);
+  const ready = Boolean(settings.terminalId.trim());
   if (!ready) {
     return {
       ok: false,
       message: 'Bağlantı bekliyor',
     };
+  }
+  if (!baseUrl) {
+    return { ok: false, message: 'API adresi geçersiz' };
   }
 
   const controller = new AbortController();
@@ -179,11 +208,17 @@ export async function testConnectionMock(settings: TerminalSettings) {
   try {
     const response = await fetch(`${baseUrl}/health`, { method: 'GET', signal: controller.signal });
     if (!response.ok) {
-      return { ok: false, message: 'Local fiyat servisi cevap vermedi' };
+      return {
+        ok: settings.apiMode === 'fallback',
+        message: settings.apiMode === 'fallback' ? 'Servis yok, mock sistem kullanılacak' : 'Local fiyat servisi bağlı değil',
+      };
     }
-    return { ok: true, message: 'Local fiyat servisi bağlantısı başarılı' };
+    return { ok: true, message: 'Local fiyat servisi bağlı' };
   } catch {
-    return { ok: false, message: 'Local fiyat servisine ulaşılamadı; mock fiyat sistemi korunur' };
+    return {
+      ok: settings.apiMode === 'fallback',
+      message: settings.apiMode === 'fallback' ? 'Servis yok, mock sistem kullanılacak' : 'Local fiyat servisi bağlı değil',
+    };
   } finally {
     clearTimeout(timeout);
   }

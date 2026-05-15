@@ -183,14 +183,31 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     }
     lastScanRef.current = { code, time: now };
 
-    const product = await getMockProductByCode(code);
-    setPendingProduct({ ...product, time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) });
-    setQuantityInput('1');
-    setBarcode('');
-    setPendingDeleteLineId(null);
-    setBanner({ message: `${product.code} bulundu. Fiyat: ${formatPrice(product.price)}. Adet gir.`, tone: 'success' });
-    notifySuccess();
-    focusQuantity();
+    try {
+      const product = await getMockProductByCode(code);
+      setBarcode('');
+      if (!product) {
+        setPendingProduct(null);
+        setBanner({ message: `${code} için ürün bulunamadı.`, tone: 'warning' });
+        notifyWarning();
+        focusScanner();
+        return;
+      }
+
+      setPendingProduct({ ...product, time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) });
+      setQuantityInput('1');
+      setPendingDeleteLineId(null);
+      setBanner({ message: `${product.code} bulundu. Fiyat: ${formatPrice(product.price)}. Adet gir.`, tone: 'success' });
+      notifySuccess();
+      focusQuantity();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Ürün araması güvenli şekilde tamamlanamadı.';
+      setBarcode('');
+      setPendingProduct(null);
+      setBanner({ message, tone: 'warning' });
+      notifyWarning();
+      focusScanner();
+    }
   };
 
   const addPendingProduct = async () => {

@@ -81,6 +81,7 @@ export type TerminalSettings = {
   terminalId: string;
   branch: string;
   apiBaseUrl: string;
+  apiMode: 'mock' | 'real' | 'fallback';
   vibrationEnabled: boolean;
   urgentVibrationEnabled: boolean;
 };

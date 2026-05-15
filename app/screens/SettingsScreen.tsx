@@ -20,12 +20,24 @@ type SettingsScreenProps = {
 };
 
 const branchOptions = ['Merkez Depo', 'Mağaza', 'Sevkiyat'];
+const apiModeOptions: Array<{ value: TerminalSettings['apiMode']; label: string }> = [
+  { value: 'mock', label: 'Mock Demo' },
+  { value: 'real', label: 'Gerçek Servis' },
+  { value: 'fallback', label: 'Servis varsa kullan, yoksa mock' },
+];
+
+const apiModeLabels: Record<TerminalSettings['apiMode'], string> = {
+  mock: 'Mock Demo',
+  real: 'Gerçek Servis',
+  fallback: 'Fallback',
+};
 
 export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProps) {
   const [settings, setSettings] = useState<TerminalSettings>({
     terminalId: 'MB-TERM-001',
     branch: session?.branch ?? 'Merkez Depo',
     apiBaseUrl: 'Hazırlık Bağlantısı',
+    apiMode: 'fallback',
     vibrationEnabled: true,
     urgentVibrationEnabled: true,
   });
@@ -50,6 +62,10 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
     const nextSettings = { ...settings, [key]: value };
     setSettings(nextSettings);
     await saveSettings(nextSettings);
+    if (key === 'apiMode') {
+      setBanner({ message: `Fiyat kaynağı: ${apiModeLabels[value as TerminalSettings['apiMode']]}.`, tone: 'info' });
+      return;
+    }
     if (key === 'vibrationEnabled') {
       setBanner({ message: value ? 'Titreşim açıldı.' : 'Titreşim kapatıldı.', tone: value ? 'success' : 'info' });
       if (value) notifySuccess();
@@ -91,7 +107,7 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
           <HealthCard label="Depo" value={settings.branch} tone="success" />
         </View>
         <View style={styles.healthGrid}>
-          <HealthCard label="Bağlantı" value={settings.apiBaseUrl.trim() ? 'Hazır' : 'Bekliyor'} tone={settings.apiBaseUrl.trim() ? 'success' : 'warning'} />
+          <HealthCard label="Fiyat Kaynağı" value={apiModeLabels[settings.apiMode]} tone={settings.apiMode === 'real' ? 'warning' : 'success'} />
           <HealthCard label="Titreşim" value={settings.vibrationEnabled ? 'Açık' : 'Kapalı'} tone={settings.vibrationEnabled ? 'success' : 'warning'} />
         </View>
       </Section>
@@ -117,6 +133,20 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
 
       <Section title="Bağlantı">
         <Field label="API adresi" value={settings.apiBaseUrl} onChangeText={(value) => update('apiBaseUrl', value)} />
+        <View style={styles.field}>
+          <Text style={styles.label}>Fiyat Kaynağı</Text>
+          <View style={styles.priceSourceGrid}>
+            {apiModeOptions.map((option) => (
+              <Pressable
+                key={option.value}
+                onPress={() => savePreference('apiMode', option.value)}
+                style={({ pressed }) => [styles.priceSourceButton, settings.apiMode === option.value && styles.segmentButtonActive, pressed && styles.pressed]}
+              >
+                <Text style={[styles.segmentText, settings.apiMode === option.value && styles.segmentTextActive]}>{option.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
         <View style={styles.inlineRow}>
           <Text style={styles.rowLabel}>Durum</Text>
           <StatusPill label={settings.apiBaseUrl.trim() ? 'Hazır' : 'Bekliyor'} tone={settings.apiBaseUrl.trim() ? 'success' : 'warning'} />
@@ -284,6 +314,17 @@ const styles = StyleSheet.create({
   },
   segmentText: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900', textAlign: 'center' },
   segmentTextActive: { color: colors.surface },
+  priceSourceGrid: { gap: spacing.xs },
+  priceSourceButton: {
+    minHeight: 42,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+  },
   pressed: { opacity: 0.86 },
   inlineRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
   rowLabel: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
