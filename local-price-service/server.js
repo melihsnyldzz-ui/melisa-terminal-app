@@ -77,7 +77,7 @@ async function getSqlProduct(code) {
     return {
       found: false,
       code,
-      message: 'SQL fiyat sorgusu yapılandırılmadı',
+      message: 'SQL_PRICE_QUERY tanımlı değil',
     };
   }
 

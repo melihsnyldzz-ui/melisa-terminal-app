@@ -34,9 +34,35 @@ SQL_PORT=1433
 SQL_ENCRYPT=false
 SQL_TRUST_SERVER_CERTIFICATE=true
 SQL_PRICE_QUERY=
+SQL_TEST_BARCODE=MB-1001
 ```
 
 `SQL_PRICE_QUERY` parametreli olmalıdır ve barkod/ürün kodu için `@code` parametresini kullanmalıdır. Sorgunun ilk satırında `code`, `name` ve `price` alanları ya da bunlara karşılık gelen Vega alanları döndürülmelidir.
+
+## Vega SQL tablo keşfi
+
+Gerçek Vega tablo adı ve fiyat alanları kesinleşmeden `DEMO_MODE=true` korunmalıdır. Keşif sırasında hedef alanlar şunlardır:
+
+- Barkod kolonu: barkod okuyucudan gelen değerle eşleşecek alan.
+- Stok kodu kolonu: terminalde ürün kodu olarak gösterilecek alan.
+- Ürün adı kolonu: terminalde ürün adı olarak gösterilecek alan.
+- Satış fiyatı kolonu: terminalde fiyat olarak dönecek alan.
+- Aktif/pasif ürün filtresi: pasif, silinmiş veya satışa kapalı ürünleri ayıracak güvenli filtre.
+- Fiyat listesi / depo / şube ayrımı: aynı ürün için farklı fiyat varsa kullanılacak seçim kuralı.
+
+Placeholder sorgu gerçek Vega tablo adı kesinleşmeden örnek olarak tutulmalıdır:
+
+```sql
+SELECT TOP (1)
+  CAST(<stok_kodu_kolonu> AS nvarchar(80)) AS code,
+  CAST(<urun_adi_kolonu> AS nvarchar(255)) AS name,
+  CAST(<satis_fiyati_kolonu> AS decimal(18, 2)) AS price
+FROM <vega_urun_veya_barkod_tablosu>
+WHERE <barkod_veya_stok_kodu_kolonu> = @code
+  AND <aktif_urun_filtresi>
+```
+
+Bu örnek tablo/kolon adlarını kesin bilgi gibi kullanmaz. Gerçek sorgu yalnızca Vega tablo keşfi tamamlandıktan sonra `.env` içindeki `SQL_PRICE_QUERY` alanına taşınmalıdır.
 
 ## Endpointler
 
