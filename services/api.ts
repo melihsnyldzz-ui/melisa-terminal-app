@@ -104,7 +104,10 @@ async function getProductFromLocalPriceService(code: string, apiBaseUrl: string)
     };
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Baglanti hatasi';
-    return { status: 'service-unavailable', reason: `${baseUrl}/product-price erisilemedi: ${reason}` };
+    const cleartextHint = reason.toLowerCase().includes('network request failed')
+      ? ' Android cleartext/LAN erisim hatasi olabilir. Chrome calisiyorsa APK network security config kontrol edilmeli.'
+      : '';
+    return { status: 'service-unavailable', reason: `${baseUrl}/product-price erisilemedi: ${reason}.${cleartextHint}` };
   } finally {
     clearTimeout(timeout);
   }
@@ -160,7 +163,11 @@ export async function checkLocalPriceService(settings: TerminalSettings): Promis
 
       lastReason = endpoint === '/health' ? `${url} HTTP 200 veya ok:true donmedi` : `${url} bos yanit dondu`;
     } catch (error) {
-      lastReason = `${url} erisilemedi: ${error instanceof Error ? error.message : 'Baglanti hatasi'}`;
+      const reason = error instanceof Error ? error.message : 'Baglanti hatasi';
+      const cleartextHint = reason.toLowerCase().includes('network request failed')
+        ? ' Android cleartext/LAN erisim hatasi olabilir. Chrome calisiyorsa APK network security config kontrol edilmeli.'
+        : '';
+      lastReason = `${url} erisilemedi: ${reason}.${cleartextHint}`;
     } finally {
       clearTimeout(timeout);
     }
