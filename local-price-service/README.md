@@ -154,3 +154,16 @@ Güvenlik notu: Bu scriptler veri yazmaz; sadece SELECT ve metadata kontrolü ya
 ## Not
 
 Bu servis v3.8.0 hazırlık iskeletidir. Demo mod varsayılan olarak açıktır. Gerçek Vega tablo/ad alanı netleşmeden demo mod kapatılmamalıdır.
+
+## v4.2.0 fiyat marker arama
+
+Vega ekraninda test urunune yazilan belirgin satis fiyati degerini SQL Server numeric kolonlarinda read-only aramak icin:
+
+```powershell
+node scripts/find-price-marker-value.js
+node scripts/find-price-marker-value.js --save
+```
+
+Script `.env` icinden `PRICE_MARKER_VALUE` ve `SQL_TEST_BARCODE` degerlerini okur. Yalnizca `INFORMATION_SCHEMA.COLUMNS` metadata okur ve numeric aday kolonlarda parametreli `SELECT` calistirir. `--save` verilirse sonuc `local-price-service/reports/find-price-marker-value.json` dosyasina yazilir.
+
+Guvenlik notu: Bu script veri yazmaz; `INSERT`, `UPDATE`, `DELETE`, `ALTER`, `DROP`, `TRUNCATE`, `MERGE` ve `EXEC` komutlarini calistiracak bir akis icermez.

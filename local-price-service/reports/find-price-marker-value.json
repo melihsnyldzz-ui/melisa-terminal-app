@@ -1,0 +1,137 @@
+{
+  "ok": true,
+  "marker": 123456789,
+  "barcode": "0000051461011",
+  "scannedColumnCount": 97225,
+  "failedColumnCount": 2,
+  "matchCount": 7,
+  "matches": [
+    {
+      "table": "dbo.F0102D0002VSTOKHAREKETLERIGIRISHAREKET",
+      "column": "SATISFIYATI1",
+      "dataType": "decimal",
+      "score": 30,
+      "matchedRowCount": 1,
+      "sampleRows": [
+        {
+          "SATISFIYATI1": 123456789,
+          "BARCODE": "0000051461011",
+          "IND": 15706,
+          "MALINCINSI": "12 Lİ FİGÜRLÜ PATİK",
+          "STOKKODU": "5146 NECİXS"
+        }
+      ]
+    },
+    {
+      "table": "dbo.F0102D0003VSTOKHAREKETLERICIKISHAREKET",
+      "column": "SATISFIYATI1",
+      "dataType": "decimal",
+      "score": 30,
+      "matchedRowCount": 2,
+      "sampleRows": [
+        {
+          "SATISFIYATI1": 123456789,
+          "BARCODE": "0000051461011",
+          "IND": 15706,
+          "MALINCINSI": "12 Lİ FİGÜRLÜ PATİK",
+          "STOKKODU": "5146 NECİXS"
+        },
+        {
+          "SATISFIYATI1": 123456789,
+          "BARCODE": "0000051461011",
+          "IND": 15706,
+          "MALINCINSI": "12 Lİ FİGÜRLÜ PATİK",
+          "STOKKODU": "5146 NECİXS"
+        }
+      ]
+    },
+    {
+      "table": "dbo.F0102D0003VSTOKHAREKETLERIGIRISHAREKET",
+      "column": "SATISFIYATI1",
+      "dataType": "decimal",
+      "score": 30,
+      "matchedRowCount": 1,
+      "sampleRows": [
+        {
+          "SATISFIYATI1": 123456789,
+          "BARCODE": "0000051461011",
+          "IND": 15706,
+          "MALINCINSI": "12 Lİ FİGÜRLÜ PATİK",
+          "STOKKODU": "5146 NECİXS"
+        }
+      ]
+    },
+    {
+      "table": "dbo.F0102D0004VSTOKHAREKETLERIGIRISHAREKET",
+      "column": "SATISFIYATI1",
+      "dataType": "decimal",
+      "score": 30,
+      "matchedRowCount": 2,
+      "sampleRows": [
+        {
+          "SATISFIYATI1": 123456789,
+          "BARCODE": "0000051461011",
+          "IND": 15706,
+          "MALINCINSI": "12 Lİ FİGÜRLÜ PATİK",
+          "STOKKODU": "5146 NECİXS"
+        },
+        {
+          "SATISFIYATI1": 123456789,
+          "BARCODE": "0000051461011",
+          "IND": 15706,
+          "MALINCINSI": "12 Lİ FİGÜRLÜ PATİK",
+          "STOKKODU": "5146 NECİXS"
+        }
+      ]
+    },
+    {
+      "table": "dbo.F0102D0005VSTOKHAREKETLERIGIRISHAREKET",
+      "column": "SATISFIYATI1",
+      "dataType": "decimal",
+      "score": 30,
+      "matchedRowCount": 1,
+      "sampleRows": [
+        {
+          "SATISFIYATI1": 123456789,
+          "BARCODE": "0000051461011",
+          "IND": 15706,
+          "MALINCINSI": "12 Lİ FİGÜRLÜ PATİK",
+          "STOKKODU": "5146 NECİXS"
+        }
+      ]
+    },
+    {
+      "table": "dbo.F0102D0006VSTOKHAREKETLERICIKISHAREKET",
+      "column": "SATISFIYATI1",
+      "dataType": "decimal",
+      "score": 30,
+      "matchedRowCount": 1,
+      "sampleRows": [
+        {
+          "SATISFIYATI1": 123456789,
+          "BARCODE": "0000051461011",
+          "IND": 15706,
+          "MALINCINSI": "12 Lİ FİGÜRLÜ PATİK",
+          "STOKKODU": "5146 NECİXS"
+        }
+      ]
+    },
+    {
+      "table": "dbo.F0102TBLBIRIMLEREX",
+      "column": "SATISFIYATI1",
+      "dataType": "decimal",
+      "score": 30,
+      "matchedRowCount": 1,
+      "sampleRows": [
+        {
+          "SATISFIYATI1": 123456789,
+          "ACIKLAMA": "FIYAT",
+          "BARCODE": "0000051461011",
+          "IND": 15241,
+          "PB1": "TL",
+          "STOKNO": 15706
+        }
+      ]
+    }
+  ]
+}
