@@ -7,8 +7,8 @@ import { TerminalHeader } from '../../components/TerminalHeader';
 import { ToastMessage, ToastTone } from '../../components/ToastMessage';
 import { createSaleMock, getMockProductByCode } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
-import { loadActiveSaleDraft, loadSelectedSalesCustomer, saveActiveSaleDraft } from '../../storage/localStorage';
-import type { ActiveSaleDraft, Product, SaleLine, SaleStatus } from '../../types';
+import { addSalePrintJob, loadActiveSaleDraft, loadSelectedSalesCustomer, saveActiveSaleDraft } from '../../storage/localStorage';
+import type { ActiveSaleDraft, Product, SaleLine, SalePrintJob, SaleStatus } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
 type NewSaleScreenProps = {
@@ -25,6 +25,8 @@ const parseQuantity = (value: string) => {
   if (!Number.isFinite(parsed) || parsed < 1) return 1;
   return parsed;
 };
+
+const getPrimaryCurrency = (lines: SaleLine[]) => lines.find((line) => line.currency)?.currency || 'TL';
 
 export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   const insets = useSafeAreaInsets();
@@ -232,9 +234,24 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       focusScanner();
       return;
     }
+
     await persistDraft();
-    setBanner({ message: 'Fiş hazırlandı.', tone: 'success' });
+    const currency = getPrimaryCurrency(lines);
+    const printJob: SalePrintJob = {
+      id: `${documentNo}-${Date.now()}`,
+      documentNo,
+      customerName: customer || 'Seçili müşteri yok',
+      lineCount: lines.length,
+      totalQuantity,
+      totalAmount,
+      currency,
+      status: 'Yazdırma bekliyor',
+      createdAt: new Date().toISOString(),
+    };
+    await addSalePrintJob(printJob);
+    setBanner({ message: `${documentNo} yazdırma kuyruğuna alındı. ${lines.length} kalem · ${totalQuantity} adet · ${formatPrice(totalAmount, currency)}`, tone: 'success' });
     notifySuccess();
+    focusScanner();
   };
 
   return (
@@ -348,7 +365,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
           <Text style={styles.bottomText}>Adet {totalQuantity}</Text>
           <Text style={styles.bottomAmount}>{formatPrice(totalAmount)}</Text>
         </View>
-        <AppButton label="FİŞİ TAMAMLA" onPress={completeSale} variant="dark" compact />
+        <AppButton label="YAZDIRMAYA GÖNDER" onPress={completeSale} variant="dark" compact />
       </View>
     </View>
   );
