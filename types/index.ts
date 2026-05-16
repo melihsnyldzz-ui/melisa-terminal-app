@@ -1,6 +1,7 @@
 export type AppScreen =
   | 'login'
   | 'dashboard'
+  | 'salesCustomer'
   | 'newSale'
   | 'picking'
   | 'openDocuments'
@@ -15,6 +16,15 @@ export type UserSession = {
   branch: string;
   terminalId: string;
   offlineMode: boolean;
+};
+
+export type SalesCustomer = {
+  id: string;
+  name: string;
+  code: string;
+  city: string;
+  balanceLabel?: string;
+  lastOperationLabel?: string;
 };
 
 export type MessageType = 'Acil' | 'Merkez' | 'Muhasebe' | 'Depo' | 'Fiş Notu';

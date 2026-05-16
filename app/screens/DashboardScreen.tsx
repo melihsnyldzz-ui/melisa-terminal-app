@@ -17,7 +17,7 @@ type DashboardScreenProps = {
 };
 
 const quickActions: Array<{ label: string; screen: AppScreen; tone?: 'primary' | 'dark' | 'success' }> = [
-  { label: 'Yeni Fiş', screen: 'newSale', tone: 'primary' },
+  { label: 'SATIŞ', screen: 'salesCustomer', tone: 'primary' },
   { label: 'Toplama', screen: 'picking', tone: 'dark' },
   { label: 'Açık Fiş', screen: 'openDocuments' },
   { label: 'QR', screen: 'qrAlbum' },

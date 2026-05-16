@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ActivePickingDraft, ActiveSaleDraft, FailedOperation, OpenDocument, PickingLine, SaleLine, TerminalSettings, UserSession } from '../types';
+import type { ActivePickingDraft, ActiveSaleDraft, FailedOperation, OpenDocument, PickingLine, SaleLine, SalesCustomer, TerminalSettings, UserSession } from '../types';
 
 const KEYS = {
   settings: 'melisa-terminal:settings',
   session: 'melisa-terminal:session',
   failedOperations: 'melisa-terminal:failed-operations',
   draftDocuments: 'melisa-terminal:draft-documents',
+  selectedSalesCustomer: 'melisa-terminal:selected-sales-customer',
   activeSaleDraft: 'melisa-terminal:active-sale-draft',
   activePickingDraft: 'melisa-terminal:active-picking-draft',
 };
@@ -122,6 +123,18 @@ export async function loadDraftDocuments(): Promise<OpenDocument[]> {
 
 export async function saveDraftDocuments(documents: OpenDocument[]): Promise<void> {
   await writeJson(KEYS.draftDocuments, documents);
+}
+
+export async function loadSelectedSalesCustomer(): Promise<SalesCustomer | null> {
+  return readJson<SalesCustomer | null>(KEYS.selectedSalesCustomer, null);
+}
+
+export async function saveSelectedSalesCustomer(customer: SalesCustomer): Promise<void> {
+  await writeJson(KEYS.selectedSalesCustomer, customer);
+}
+
+export async function clearSelectedSalesCustomer(): Promise<void> {
+  await AsyncStorage.removeItem(KEYS.selectedSalesCustomer);
 }
 
 export async function loadActiveSaleDraft(): Promise<ActiveSaleDraft | null> {

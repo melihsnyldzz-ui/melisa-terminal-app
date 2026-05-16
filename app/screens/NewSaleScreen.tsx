@@ -8,7 +8,7 @@ import { StatusPill } from '../../components/StatusPill';
 import { ToastMessage, ToastTone } from '../../components/ToastMessage';
 import { createSaleMock, getMockProductByCode } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
-import { loadActiveSaleDraft, saveActiveSaleDraft } from '../../storage/localStorage';
+import { loadActiveSaleDraft, loadSelectedSalesCustomer, saveActiveSaleDraft } from '../../storage/localStorage';
 import type { ActiveSaleDraft, Product, SaleLine, SaleStatus } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
@@ -94,13 +94,21 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       : 'Müşteri seçilmedi';
 
   useEffect(() => {
-    loadActiveSaleDraft().then((draft) => {
-      if (!draft) return;
-      setCustomer(draft.customerName);
-      setDocumentNo(draft.documentNo);
-      setLines(draft.lines);
-      setBanner({ message: `${draft.documentNo} taslak yüklendi.`, tone: 'info' });
-      setTimeout(() => barcodeInputRef.current?.focus(), 150);
+    Promise.all([loadActiveSaleDraft(), loadSelectedSalesCustomer()]).then(([draft, selectedSalesCustomer]) => {
+      const hasActiveDraft = Boolean(draft && (draft.documentNo || draft.lines.length > 0));
+      if (draft && hasActiveDraft) {
+        setCustomer(draft.customerName);
+        setDocumentNo(draft.documentNo);
+        setLines(draft.lines);
+        setBanner({ message: `${draft.documentNo} taslak yüklendi.`, tone: 'info' });
+        setTimeout(() => barcodeInputRef.current?.focus(), 150);
+        return;
+      }
+
+      const nextCustomerName = draft?.customerName || selectedSalesCustomer?.name;
+      if (!nextCustomerName) return;
+      setCustomer(nextCustomerName);
+      setBanner({ message: `${nextCustomerName} müşterisi satışa hazır.`, tone: 'info' });
     });
   }, []);
 
