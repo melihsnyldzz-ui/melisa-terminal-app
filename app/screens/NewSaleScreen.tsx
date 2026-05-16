@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { ActionRow } from '../../components/ActionRow';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppButton } from '../../components/AppButton';
-import { EmptyState } from '../../components/EmptyState';
-import { ScreenShell } from '../../components/ScreenShell';
 import { StatusPill } from '../../components/StatusPill';
+import { TerminalHeader } from '../../components/TerminalHeader';
 import { ToastMessage, ToastTone } from '../../components/ToastMessage';
 import { createSaleMock, getMockProductByCode } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
@@ -16,31 +15,10 @@ type NewSaleScreenProps = {
   onBack: () => void;
 };
 
-type CustomerSuggestion = {
-  id: string;
-  name: string;
-  code: string;
-  city: string;
-};
-
 type PendingProduct = Product & {
   time: string;
 };
 
-const mockCustomers: CustomerSuggestion[] = [
-  { id: 'cus-1', name: 'ABC Baby Store', code: 'C-1001', city: 'İstanbul' },
-  { id: 'cus-2', name: 'Mini Kids', code: 'C-1002', city: 'İstanbul' },
-  { id: 'cus-3', name: 'Nova Baby', code: 'C-1003', city: 'Ankara' },
-  { id: 'cus-4', name: 'Melisa Baby Boutique', code: 'C-1004', city: 'İzmir' },
-  { id: 'cus-5', name: 'Bebek Dünyası', code: 'C-1005', city: 'Bursa' },
-  { id: 'cus-6', name: 'Happy Mini Store', code: 'C-1006', city: 'Antalya' },
-  { id: 'cus-7', name: 'Luna Kids Wear', code: 'C-1007', city: 'Gaziantep' },
-  { id: 'cus-8', name: 'Yeni Müşteri', code: 'MANUEL', city: 'Elle giriş' },
-];
-
-const quickCodes = ['MB-1001', 'MB-1002', 'MB-1003', 'MB-1004', 'MB-1005', 'MB-1006', 'MB-1007', 'MB-1008'];
-
-const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase('tr-TR');
 const formatPrice = (price: number, currency = 'TL') => `${price.toLocaleString('tr-TR')} ${currency}`;
 const parseQuantity = (value: string) => {
   const parsed = Number(value.replace(/[^0-9]/g, ''));
@@ -49,9 +27,11 @@ const parseQuantity = (value: string) => {
 };
 
 export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
+  const insets = useSafeAreaInsets();
   const barcodeInputRef = useRef<TextInput>(null);
   const quantityInputRef = useRef<TextInput>(null);
   const lastScanRef = useRef<{ code: string; time: number } | null>(null);
+  const bootstrappedRef = useRef(false);
   const [customer, setCustomer] = useState('');
   const [documentNo, setDocumentNo] = useState('');
   const [barcode, setBarcode] = useState('');
@@ -67,48 +47,34 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   const pendingTotal = pendingProduct ? pendingProduct.price * pendingQuantity : 0;
   const status: SaleStatus = documentNo && lines.length > 0 ? 'Hazır' : 'Taslak';
   const canScan = Boolean(documentNo);
-  const customerQuery = normalizeSearchText(customer);
-  const selectedCustomer = useMemo(
-    () => mockCustomers.find((item) => normalizeSearchText(item.name) === customerQuery),
-    [customerQuery],
-  );
-  const customerSuggestions = useMemo(() => {
-    if (!customerQuery) return mockCustomers.slice(0, 4);
-
-    return mockCustomers
-      .filter((item) => normalizeSearchText(item.name).includes(customerQuery) || normalizeSearchText(item.code).includes(customerQuery))
-      .sort((first, second) => {
-        const firstName = normalizeSearchText(first.name);
-        const secondName = normalizeSearchText(second.name);
-        const firstStarts = firstName.startsWith(customerQuery) ? 0 : 1;
-        const secondStarts = secondName.startsWith(customerQuery) ? 0 : 1;
-        if (firstStarts !== secondStarts) return firstStarts - secondStarts;
-        return firstName.localeCompare(secondName, 'tr-TR');
-      })
-      .slice(0, 5);
-  }, [customerQuery]);
-  const customerMetaLabel = selectedCustomer
-    ? `${selectedCustomer.code} · ${selectedCustomer.city}`
-    : customer.trim()
-      ? 'Yeni müşteri adı ile devam edilecek'
-      : 'Müşteri seçilmedi';
 
   useEffect(() => {
-    Promise.all([loadActiveSaleDraft(), loadSelectedSalesCustomer()]).then(([draft, selectedSalesCustomer]) => {
+    Promise.all([loadActiveSaleDraft(), loadSelectedSalesCustomer()]).then(async ([draft, selectedSalesCustomer]) => {
+      if (bootstrappedRef.current) return;
+      bootstrappedRef.current = true;
+
       const hasActiveDraft = Boolean(draft && (draft.documentNo || draft.lines.length > 0));
       if (draft && hasActiveDraft) {
         setCustomer(draft.customerName);
         setDocumentNo(draft.documentNo);
         setLines(draft.lines);
-        setBanner({ message: `${draft.documentNo} taslak yüklendi.`, tone: 'info' });
+        setBanner({ message: `${draft.documentNo} yüklendi.`, tone: 'info' });
         setTimeout(() => barcodeInputRef.current?.focus(), 150);
         return;
       }
 
       const nextCustomerName = draft?.customerName || selectedSalesCustomer?.name;
-      if (!nextCustomerName) return;
+      if (!nextCustomerName) {
+        setBanner({ message: 'Satış için müşteri seçimi gerekli.', tone: 'warning' });
+        return;
+      }
+
+      const sale = await createSaleMock(nextCustomerName);
       setCustomer(nextCustomerName);
-      setBanner({ message: `${nextCustomerName} müşterisi satışa hazır.`, tone: 'info' });
+      setDocumentNo(sale.documentNo);
+      await persistDraft([], sale.documentNo, nextCustomerName);
+      setBanner({ message: `${sale.documentNo} hazır.`, tone: 'success' });
+      setTimeout(() => barcodeInputRef.current?.focus(), 150);
     });
   }, []);
 
@@ -130,12 +96,6 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     await saveActiveSaleDraft(draft);
   };
 
-  const selectCustomer = (nextCustomer: CustomerSuggestion) => {
-    const nextName = nextCustomer.name === 'Yeni Müşteri' ? '' : nextCustomer.name;
-    setCustomer(nextName);
-    setBanner({ message: nextName ? `${nextName} seçildi.` : 'Yeni müşteri adı yazılabilir.', tone: 'info' });
-  };
-
   const focusScanner = () => {
     setTimeout(() => barcodeInputRef.current?.focus(), 80);
   };
@@ -144,38 +104,17 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     setTimeout(() => quantityInputRef.current?.focus(), 80);
   };
 
-  const startSale = async () => {
-    if (documentNo) {
-      setBanner({ message: 'Fiş zaten aktif.', tone: 'info' });
-      focusScanner();
-      return;
-    }
-
-    const selectedCustomerName = customer.trim();
-    if (!selectedCustomerName) {
-      setBanner({ message: 'Önce müşteri adı yaz veya listeden seç.', tone: 'warning' });
-      notifyWarning();
-      return;
-    }
-
-    const sale = await createSaleMock(selectedCustomerName);
-    setDocumentNo(sale.documentNo);
-    await persistDraft(lines, sale.documentNo, selectedCustomerName);
-    setBanner({ message: `${sale.documentNo} aktif fiş hazır. Barkod okutabilirsin.`, tone: 'success' });
-    notifySuccess();
-    focusScanner();
-  };
-
   const scanProduct = async (rawCode?: string) => {
     if (!documentNo) {
-      setBanner({ message: 'Önce fişi başlat.', tone: 'warning' });
+      setBanner({ message: 'Fiş hazırlanıyor. Müşteri seçimini kontrol et.', tone: 'warning' });
       notifyWarning();
       focusScanner();
       return;
     }
+
     const code = (rawCode ?? barcode).trim().toUpperCase();
     if (!code) {
-      setBanner({ message: 'Kod okut ya da yaz.', tone: 'warning' });
+      setBanner({ message: 'Barkod gir.', tone: 'warning' });
       notifyWarning();
       focusScanner();
       return;
@@ -196,7 +135,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       setBarcode('');
       if (!product) {
         setPendingProduct(null);
-        setBanner({ message: `${code} için ürün bulunamadı.`, tone: 'warning' });
+        setBanner({ message: `${code} bulunamadı.`, tone: 'warning' });
         notifyWarning();
         focusScanner();
         return;
@@ -205,11 +144,11 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       setPendingProduct({ ...product, time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) });
       setQuantityInput('1');
       setPendingDeleteLineId(null);
-      setBanner({ message: `${product.code} bulundu. Fiyat: ${formatPrice(product.price, product.currency)}. Adet gir.`, tone: 'success' });
+      setBanner({ message: `${product.code} bulundu.`, tone: 'success' });
       notifySuccess();
       focusQuantity();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Ürün araması güvenli şekilde tamamlanamadı.';
+      const message = error instanceof Error ? error.message : 'Ürün araması tamamlanamadı.';
       setBarcode('');
       setPendingProduct(null);
       setBanner({ message, tone: 'warning' });
@@ -234,7 +173,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     setPendingProduct(null);
     setQuantityInput('1');
     await persistDraft(nextLines);
-    setBanner({ message: `${pendingProduct.code} · ${quantity} adet · ${formatPrice(pendingProduct.price, pendingProduct.currency)} fiyatla fişe eklendi.`, tone: 'success' });
+    setBanner({ message: `${pendingProduct.code} fişe eklendi.`, tone: 'success' });
     notifySuccess();
     focusScanner();
   };
@@ -249,9 +188,14 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     setBarcode(value);
   };
 
+  const changePendingQuantity = (delta: number) => {
+    const nextQuantity = Math.max(1, pendingQuantity + delta);
+    setQuantityInput(String(nextQuantity));
+    focusQuantity();
+  };
+
   const changeQuantity = async (lineId: string, delta: number) => {
-    const nextLines = lines
-      .map((line) => (line.lineId === lineId ? { ...line, quantity: Math.max(1, line.quantity + delta) } : line));
+    const nextLines = lines.map((line) => (line.lineId === lineId ? { ...line, quantity: Math.max(1, line.quantity + delta) } : line));
     setLines(nextLines);
     await persistDraft(nextLines);
     focusScanner();
@@ -260,7 +204,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   const removeLine = async (lineId: string) => {
     if (pendingDeleteLineId !== lineId) {
       setPendingDeleteLineId(lineId);
-      setBanner({ message: 'Silmek için tekrar basın.', tone: 'warning' });
+      setBanner({ message: 'Silmek için tekrar bas.', tone: 'warning' });
       notifyWarning();
       focusScanner();
       return;
@@ -270,55 +214,14 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     setLines(nextLines);
     setPendingDeleteLineId(null);
     await persistDraft(nextLines);
-    setBanner({ message: 'Ürün satırı silindi.', tone: 'info' });
+    setBanner({ message: 'Satır silindi.', tone: 'info' });
     notifyWarning();
     focusScanner();
   };
 
-  const saveDraft = async () => {
-    if (!documentNo) {
-      setBanner({ message: 'Kaydetmek için fiş başlat.', tone: 'warning' });
-      notifyWarning();
-      focusScanner();
-      return;
-    }
-    await persistDraft();
-    setBanner({ message: 'Taslak kaydedildi.', tone: 'success' });
-    notifySuccess();
-  };
-
-  const prepareAlbum = async () => {
-    if (!documentNo) {
-      setBanner({ message: 'QR albüm için fiş başlat.', tone: 'warning' });
-      notifyWarning();
-      focusScanner();
-      return;
-    }
-    if (lines.length === 0) {
-      setBanner({ message: 'QR albüm için ürün ekle.', tone: 'warning' });
-      notifyWarning();
-      focusScanner();
-      return;
-    }
-    await persistDraft();
-    setBanner({ message: 'QR albüm hazırlandı.', tone: 'success' });
-    notifySuccess();
-  };
-
-  const holdSale = async () => {
-    if (!documentNo) {
-      setBanner({ message: 'Beklemeye almak için fiş başlat.', tone: 'warning' });
-      notifyWarning();
-      focusScanner();
-      return;
-    }
-    await persistDraft();
-    setBanner({ message: 'Fiş beklemeye alındı.', tone: 'info' });
-  };
-
   const completeSale = async () => {
     if (!documentNo) {
-      setBanner({ message: 'Tamamlamak için fiş başlat.', tone: 'warning' });
+      setBanner({ message: 'Tamamlamak için fiş gerekli.', tone: 'warning' });
       notifyWarning();
       focusScanner();
       return;
@@ -335,431 +238,279 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   };
 
   return (
-    <ScreenShell title="Yeni Fiş" subtitle="Barkod okut, fiyatı gör, adet gir" onBack={onBack}>
+    <View style={styles.shell}>
+      <TerminalHeader onBack={onBack} />
       <ToastMessage message={banner?.message} tone={banner?.tone} />
 
-      <View style={styles.statusPanel}>
-        <View style={styles.statusTopRow}>
-          <Text style={styles.statusDocument}>{documentNo || 'Fiş başlatılmadı'}</Text>
+      <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 86 }]} keyboardShouldPersistTaps="handled">
+        <View style={styles.topPanel}>
+          <View style={styles.topMain}>
+            <Text style={styles.documentNo}>{documentNo || 'Fiş hazırlanıyor'}</Text>
+            <Text style={styles.customerName} numberOfLines={1}>{customer || 'Müşteri seçilmedi'}</Text>
+          </View>
           <StatusPill label={status} tone={status === 'Hazır' ? 'success' : 'warning'} />
         </View>
-        <Text style={styles.statusCustomer} numberOfLines={1}>{customer || 'Müşteri seçilmedi'}</Text>
-        <View style={styles.statusMetricRow}>
-          <Metric label="Kalem" value={lines.length.toString()} />
-          <Metric label="Adet" value={totalQuantity.toString()} />
-          <Metric label="Tutar" value={formatPrice(totalAmount)} />
-        </View>
-      </View>
 
-      <View style={styles.formPanel}>
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.stepBadge}>1</Text>
-          <View style={styles.sectionHeaderTextBlock}>
-            <Text style={styles.label}>Müşteri ara</Text>
-            <Text style={styles.helperText}>{documentNo ? 'Müşteri fişe bağlandı; barkod okutmaya devam et.' : 'İsim harfleri yazıldıkça uygun müşteriler listelenir.'}</Text>
-          </View>
-        </View>
-        <TextInput
-          value={customer}
-          onChangeText={setCustomer}
-          placeholder="Müşteri adı yaz"
-          placeholderTextColor={colors.muted}
-          style={[styles.input, documentNo && styles.lockedInput]}
-          editable={!documentNo}
-        />
-        {customer.trim() ? (
-          <View style={[styles.selectedCustomerCard, documentNo && styles.selectedCustomerCardLocked]}>
-            <View style={styles.selectedCustomerTextBlock}>
-              <Text style={styles.selectedCustomerLabel}>{documentNo ? 'Fiş müşterisi' : 'Seçilecek müşteri'}</Text>
-              <Text style={styles.selectedCustomerName} numberOfLines={1}>{customer.trim()}</Text>
-              <Text style={styles.selectedCustomerMeta}>{customerMetaLabel}</Text>
+        <View style={styles.scanPanel}>
+          <TextInput
+            ref={barcodeInputRef}
+            value={barcode}
+            onChangeText={handleBarcodeChange}
+            placeholder={canScan ? 'BARKOD' : 'MÜŞTERİ SEÇ'}
+            placeholderTextColor={colors.muted}
+            style={[styles.barcodeInput, !canScan && styles.disabledInput]}
+            autoCapitalize="characters"
+            editable={canScan}
+            blurOnSubmit={false}
+            returnKeyType="done"
+            onSubmitEditing={() => scanProduct()}
+          />
+
+          <View style={styles.productReadout}>
+            <View style={styles.productReadoutMain}>
+              <Text style={styles.pendingCode}>{pendingProduct?.code || '-'}</Text>
+              <Text style={styles.pendingName} numberOfLines={2}>{pendingProduct?.name || 'Ürün okutulmadı'}</Text>
+              <Text style={styles.pendingTime}>{pendingProduct ? pendingProduct.time : ''}</Text>
             </View>
-            <StatusPill label={documentNo ? 'Kilitli' : 'Hazır'} tone={documentNo ? 'success' : 'info'} />
+            <View style={styles.priceBlock}>
+              <Text style={styles.priceLabel}>FİYAT</Text>
+              <Text style={styles.priceValue}>{pendingProduct ? formatPrice(pendingProduct.price, pendingProduct.currency) : '-'}</Text>
+            </View>
           </View>
-        ) : null}
-        {!documentNo && (
-          <View style={styles.suggestionList}>
-            {customerSuggestions.length > 0 ? (
-              customerSuggestions.map((item) => {
-                const selected = selectedCustomer?.id === item.id;
-                const isManual = item.code === 'MANUEL';
-                return (
-                  <Pressable key={item.id} onPress={() => selectCustomer(item)} style={[styles.suggestionRow, selected && styles.suggestionRowSelected, isManual && styles.manualSuggestionRow]}>
-                    <View style={styles.suggestionMain}>
-                      <Text style={[styles.suggestionName, selected && styles.suggestionNameSelected]} numberOfLines={1}>{item.name}</Text>
-                      <Text style={[styles.suggestionMeta, selected && styles.suggestionMetaSelected]}>{item.code} · {item.city}</Text>
-                    </View>
-                    <Text style={[styles.suggestionAction, selected && styles.suggestionActionSelected]}>{selected ? 'Seçili' : isManual ? 'Elle Yaz' : 'Seç'}</Text>
-                  </Pressable>
-                );
-              })
-            ) : (
-              <View style={styles.noSuggestionBox}>
-                <Text style={styles.noSuggestionTitle}>Eşleşen müşteri yok</Text>
-                <Text style={styles.noSuggestionText}>Bu isimle yeni müşteri fişi başlatılabilir.</Text>
-              </View>
-            )}
-          </View>
-        )}
-        <AppButton label={documentNo ? 'Fiş Başlatıldı' : 'Müşteriyi Seç ve Fiş Başlat'} onPress={startSale} variant={documentNo ? 'dark' : 'primary'} />
-      </View>
 
-      <View style={[styles.formPanel, !canScan && styles.lockedPanel]}>
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.stepBadge}>2</Text>
-          <View style={styles.sectionHeaderTextBlock}>
-            <Text style={styles.label}>Barkod okut / fiyat gör</Text>
-            <Text style={styles.helperText}>{canScan ? 'Önce ürünü okut, fiyatı gör, sonra adet gir.' : 'Barkod alanı fiş başlatılınca açılır.'}</Text>
+          <View style={styles.quantityRow}>
+            <Pressable onPress={() => changePendingQuantity(-1)} style={styles.quantityButton}>
+              <Text style={styles.quantityButtonText}>-</Text>
+            </Pressable>
+            <TextInput
+              ref={quantityInputRef}
+              value={quantityInput}
+              onChangeText={setQuantityInput}
+              keyboardType="number-pad"
+              selectTextOnFocus
+              style={styles.quantityInput}
+            />
+            <Pressable onPress={() => changePendingQuantity(1)} style={styles.quantityButton}>
+              <Text style={styles.quantityButtonText}>+</Text>
+            </Pressable>
+            <View style={styles.pendingTotalBox}>
+              <Text style={styles.pendingTotalLabel}>TOPLAM</Text>
+              <Text style={styles.pendingTotalValue}>{pendingProduct ? formatPrice(pendingTotal, pendingProduct.currency) : '-'}</Text>
+            </View>
           </View>
+
+          <AppButton label="FİŞE EKLE" onPress={addPendingProduct} variant="primary" />
         </View>
-        <TextInput
-          ref={barcodeInputRef}
-          value={barcode}
-          onChangeText={handleBarcodeChange}
-          placeholder={canScan ? 'Kod okut veya yaz' : 'Önce müşteri seç ve fiş başlat'}
-          placeholderTextColor={colors.muted}
-          style={[styles.input, canScan && styles.scanInput, !canScan && styles.disabledInput]}
-          autoCapitalize="characters"
-          editable={canScan}
-          blurOnSubmit={false}
-          returnKeyType="done"
-          onSubmitEditing={() => scanProduct()}
-        />
 
-        <View style={styles.pricePreviewBox}>
-          <Text style={styles.lastScanLabel}>Okutulan ürün</Text>
-          {pendingProduct ? (
-            <View style={styles.pricePreviewBody}>
-              <View style={styles.pricePreviewTopRow}>
-                <View style={styles.pricePreviewMain}>
-                  <Text style={styles.lastScanCode}>{pendingProduct.code}</Text>
-                  <Text style={styles.lastScanName} numberOfLines={1}>{pendingProduct.name}</Text>
-                  <Text style={styles.lastScanMeta}>Okutma: {pendingProduct.time}</Text>
-                </View>
-                <View style={styles.priceBadge}>
-                  <Text style={styles.priceBadgeLabel}>Fiyat</Text>
-                  <Text style={styles.priceBadgeValue}>{formatPrice(pendingProduct.price, pendingProduct.currency)}</Text>
-                </View>
-              </View>
-              <View style={styles.quantityEntryRow}>
-                <View style={styles.quantityInputBlock}>
-                  <Text style={styles.quantityInputLabel}>Adet gir</Text>
-                  <TextInput
-                    ref={quantityInputRef}
-                    value={quantityInput}
-                    onChangeText={setQuantityInput}
-                    keyboardType="number-pad"
-                    selectTextOnFocus
-                    style={styles.quantityInput}
-                  />
-                </View>
-                <View style={styles.pendingTotalBox}>
-                  <Text style={styles.pendingTotalLabel}>Satır tutarı</Text>
-                  <Text style={styles.pendingTotalValue}>{formatPrice(pendingTotal, pendingProduct.currency)}</Text>
-                </View>
-              </View>
+        <View style={styles.table}>
+          <View style={styles.tableHeader}>
+            <Text style={[styles.headerCell, styles.codeCol]}>KOD</Text>
+            <Text style={[styles.headerCell, styles.qtyCol]}>ADET</Text>
+            <Text style={[styles.headerCell, styles.priceCol]}>FİYAT</Text>
+            <Text style={[styles.headerCell, styles.totalCol]}>TOPLAM</Text>
+          </View>
+          {lines.length === 0 ? (
+            <View style={styles.emptyRow}>
+              <Text style={styles.emptyText}>Satır yok</Text>
             </View>
           ) : (
-            <Text style={styles.lastScanEmpty}>Ürünü okuttuğunda adı ve fiyatı burada görünür.</Text>
+            lines.map((line) => (
+              <View key={line.lineId} style={styles.lineRow}>
+                <Pressable onPress={() => removeLine(line.lineId)} style={styles.codeCol}>
+                  <Text style={styles.lineCode}>{line.code}</Text>
+                  <Text style={styles.lineName} numberOfLines={1}>{line.name}</Text>
+                  <Text style={styles.deleteHint}>{pendingDeleteLineId === line.lineId ? 'Silmek için tekrar bas' : 'Sil'}</Text>
+                </Pressable>
+                <View style={styles.qtyCol}>
+                  <View style={styles.lineQtyControls}>
+                    <Pressable onPress={() => changeQuantity(line.lineId, -1)} style={styles.lineQtyButton}>
+                      <Text style={styles.lineQtyButtonText}>-</Text>
+                    </Pressable>
+                    <Text style={styles.lineQtyValue}>{line.quantity}</Text>
+                    <Pressable onPress={() => changeQuantity(line.lineId, 1)} style={styles.lineQtyButton}>
+                      <Text style={styles.lineQtyButtonText}>+</Text>
+                    </Pressable>
+                  </View>
+                </View>
+                <Text style={[styles.lineMoney, styles.priceCol]}>{formatPrice(line.price, line.currency)}</Text>
+                <Text style={[styles.lineMoneyStrong, styles.totalCol]}>{formatPrice(line.price * line.quantity, line.currency)}</Text>
+              </View>
+            ))
           )}
         </View>
+      </ScrollView>
 
-        <ActionRow
-          actions={[
-            { label: pendingProduct ? 'Adetle Fişe Ekle' : 'Ürünü Bul', onPress: pendingProduct ? addPendingProduct : () => scanProduct(), variant: 'primary' },
-          ]}
-        />
-        <View style={styles.quickCodeRow}>
-          {quickCodes.map((code) => (
-            <Pressable key={code} onPress={() => scanProduct(code)} style={[styles.quickCodeButton, !canScan && styles.quickCodeButtonDisabled]}>
-              <Text style={styles.quickCodeText}>{code}</Text>
-            </Pressable>
-          ))}
+      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + spacing.sm }]}>
+        <View style={styles.bottomTotals}>
+          <Text style={styles.bottomText}>Kalem {lines.length}</Text>
+          <Text style={styles.bottomText}>Adet {totalQuantity}</Text>
+          <Text style={styles.bottomAmount}>{formatPrice(totalAmount)}</Text>
         </View>
+        <AppButton label="FİŞİ TAMAMLA" onPress={completeSale} variant="dark" compact />
       </View>
-
-      {lines.length === 0 ? (
-        <EmptyState badge="ÜRÜN" title="Fişte ürün yok" description="Müşteri seçilip fiş başlatıldıktan sonra kod okut, fiyatı gör ve adet gir." />
-      ) : (
-        <View style={styles.productList}>
-          <View style={styles.productListHeader}>
-            <Text style={styles.productListTitle}>Fiş ürünleri</Text>
-            <Text style={styles.productListCount}>{lines.length} kalem · {totalQuantity} adet · {formatPrice(totalAmount)}</Text>
-          </View>
-          {lines.map((line) => (
-            <View key={line.lineId} style={styles.productRow}>
-              <View style={styles.productMain}>
-                <Text style={styles.productCode}>{line.code}</Text>
-                <Text style={styles.productName} numberOfLines={1}>{line.name}</Text>
-                <Text style={styles.productMeta} numberOfLines={1}>Birim {formatPrice(line.price, line.currency)} · Satır {formatPrice(line.price * line.quantity, line.currency)}</Text>
-              </View>
-              <View style={styles.quantityBlock}>
-                <Text style={styles.quantityLabel}>Adet</Text>
-                <Text style={styles.quantityValue}>{line.quantity}</Text>
-              </View>
-              <View style={styles.lineActions}>
-                <Pressable onPress={() => changeQuantity(line.lineId, -1)} style={styles.lineButton}>
-                  <Text style={styles.lineButtonText}>-</Text>
-                </Pressable>
-                <Pressable onPress={() => changeQuantity(line.lineId, 1)} style={styles.lineButton}>
-                  <Text style={styles.lineButtonText}>+</Text>
-                </Pressable>
-                <Pressable onPress={() => removeLine(line.lineId)} style={[styles.lineButton, styles.deleteButton, pendingDeleteLineId === line.lineId && styles.deleteConfirmButton]}>
-                  <Text style={styles.deleteText}>{pendingDeleteLineId === line.lineId ? 'Onay' : 'Sil'}</Text>
-                </Pressable>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
-
-      <View style={styles.actionPanel}>
-        <ActionRow
-          actions={[
-            { label: 'Taslağı Kaydet', onPress: saveDraft, variant: 'secondary' },
-            { label: 'QR Albüm Hazırla', onPress: prepareAlbum, variant: 'dark' },
-          ]}
-        />
-        <ActionRow
-          actions={[
-            { label: 'Beklemeye Al', onPress: holdSale, variant: 'quiet' },
-            { label: 'Fişi Tamamla', onPress: completeSale, variant: 'primary' },
-          ]}
-        />
-      </View>
-    </ScreenShell>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.metricBox}>
-      <Text style={styles.metricValue}>{value}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  statusPanel: {
+  shell: { flex: 1, backgroundColor: colors.surface },
+  scroll: { flex: 1 },
+  content: { padding: spacing.sm, gap: spacing.sm },
+  topPanel: {
+    minHeight: 56,
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.line,
     borderLeftWidth: 4,
     borderLeftColor: colors.red,
-    padding: spacing.sm,
-    gap: spacing.xs,
-  },
-  statusTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
-  statusDocument: { color: colors.red, fontSize: typography.section, fontWeight: '900', flex: 1 },
-  statusCustomer: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
-  statusMetricRow: { flexDirection: 'row', gap: spacing.xs },
-  metricBox: {
-    flex: 1,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: colors.surfaceSoft,
-    paddingVertical: 4,
-    paddingHorizontal: spacing.xs,
+    padding: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
   },
-  metricValue: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900', textAlign: 'center' },
-  metricLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900', textAlign: 'center' },
-  formPanel: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg, padding: spacing.sm, gap: spacing.xs },
-  lockedPanel: { opacity: 0.92 },
-  actionPanel: { gap: spacing.xs },
-  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  sectionHeaderTextBlock: { flex: 1, gap: 2 },
-  stepBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: colors.anthracite,
-    color: colors.surface,
-    fontSize: typography.body,
+  topMain: { flex: 1, gap: 2 },
+  documentNo: { color: colors.red, fontSize: typography.section, fontWeight: '900' },
+  customerName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  scanPanel: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.anthracite,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    gap: spacing.sm,
+  },
+  barcodeInput: {
+    minHeight: 58,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 2,
+    borderColor: colors.anthracite,
+    color: colors.ink,
+    fontSize: 24,
+    paddingHorizontal: spacing.md,
     fontWeight: '900',
     textAlign: 'center',
-    lineHeight: 30,
+    letterSpacing: 0,
   },
-  label: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
-  helperText: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
-  input: { minHeight: 42, borderRadius: radius.md, backgroundColor: colors.surfaceSoft, borderWidth: 1, borderColor: colors.line, color: colors.ink, fontSize: typography.body, paddingHorizontal: spacing.md, fontWeight: '800' },
-  lockedInput: { backgroundColor: colors.surface, borderColor: colors.anthracite },
-  scanInput: { borderColor: colors.anthracite, backgroundColor: colors.surface },
-  disabledInput: { opacity: 0.72 },
-  selectedCustomerCard: {
+  disabledInput: { opacity: 0.7 },
+  productReadout: { flexDirection: 'row', alignItems: 'stretch', gap: spacing.sm },
+  productReadoutMain: {
+    flex: 1,
+    minHeight: 70,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.red,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.red,
-    backgroundColor: colors.surface,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    padding: spacing.sm,
-  },
-  selectedCustomerCardLocked: { borderColor: colors.anthracite, borderLeftColor: colors.anthracite },
-  selectedCustomerTextBlock: { flex: 1, gap: 2 },
-  selectedCustomerLabel: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
-  selectedCustomerName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
-  selectedCustomerMeta: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
-  suggestionList: { gap: spacing.xs },
-  suggestionRow: {
-    minHeight: 40,
-    borderRadius: radius.md,
+    backgroundColor: colors.surfaceSoft,
     borderWidth: 1,
     borderColor: colors.line,
-    backgroundColor: colors.surfaceSoft,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-  },
-  suggestionRowSelected: { backgroundColor: colors.anthracite, borderColor: colors.anthracite },
-  manualSuggestionRow: { borderStyle: 'dashed' },
-  suggestionMain: { flex: 1, gap: 2 },
-  suggestionName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
-  suggestionNameSelected: { color: colors.surface },
-  suggestionMeta: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
-  suggestionMetaSelected: { color: colors.surface },
-  suggestionAction: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
-  suggestionActionSelected: { color: colors.surface },
-  noSuggestionBox: {
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: colors.surfaceSoft,
     padding: spacing.sm,
-    gap: 2,
+    justifyContent: 'center',
   },
-  noSuggestionTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
-  noSuggestionText: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
-  pricePreviewBox: {
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.red,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.red,
-    backgroundColor: colors.surface,
-    padding: spacing.sm,
-    gap: spacing.xs,
-  },
-  pricePreviewBody: { gap: spacing.xs },
-  pricePreviewTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  pricePreviewMain: { flex: 1, gap: 2 },
-  lastScanLabel: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
-  lastScanCode: { color: colors.red, fontSize: typography.body, fontWeight: '900' },
-  lastScanName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
-  lastScanMeta: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
-  lastScanEmpty: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
-  priceBadge: {
-    minWidth: 92,
+  pendingCode: { color: colors.red, fontSize: typography.section, fontWeight: '900' },
+  pendingName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  pendingTime: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
+  priceBlock: {
+    width: 108,
     borderRadius: radius.md,
     backgroundColor: colors.anthracite,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    padding: spacing.sm,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  priceBadgeLabel: { color: colors.line, fontSize: 10, fontWeight: '900' },
-  priceBadgeValue: { color: colors.surface, fontSize: typography.body, fontWeight: '900' },
-  quantityEntryRow: { flexDirection: 'row', gap: spacing.xs, alignItems: 'stretch' },
-  quantityInputBlock: { flex: 1, gap: 2 },
-  quantityInputLabel: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
+  priceLabel: { color: colors.line, fontSize: typography.small, fontWeight: '900' },
+  priceValue: { color: colors.surface, fontSize: typography.body, fontWeight: '900', textAlign: 'center' },
+  quantityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  quantityButton: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.anthracite,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quantityButtonText: { color: colors.surface, fontSize: 24, fontWeight: '900' },
   quantityInput: {
-    minHeight: 42,
+    width: 62,
+    height: 44,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.anthracite,
     backgroundColor: colors.surfaceSoft,
     color: colors.ink,
-    fontSize: typography.section,
+    fontSize: typography.title,
     fontWeight: '900',
     textAlign: 'center',
   },
   pendingTotalBox: {
     flex: 1,
+    height: 44,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.line,
     backgroundColor: colors.surfaceSoft,
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: spacing.sm,
   },
-  pendingTotalLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
+  pendingTotalLabel: { color: colors.muted, fontSize: 10, fontWeight: '900' },
   pendingTotalValue: { color: colors.red, fontSize: typography.body, fontWeight: '900' },
-  quickCodeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  quickCodeButton: {
-    flexBasis: '23%',
-    flexGrow: 1,
-    minHeight: 34,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.anthracite,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xs,
-  },
-  quickCodeButtonDisabled: { opacity: 0.45 },
-  quickCodeText: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
-  productList: { gap: spacing.xs },
-  productListHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.xs,
-  },
-  productListTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
-  productListCount: { color: colors.muted, fontSize: typography.small, fontWeight: '900', flex: 1, textAlign: 'right' },
-  productRow: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+  table: {
     borderWidth: 1,
     borderColor: colors.line,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.red,
-    padding: spacing.xs,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
   },
-  productMain: { flex: 1, gap: 1 },
-  productCode: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
-  productName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
-  productMeta: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
-  quantityBlock: {
-    minWidth: 44,
-    alignItems: 'center',
-    backgroundColor: colors.surfaceSoft,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.line,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 3,
-  },
-  quantityLabel: { color: colors.muted, fontSize: 10, fontWeight: '900' },
-  quantityValue: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
-  lineActions: { flexDirection: 'row', gap: 4 },
-  lineButton: {
+  tableHeader: {
     minHeight: 30,
-    minWidth: 32,
+    backgroundColor: colors.anthracite,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  headerCell: { color: colors.surface, fontSize: typography.small, fontWeight: '900' },
+  codeCol: { flex: 1.65, paddingHorizontal: spacing.xs },
+  qtyCol: { width: 92, alignItems: 'center' },
+  priceCol: { width: 82, textAlign: 'right', paddingHorizontal: spacing.xs },
+  totalCol: { width: 92, textAlign: 'right', paddingHorizontal: spacing.xs },
+  emptyRow: { minHeight: 42, justifyContent: 'center', alignItems: 'center' },
+  emptyText: { color: colors.muted, fontSize: typography.body, fontWeight: '800' },
+  lineRow: {
+    minHeight: 46,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 3,
+    paddingHorizontal: spacing.xs,
+  },
+  lineCode: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
+  lineName: { color: colors.ink, fontSize: typography.small, fontWeight: '800' },
+  deleteHint: { color: colors.muted, fontSize: 9, fontWeight: '800' },
+  lineQtyControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3 },
+  lineQtyButton: {
+    width: 24,
+    height: 24,
     borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.anthracite,
-    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.xs,
   },
-  lineButtonText: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
-  deleteButton: { backgroundColor: colors.red, borderColor: colors.redDark },
-  deleteConfirmButton: { backgroundColor: colors.anthracite, borderColor: colors.anthracite },
-  deleteText: { color: colors.surface, fontSize: 10, fontWeight: '900' },
+  lineQtyButtonText: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
+  lineQtyValue: { width: 30, color: colors.ink, fontSize: typography.body, fontWeight: '900', textAlign: 'center' },
+  lineMoney: { color: colors.ink, fontSize: typography.small, fontWeight: '800' },
+  lineMoneyStrong: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
+  bottomBar: {
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+    backgroundColor: colors.surface,
+    paddingTop: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  bottomTotals: { flex: 1, gap: 1 },
+  bottomText: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
+  bottomAmount: { color: colors.red, fontSize: typography.section, fontWeight: '900' },
 });
