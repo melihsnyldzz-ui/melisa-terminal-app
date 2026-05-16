@@ -74,6 +74,18 @@ export type ActiveSaleDraft = {
   updatedAt: string;
 };
 
+export type SalePrintJob = {
+  id: string;
+  documentNo: string;
+  customerName: string;
+  lineCount: number;
+  totalQuantity: number;
+  totalAmount: number;
+  currency: string;
+  status: 'Yazdırma bekliyor' | 'Yazdırıldı' | 'Yazdırma hatası';
+  createdAt: string;
+};
+
 export type PickingLine = {
   id: string;
   code: string;
