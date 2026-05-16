@@ -309,34 +309,36 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
             <Text style={[styles.headerCell, styles.priceCol]}>FİYAT</Text>
             <Text style={[styles.headerCell, styles.totalCol]}>TOPLAM</Text>
           </View>
-          {lines.length === 0 ? (
-            <View style={styles.emptyRow}>
-              <Text style={styles.emptyText}>Satır yok</Text>
-            </View>
-          ) : (
-            lines.map((line) => (
-              <View key={line.lineId} style={styles.lineRow}>
-                <Pressable onPress={() => removeLine(line.lineId)} style={styles.codeCol}>
-                  <Text style={styles.lineCode}>{line.code}</Text>
-                  <Text style={styles.lineName} numberOfLines={1}>{line.name}</Text>
-                  <Text style={styles.deleteHint}>{pendingDeleteLineId === line.lineId ? 'Silmek için tekrar bas' : 'Sil'}</Text>
-                </Pressable>
-                <View style={styles.qtyCol}>
-                  <View style={styles.lineQtyControls}>
-                    <Pressable onPress={() => changeQuantity(line.lineId, -1)} style={styles.lineQtyButton}>
-                      <Text style={styles.lineQtyButtonText}>-</Text>
-                    </Pressable>
-                    <Text style={styles.lineQtyValue}>{line.quantity}</Text>
-                    <Pressable onPress={() => changeQuantity(line.lineId, 1)} style={styles.lineQtyButton}>
-                      <Text style={styles.lineQtyButtonText}>+</Text>
-                    </Pressable>
-                  </View>
-                </View>
-                <Text style={[styles.lineMoney, styles.priceCol]}>{formatPrice(line.price, line.currency)}</Text>
-                <Text style={[styles.lineMoneyStrong, styles.totalCol]}>{formatPrice(line.price * line.quantity, line.currency)}</Text>
+          <ScrollView style={styles.tableBody} nestedScrollEnabled>
+            {lines.length === 0 ? (
+              <View style={styles.emptyRow}>
+                <Text style={styles.emptyText}>Satır yok</Text>
               </View>
-            ))
-          )}
+            ) : (
+              lines.map((line) => (
+                <View key={line.lineId} style={styles.lineRow}>
+                  <Pressable onPress={() => removeLine(line.lineId)} style={styles.codeCol}>
+                    <Text style={styles.lineCode} numberOfLines={1}>{line.code}</Text>
+                    <Text style={styles.lineName} numberOfLines={1}>{line.name}</Text>
+                    {pendingDeleteLineId === line.lineId ? <Text style={styles.deleteHint}>Silmek için tekrar bas</Text> : null}
+                  </Pressable>
+                  <View style={styles.qtyCol}>
+                    <View style={styles.lineQtyControls}>
+                      <Pressable onPress={() => changeQuantity(line.lineId, -1)} style={styles.lineQtyButton}>
+                        <Text style={styles.lineQtyButtonText}>-</Text>
+                      </Pressable>
+                      <Text style={styles.lineQtyValue}>{line.quantity}</Text>
+                      <Pressable onPress={() => changeQuantity(line.lineId, 1)} style={styles.lineQtyButton}>
+                        <Text style={styles.lineQtyButtonText}>+</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                  <Text style={[styles.lineMoney, styles.priceCol]} numberOfLines={1}>{formatPrice(line.price, line.currency)}</Text>
+                  <Text style={[styles.lineMoneyStrong, styles.totalCol]} numberOfLines={1}>{formatPrice(line.price * line.quantity, line.currency)}</Text>
+                </View>
+              ))
+            )}
+          </ScrollView>
         </View>
       </ScrollView>
 
@@ -454,6 +456,9 @@ const styles = StyleSheet.create({
   pendingTotalLabel: { color: colors.muted, fontSize: 10, fontWeight: '900' },
   pendingTotalValue: { color: colors.red, fontSize: typography.body, fontWeight: '900' },
   table: {
+    flex: 1,
+    minHeight: 190,
+    maxHeight: 390,
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: radius.md,
@@ -461,45 +466,46 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   tableHeader: {
-    minHeight: 30,
+    minHeight: 24,
     backgroundColor: colors.anthracite,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: 2,
   },
-  headerCell: { color: colors.surface, fontSize: typography.small, fontWeight: '900' },
-  codeCol: { flex: 1.65, paddingHorizontal: spacing.xs },
-  qtyCol: { width: 92, alignItems: 'center' },
-  priceCol: { width: 82, textAlign: 'right', paddingHorizontal: spacing.xs },
-  totalCol: { width: 92, textAlign: 'right', paddingHorizontal: spacing.xs },
-  emptyRow: { minHeight: 42, justifyContent: 'center', alignItems: 'center' },
-  emptyText: { color: colors.muted, fontSize: typography.body, fontWeight: '800' },
+  tableBody: { maxHeight: 366 },
+  headerCell: { color: colors.surface, fontSize: 10, fontWeight: '900' },
+  codeCol: { flex: 1, minWidth: 0, paddingHorizontal: 3 },
+  qtyCol: { width: 74, alignItems: 'center' },
+  priceCol: { width: 68, textAlign: 'right', paddingHorizontal: 2 },
+  totalCol: { width: 76, textAlign: 'right', paddingHorizontal: 2 },
+  emptyRow: { minHeight: 34, justifyContent: 'center', alignItems: 'center' },
+  emptyText: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
   lineRow: {
-    minHeight: 46,
+    minHeight: 33,
     borderTopWidth: 1,
     borderTopColor: colors.line,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 3,
-    paddingHorizontal: spacing.xs,
+    paddingVertical: 1,
+    paddingHorizontal: 2,
   },
-  lineCode: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
-  lineName: { color: colors.ink, fontSize: typography.small, fontWeight: '800' },
-  deleteHint: { color: colors.muted, fontSize: 9, fontWeight: '800' },
-  lineQtyControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3 },
+  lineCode: { color: colors.red, fontSize: 10, fontWeight: '900', lineHeight: 12 },
+  lineName: { color: colors.ink, fontSize: 9, fontWeight: '800', lineHeight: 11 },
+  deleteHint: { color: colors.red, fontSize: 8, fontWeight: '900', lineHeight: 9 },
+  lineQtyControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 },
   lineQtyButton: {
-    width: 24,
-    height: 24,
+    width: 21,
+    height: 21,
     borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.anthracite,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  lineQtyButtonText: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
-  lineQtyValue: { width: 30, color: colors.ink, fontSize: typography.body, fontWeight: '900', textAlign: 'center' },
-  lineMoney: { color: colors.ink, fontSize: typography.small, fontWeight: '800' },
-  lineMoneyStrong: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
+  lineQtyButtonText: { color: colors.anthracite, fontSize: 12, fontWeight: '900', lineHeight: 14 },
+  lineQtyValue: { width: 24, color: colors.ink, fontSize: 11, fontWeight: '900', textAlign: 'center' },
+  lineMoney: { color: colors.ink, fontSize: 10, fontWeight: '800' },
+  lineMoneyStrong: { color: colors.anthracite, fontSize: 10, fontWeight: '900' },
   bottomBar: {
     borderTopWidth: 1,
     borderTopColor: colors.line,
