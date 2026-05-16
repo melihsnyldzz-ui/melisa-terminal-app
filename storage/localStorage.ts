@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ActivePickingDraft, ActiveSaleDraft, FailedOperation, OpenDocument, PickingLine, SaleLine, SalesCustomer, TerminalSettings, UserSession } from '../types';
+import type { ActivePickingDraft, ActiveSaleDraft, FailedOperation, OpenDocument, PickingLine, SaleLine, SalePrintJob, SalesCustomer, TerminalSettings, UserSession } from '../types';
 
 const KEYS = {
   settings: 'melisa-terminal:settings',
@@ -9,6 +9,7 @@ const KEYS = {
   selectedSalesCustomer: 'melisa-terminal:selected-sales-customer',
   activeSaleDraft: 'melisa-terminal:active-sale-draft',
   activePickingDraft: 'melisa-terminal:active-picking-draft',
+  salePrintJobs: 'melisa-terminal:sale-print-jobs',
 };
 
 const defaultSettings: TerminalSettings = {
@@ -61,6 +62,15 @@ const normalizeActivePickingDraft = (draft: ActivePickingDraft | null): ActivePi
     lines,
   };
 };
+
+const normalizeSalePrintJobs = (jobs: SalePrintJob[]): SalePrintJob[] => Array.isArray(jobs) ? jobs.map((job) => ({
+  ...job,
+  lineCount: Number.isFinite(job.lineCount) ? job.lineCount : 0,
+  totalQuantity: Number.isFinite(job.totalQuantity) ? job.totalQuantity : 0,
+  totalAmount: Number.isFinite(job.totalAmount) ? job.totalAmount : 0,
+  currency: job.currency || 'TL',
+  status: job.status || 'Yazdırma bekliyor',
+})) : [];
 
 async function readJson<T>(key: string, fallback: T): Promise<T> {
   try {
@@ -148,6 +158,20 @@ export async function saveActiveSaleDraft(draft: ActiveSaleDraft): Promise<void>
 
 export async function clearActiveSaleDraft(): Promise<void> {
   await AsyncStorage.removeItem(KEYS.activeSaleDraft);
+}
+
+export async function loadSalePrintJobs(): Promise<SalePrintJob[]> {
+  const jobs = await readJson<SalePrintJob[]>(KEYS.salePrintJobs, []);
+  return normalizeSalePrintJobs(jobs);
+}
+
+export async function saveSalePrintJobs(jobs: SalePrintJob[]): Promise<void> {
+  await writeJson(KEYS.salePrintJobs, normalizeSalePrintJobs(jobs));
+}
+
+export async function addSalePrintJob(job: SalePrintJob): Promise<void> {
+  const jobs = await loadSalePrintJobs();
+  await saveSalePrintJobs([job, ...jobs]);
 }
 
 export async function loadActivePickingDraft(): Promise<ActivePickingDraft | null> {
