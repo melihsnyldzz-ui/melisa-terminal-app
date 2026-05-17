@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getRetryPlan } from '../app/offline/retryScheduler';
 import type { ActiveSaleDraft, SalePrintJob } from '../types';
 import type { OfflineQueueAction, OfflineQueueActionPayload } from '../app/offline/offlineQueueTypes';
 
@@ -28,6 +29,12 @@ function normalizeOfflineActions(actions: OfflineQueueAction[]): OfflineQueueAct
     .map((action) => {
       const retryCount = Number.isFinite(action.retryCount) && action.retryCount >= 0 ? action.retryCount : action.retry?.retryCount || 0;
       const updatedAt = action.updatedAt || action.createdAt || new Date().toISOString();
+      const retryPlan = getRetryPlan({
+        status: action.status === 'error' ? 'error' : 'pending',
+        createdAt: action.createdAt || updatedAt,
+        retryCount,
+        retry: { ...action.retry, retryCount },
+      });
       return {
         ...action,
         status: action.status === 'error' ? 'error' : 'pending',
@@ -35,10 +42,12 @@ function normalizeOfflineActions(actions: OfflineQueueAction[]): OfflineQueueAct
         updatedAt,
         retryCount,
         lastError: action.lastError || action.retry?.lastError,
+        nextRetryAt: action.nextRetryAt || retryPlan.nextRetryAt,
+        retryBlocked: action.retryBlocked ?? retryPlan.retryBlocked,
         retry: {
           retryCount,
           lastTriedAt: action.retry?.lastTriedAt,
-          nextRetryAfter: action.retry?.nextRetryAfter,
+          nextRetryAfter: action.retry?.nextRetryAfter || action.nextRetryAt || retryPlan.nextRetryAt,
           lastError: action.lastError || action.retry?.lastError,
         },
       };
@@ -61,6 +70,7 @@ export function createPrintRetryOfflineAction(printJob: SalePrintJob, lastError?
     customerName: printJob.customerName,
     retryCount: 0,
     lastError,
+    retryBlocked: false,
     retry: {
       retryCount: 0,
       lastError,
@@ -77,6 +87,7 @@ export function createPendingSaleCompletionOfflineAction(saleDraft: ActiveSaleDr
     customerName: saleDraft.customerName,
     retryCount: 0,
     lastError,
+    retryBlocked: false,
     retry: {
       retryCount: 0,
       lastError,
@@ -91,15 +102,25 @@ export async function loadOfflineActions(): Promise<OfflineQueueAction[]> {
 
 export async function addOfflineAction(action: Omit<OfflineQueueAction, 'id' | 'createdAt' | 'updatedAt'>): Promise<OfflineQueueAction> {
   const now = new Date().toISOString();
+  const retryCount = action.retryCount || 0;
+  const retryPlan = getRetryPlan({
+    status: action.status,
+    createdAt: now,
+    retryCount,
+    retry: { ...action.retry, retryCount },
+  });
   const nextAction: OfflineQueueAction = {
     ...action,
     id: `offline-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     createdAt: now,
     updatedAt: now,
-    retryCount: action.retryCount || 0,
+    retryCount,
+    nextRetryAt: action.nextRetryAt || retryPlan.nextRetryAt,
+    retryBlocked: action.retryBlocked ?? retryPlan.retryBlocked,
     retry: {
       ...action.retry,
-      retryCount: action.retryCount || action.retry.retryCount || 0,
+      retryCount,
+      nextRetryAfter: action.retry.nextRetryAfter || retryPlan.nextRetryAt,
       lastError: action.lastError || action.retry.lastError,
     },
   };
@@ -128,16 +149,25 @@ export async function updateOfflineAction(actionId: string, patch: Partial<Offli
   const nextActions = actions.map((action) => {
     if (action.id !== actionId) return action;
     const retryCount = patch.retryCount ?? patch.retry?.retryCount ?? action.retryCount;
+    const retryPlan = getRetryPlan({
+      status: patch.status || action.status,
+      createdAt: action.createdAt,
+      retryCount,
+      retry: { ...action.retry, ...patch.retry, retryCount },
+    });
     updatedAction = {
       ...action,
       ...patch,
       updatedAt: new Date().toISOString(),
       retryCount,
       lastError: patch.lastError ?? patch.retry?.lastError ?? action.lastError,
+      nextRetryAt: patch.nextRetryAt ?? retryPlan.nextRetryAt,
+      retryBlocked: patch.retryBlocked ?? retryPlan.retryBlocked,
       retry: {
         ...action.retry,
         ...patch.retry,
         retryCount,
+        nextRetryAfter: patch.retry?.nextRetryAfter ?? patch.nextRetryAt ?? retryPlan.nextRetryAt,
         lastError: patch.lastError ?? patch.retry?.lastError ?? action.lastError,
       },
     };

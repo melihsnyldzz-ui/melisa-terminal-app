@@ -11,6 +11,8 @@ export type OfflineQueueRetryMetadata = {
   lastError?: string;
 };
 
+export type OfflineQueueRetryState = 'eligible' | 'waiting' | 'blocked';
+
 export type OfflineQueueActionPayload =
   | {
       type: 'printRetry';
@@ -31,6 +33,8 @@ export type OfflineQueueAction = {
   updatedAt: string;
   retryCount: number;
   lastError?: string;
+  nextRetryAt?: string;
+  retryBlocked?: boolean;
   retry: OfflineQueueRetryMetadata;
   payload: OfflineQueueActionPayload;
 };

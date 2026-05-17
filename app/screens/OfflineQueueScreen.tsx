@@ -7,6 +7,7 @@ import { StatusPill } from '../../components/StatusPill';
 import { TerminalHeader } from '../../components/TerminalHeader';
 import { clearOfflineActions, loadOfflineActions, removeOfflineAction, removeOfflineActionsByStatus } from '../../storage/offlineQueueStorage';
 import type { OfflineQueueAction } from '../offline/offlineQueueTypes';
+import { getRetryPlan } from '../offline/retryScheduler';
 import { colors, radius, spacing, typography } from '../theme';
 
 type OfflineQueueScreenProps = {
@@ -21,6 +22,12 @@ const actionLabels: Record<OfflineQueueAction['actionType'], string> = {
 const statusLabels: Record<OfflineQueueAction['status'], string> = {
   pending: 'Bekleyen',
   error: 'Hata',
+};
+
+const retryStateLabels = {
+  eligible: 'Retry uygun',
+  waiting: 'Retry bekliyor',
+  blocked: 'Retry bloklandı',
 };
 
 const formatDate = (value?: string) => {
@@ -59,6 +66,9 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
     error: actions.filter((action) => action.status === 'error').length,
     printRetry: actions.filter((action) => action.actionType === 'printRetry').length,
     saleCompletion: actions.filter((action) => action.actionType === 'pendingSaleCompletion').length,
+    retryEligible: actions.filter((action) => getRetryPlan(action).retryState === 'eligible').length,
+    retryWaiting: actions.filter((action) => getRetryPlan(action).retryState === 'waiting').length,
+    retryBlocked: actions.filter((action) => getRetryPlan(action).retryState === 'blocked').length,
   }), [actions]);
 
   const confirmDelete = (action: OfflineQueueAction) => {
@@ -161,6 +171,9 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
               <InfoBox label="Error" value={summary.error.toString()} tone="danger" />
               <InfoBox label="Print retry" value={summary.printRetry.toString()} />
               <InfoBox label="Sale completion" value={summary.saleCompletion.toString()} />
+              <InfoBox label="Retry uygun" value={summary.retryEligible.toString()} tone="success" />
+              <InfoBox label="Retry bekliyor" value={summary.retryWaiting.toString()} tone="warning" />
+              <InfoBox label="Retry blok" value={summary.retryBlocked.toString()} tone="danger" />
             </View>
 
             <View style={styles.adminActions}>
@@ -188,6 +201,8 @@ function OfflineQueueCard({ action, expanded, showJson, onToggleDetail, onToggle
   onDelete: () => void;
 }) {
   const isError = action.status === 'error';
+  const retryPlan = getRetryPlan(action);
+  const retryTone = retryPlan.retryState === 'eligible' ? 'success' : retryPlan.retryState === 'waiting' ? 'warning' : 'danger';
 
   return (
     <View style={[styles.card, isError ? styles.cardError : styles.cardPending]}>
@@ -196,7 +211,10 @@ function OfflineQueueCard({ action, expanded, showJson, onToggleDetail, onToggle
           <Text style={styles.documentNo}>{action.documentNo || action.id}</Text>
           <Text style={styles.customerName} numberOfLines={1}>{action.customerName || 'Müşteri yok'}</Text>
         </View>
-        <StatusPill label={statusLabels[action.status]} tone={isError ? 'danger' : 'warning'} />
+        <View style={styles.statusStack}>
+          <StatusPill label={statusLabels[action.status]} tone={isError ? 'danger' : 'warning'} />
+          <StatusPill label={retryStateLabels[retryPlan.retryState]} tone={retryTone} />
+        </View>
       </View>
 
       <View style={styles.metricRow}>
@@ -206,6 +224,10 @@ function OfflineQueueCard({ action, expanded, showJson, onToggleDetail, onToggle
       <View style={styles.metricRow}>
         <InfoBox label="CreatedAt" value={formatDate(action.createdAt)} />
         <InfoBox label="LastTriedAt" value={formatDate(action.retry.lastTriedAt)} />
+      </View>
+      <View style={styles.metricRow}>
+        <InfoBox label="NextRetryAt" value={formatDate(action.nextRetryAt || retryPlan.nextRetryAt)} />
+        <InfoBox label="Max retry" value={retryPlan.maxRetryExceeded ? 'Aşıldı' : 'Uygun'} tone={retryPlan.maxRetryExceeded ? 'danger' : 'success'} />
       </View>
 
       <View style={styles.errorInfoBox}>
@@ -219,7 +241,12 @@ function OfflineQueueCard({ action, expanded, showJson, onToggleDetail, onToggle
           <Text style={styles.detailText}>ID: {action.id}</Text>
           <Text style={styles.detailText}>Durum: {action.status}</Text>
           <Text style={styles.detailText}>UpdatedAt: {formatDate(action.updatedAt)}</Text>
-          {action.retry.nextRetryAfter ? <Text style={styles.detailText}>NextRetryAfter: {formatDate(action.retry.nextRetryAfter)}</Text> : null}
+          <Text style={styles.detailText}>Retry durumu: {retryStateLabels[retryPlan.retryState]}</Text>
+          <Text style={styles.detailText}>Retry uygun: {retryPlan.retryEligible ? 'Evet' : 'Hayır'}</Text>
+          <Text style={styles.detailText}>Retry zamanı geldi: {retryPlan.retryDue ? 'Evet' : 'Hayır'}</Text>
+          <Text style={styles.detailText}>Retry bloklandı: {retryPlan.retryBlocked ? 'Evet' : 'Hayır'}</Text>
+          <Text style={styles.detailText}>NextRetryAt: {formatDate(action.nextRetryAt || retryPlan.nextRetryAt)}</Text>
+          <Text style={styles.detailText}>Policy delay: {retryPlan.delayMs ? `${Math.round(retryPlan.delayMs / 1000)} sn` : '-'}</Text>
         </View>
       ) : null}
 
@@ -247,10 +274,10 @@ function SmallButton({ label, onPress, danger = false }: { label: string; onPres
   );
 }
 
-function InfoBox({ label, value, tone }: { label: string; value: string; tone?: 'danger' | 'warning' }) {
+function InfoBox({ label, value, tone }: { label: string; value: string; tone?: 'danger' | 'warning' | 'success' }) {
   return (
     <View style={styles.infoBox}>
-      <Text style={[styles.infoValue, tone === 'danger' && styles.infoDanger, tone === 'warning' && styles.infoWarning]} numberOfLines={1}>{value}</Text>
+      <Text style={[styles.infoValue, tone === 'danger' && styles.infoDanger, tone === 'warning' && styles.infoWarning, tone === 'success' && styles.infoSuccess]} numberOfLines={1}>{value}</Text>
       <Text style={styles.infoLabel}>{label}</Text>
     </View>
   );
@@ -298,6 +325,7 @@ const styles = StyleSheet.create({
   infoValue: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
   infoDanger: { color: colors.red },
   infoWarning: { color: colors.amber },
+  infoSuccess: { color: colors.success },
   infoLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
   card: {
     backgroundColor: colors.surface,
@@ -310,6 +338,7 @@ const styles = StyleSheet.create({
   cardError: { borderColor: '#f3bcc5', borderLeftWidth: 4, borderLeftColor: colors.red },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
   cardMain: { flex: 1, gap: 2 },
+  statusStack: { alignItems: 'flex-end', gap: spacing.xs },
   documentNo: { color: colors.red, fontSize: typography.section, fontWeight: '900' },
   customerName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
   metricRow: { flexDirection: 'row', gap: spacing.xs },
