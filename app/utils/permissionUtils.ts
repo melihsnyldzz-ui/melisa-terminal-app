@@ -1,7 +1,7 @@
 import type { AppScreen, Permission, PersonnelRole, PersonnelUser } from '../../types';
 
 const rolePermissions: Record<PersonnelRole, Permission[]> = {
-  admin: ['sales', 'openDocuments', 'picking', 'review', 'printQueue', 'offlineQueue', 'currencySettings', 'auditLog', 'settings', 'messages', 'qrAlbum', 'dataUpdate', 'terminalSettings'],
+  admin: ['sales', 'openDocuments', 'picking', 'review', 'printQueue', 'printEventHistory', 'offlineQueue', 'currencySettings', 'auditLog', 'settings', 'messages', 'qrAlbum', 'dataUpdate', 'terminalSettings'],
   depo: ['sales', 'openDocuments', 'picking', 'printQueue', 'messages', 'qrAlbum'],
   kasa: ['sales', 'openDocuments', 'review', 'printQueue', 'messages', 'qrAlbum'],
 };
@@ -15,6 +15,7 @@ export const screenPermissions: Partial<Record<AppScreen, Permission>> = {
   saleReview: 'review',
   failedQueue: 'printQueue',
   printQueue: 'printQueue',
+  printEventHistory: 'printEventHistory',
   offlineQueue: 'offlineQueue',
   currencySettings: 'currencySettings',
   terminalSettings: 'terminalSettings',
