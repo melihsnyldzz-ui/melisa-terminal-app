@@ -40,6 +40,9 @@ jobs:
       - name: Export Expo web
         run: npm run export:web
 
+      - name: Prepare GitHub Pages cache metadata
+        run: node scripts/postprocess-web-export.mjs
+
       - name: List exported files
         run: ls -la dist
 

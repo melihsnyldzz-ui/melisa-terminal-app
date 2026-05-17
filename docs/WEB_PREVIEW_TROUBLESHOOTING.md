@@ -15,14 +15,30 @@ https://melihsnyldzz-ui.github.io/melisa-terminal-app/
 ## Bu repoda kullanılan web export
 
 ```powershell
+npm run check
 npm run export:web
+node scripts/postprocess-web-export.mjs
 ```
 
-Bu komut Expo Web çıktısını GitHub Pages için üretir.
+Bu komutlar Expo Web çıktısını GitHub Pages için üretir ve `dist/index.html` içine cache azaltıcı build metadata ekler.
+
+## Cache bypass
+
+Deploy tamamlandığı halde eski ekran görünürse:
+
+```text
+https://melihsnyldzz-ui.github.io/melisa-terminal-app/?v=5.12.2
+```
+
+Build bilgisini ayrıca buradan kontrol edin:
+
+```text
+https://melihsnyldzz-ui.github.io/melisa-terminal-app/build-info.json
+```
 
 ## Kontrol zamanı
 
-v0.8.4 sonrası Web Preview workflow'unu yeniden tetiklemek için bu not güncellendi.
+v5.12.2 sonrası Web Preview workflow'u build metadata ve cache azaltıcı HTML meta alanları üretir.
 
 ## Not
 
