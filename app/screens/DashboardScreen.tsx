@@ -20,11 +20,11 @@ type DashboardScreenProps = {
   systemMessage?: string;
 };
 
-const quickActions: Array<{ label: string; screen: AppScreen; tone?: 'primary' | 'dark' | 'success' }> = [
-  { label: 'SATIŞ', screen: 'salesCustomer', tone: 'primary' },
-  { label: 'Toplama', screen: 'picking', tone: 'dark' },
-  { label: 'Açık Fiş', screen: 'openDocuments' },
-  { label: 'QR', screen: 'qrAlbum' },
+const staffActions: Array<{ label: string; helper: string; screen: AppScreen; tone?: 'primary' | 'dark' | 'warning' }> = [
+  { label: 'SATIŞ', helper: 'Müşteri seç, fiş aç', screen: 'salesCustomer', tone: 'primary' },
+  { label: 'AÇIK FİŞLER', helper: 'Bekleyen fişlere bak', screen: 'openDocuments', tone: 'warning' },
+  { label: 'YAZDIRMA KUYRUĞU', helper: 'Fişi tekrar yazdır', screen: 'printQueue' },
+  { label: 'TOPLAMA', helper: 'Depo işini yap', screen: 'picking', tone: 'dark' },
 ];
 
 const modules: Array<{ label: string; description: string; screen: AppScreen; code: string }> = [
@@ -118,9 +118,10 @@ export function DashboardScreen({ session, currentUser, onNavigate, systemMessag
   const personName = session?.username || 'Personel';
   const activeLineCount = activeDraft?.lines.length ?? 0;
   const activeTotalQuantity = activeDraft?.lines.reduce((sum, line) => sum + line.quantity, 0) ?? 0;
-  const visibleQuickActions = quickActions.filter((action) => canOpenScreen(currentUser, action.screen));
-  const visibleModules = modules.filter((module) => canOpenScreen(currentUser, module.screen));
   const isAdmin = currentUser?.role === 'admin';
+  const visibleStaffActions = staffActions.filter((action) => canOpenScreen(currentUser, action.screen));
+  const staffScreens = new Set(staffActions.map((action) => action.screen));
+  const visibleModules = modules.filter((module) => canOpenScreen(currentUser, module.screen) && (isAdmin || !staffScreens.has(module.screen)));
   const hasMainIssue = mainStatus.bridgeConnected === false
     || mainStatus.openSaleDraftCount > 0
     || mainStatus.pendingPrintCount > 0
@@ -141,15 +142,6 @@ export function DashboardScreen({ session, currentUser, onNavigate, systemMessag
             {currentUser ? <Text style={styles.userLine}>{currentUser.code} · {currentUser.role.toUpperCase()}</Text> : null}
           </View>
           <StatusPill label="Hazır" tone="success" />
-        </View>
-
-        <View style={styles.quickBar}>
-          {visibleQuickActions.map((action) => (
-            <Pressable key={action.label} onPress={() => onNavigate(action.screen)} style={({ pressed }) => [styles.quickButton, action.tone === 'primary' && styles.quickPrimary, action.tone === 'dark' && styles.quickDark, pressed && styles.pressed]}>
-              <Text style={[styles.quickText, (action.tone === 'primary' || action.tone === 'dark') && styles.quickTextLight]}>{action.label}</Text>
-              {action.screen === 'messages' && unreadCount > 0 ? <View style={styles.quickUnreadDot}><Text style={styles.quickUnreadText}>{unreadCount}</Text></View> : null}
-            </Pressable>
-          ))}
         </View>
 
         <View style={[styles.todayStatusPanel, hasMainIssue ? styles.todayStatusWarning : styles.todayStatusSuccess]}>
@@ -183,14 +175,17 @@ export function DashboardScreen({ session, currentUser, onNavigate, systemMessag
           </Pressable>
         ) : null}
 
-        <Pressable onPress={() => onNavigate('picking')} style={({ pressed }) => [styles.pickingHero, pressed && styles.pressed]}>
-          <View style={styles.heroTextBlock}>
-            <Text style={styles.heroKicker}>DEPO TOPLAMA</Text>
-            <Text style={styles.heroTitle}>Barkodla tikle</Text>
-            <Text style={styles.heroText}>Fişi aç, ürünü okut, doğruysa otomatik toplandı yap.</Text>
+        <View style={styles.staffActionPanel}>
+          <Text style={styles.sectionKicker}>GÜNLÜK İŞLER</Text>
+          <View style={styles.staffActionGrid}>
+            {visibleStaffActions.map((action) => (
+              <Pressable key={action.screen} onPress={() => onNavigate(action.screen)} style={({ pressed }) => [styles.staffAction, action.tone === 'primary' && styles.staffActionPrimary, action.tone === 'dark' && styles.staffActionDark, action.tone === 'warning' && styles.staffActionWarning, pressed && styles.pressed]}>
+                <Text style={[styles.staffActionText, (action.tone === 'primary' || action.tone === 'dark') && styles.staffActionTextLight]}>{action.label}</Text>
+                <Text style={[styles.staffActionHelper, (action.tone === 'primary' || action.tone === 'dark') && styles.staffActionHelperLight]}>{action.helper}</Text>
+              </Pressable>
+            ))}
           </View>
-          <View style={styles.heroBadge}><Text style={styles.heroBadgeText}>TOPLA</Text></View>
-        </Pressable>
+        </View>
 
         <View style={styles.summaryGrid}>
           <SummaryBox label="Açık" value={documents.length.toString()} />
@@ -199,18 +194,23 @@ export function DashboardScreen({ session, currentUser, onNavigate, systemMessag
           <SummaryBox label="Risk" value={failedCount.toString()} tone={failedCount > 0 ? 'warning' : 'dark'} />
         </View>
 
-        <View style={styles.menuGrid}>
-          {visibleModules.map((module) => (
-            <Pressable key={module.screen} onPress={() => onNavigate(module.screen)} style={({ pressed }) => [styles.module, module.screen === 'picking' && styles.moduleFeatured, pressed && styles.pressed]}>
-              <View style={styles.codeBox}><Text style={styles.codeText}>{module.code}</Text></View>
-              <View style={styles.moduleTextBlock}>
-                <Text style={styles.moduleText}>{module.label}</Text>
-                <Text style={styles.moduleDescription}>{module.description}</Text>
-              </View>
-              {module.screen === 'messages' && unreadCount > 0 ? <View style={styles.moduleUnreadBadge}><Text style={styles.moduleUnreadText}>{unreadCount}</Text></View> : null}
-            </Pressable>
-          ))}
-        </View>
+        {visibleModules.length > 0 ? (
+          <View style={styles.menuSection}>
+            <Text style={styles.sectionKicker}>{isAdmin ? 'ADMIN VE DİĞER MENÜLER' : 'DİĞER İŞLER'}</Text>
+            <View style={styles.menuGrid}>
+              {visibleModules.map((module) => (
+                <Pressable key={module.screen} onPress={() => onNavigate(module.screen)} style={({ pressed }) => [styles.module, module.screen === 'picking' && styles.moduleFeatured, pressed && styles.pressed]}>
+                  <View style={styles.codeBox}><Text style={styles.codeText}>{module.code}</Text></View>
+                  <View style={styles.moduleTextBlock}>
+                    <Text style={styles.moduleText}>{module.label}</Text>
+                    <Text style={styles.moduleDescription}>{module.description}</Text>
+                  </View>
+                  {module.screen === 'messages' && unreadCount > 0 ? <View style={styles.moduleUnreadBadge}><Text style={styles.moduleUnreadText}>{unreadCount}</Text></View> : null}
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ) : null}
 
         <View style={styles.footerNote}>
           <Text style={styles.footerNoteText}>Hedef: okut → doğrula → ekle/topla</Text>
@@ -268,39 +268,7 @@ const styles = StyleSheet.create({
   kicker: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
   title: { color: colors.surface, fontSize: typography.section, fontWeight: '900' },
   userLine: { color: colors.line, fontSize: typography.small, fontWeight: '900', marginTop: 2 },
-  quickBar: { flexDirection: 'row', gap: spacing.xs },
-  quickButton: {
-    flex: 1,
-    minHeight: 40,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xs,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.anthracite,
-    ...shadows.subtle,
-  },
-  quickPrimary: { backgroundColor: colors.red, borderColor: colors.redDark, borderBottomColor: colors.anthracite },
-  quickDark: { backgroundColor: colors.anthracite, borderColor: colors.anthracite, borderBottomColor: colors.red },
-  quickText: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900', textAlign: 'center' },
-  quickTextLight: { color: colors.surface },
-  quickUnreadDot: {
-    position: 'absolute',
-    right: 4,
-    top: 3,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.red,
-    borderWidth: 1,
-    borderColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickUnreadText: { color: colors.surface, fontSize: 10, fontWeight: '900' },
+  sectionKicker: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
   todayStatusPanel: {
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -333,6 +301,36 @@ const styles = StyleSheet.create({
   statusBoxWarning: { color: colors.amber },
   statusBoxDanger: { color: colors.red },
   statusBoxLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
+  staffActionPanel: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.sm,
+    gap: spacing.xs,
+    ...shadows.subtle,
+  },
+  staffActionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  staffAction: {
+    width: '48.7%',
+    minHeight: 78,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.anthracite,
+    borderBottomWidth: 3,
+    borderBottomColor: colors.red,
+    backgroundColor: colors.surface,
+    padding: spacing.sm,
+    justifyContent: 'center',
+    gap: 3,
+  },
+  staffActionPrimary: { backgroundColor: colors.red, borderColor: colors.redDark, borderBottomColor: colors.anthracite },
+  staffActionDark: { backgroundColor: colors.anthracite, borderColor: colors.anthracite, borderBottomColor: colors.red },
+  staffActionWarning: { backgroundColor: colors.warningSoft, borderColor: colors.amber, borderBottomColor: colors.amber },
+  staffActionText: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
+  staffActionTextLight: { color: colors.surface },
+  staffActionHelper: { color: colors.muted, fontSize: typography.small, fontWeight: '900', lineHeight: 14 },
+  staffActionHelperLight: { color: colors.line },
   urgentAlert: {
     backgroundColor: colors.dangerSoft,
     borderWidth: 1,
@@ -357,26 +355,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     paddingVertical: 2,
   },
-  pickingHero: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.anthracite,
-    borderLeftWidth: 5,
-    borderLeftColor: colors.red,
-    padding: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    ...shadows.subtle,
-  },
-  heroTextBlock: { flex: 1, gap: 2 },
-  heroKicker: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
-  heroTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
-  heroText: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
-  heroBadge: { backgroundColor: colors.red, borderRadius: radius.md, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, minHeight: 34, justifyContent: 'center' },
-  heroBadgeText: { color: colors.surface, fontSize: typography.small, fontWeight: '900' },
   summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   summaryBox: {
     flex: 1,
@@ -397,6 +375,7 @@ const styles = StyleSheet.create({
   summaryDanger: { color: colors.red },
   summaryWarning: { color: colors.amber },
   summaryLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900', marginTop: 2 },
+  menuSection: { gap: spacing.xs },
   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   module: {
     width: '48.7%',
