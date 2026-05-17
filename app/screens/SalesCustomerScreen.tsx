@@ -16,13 +16,13 @@ type SalesCustomerScreenProps = {
 };
 
 const mockCustomers: SalesCustomer[] = [
-  { id: 'cus-1', name: 'ABC Baby Store', code: 'C-1001', city: 'İstanbul', balanceLabel: 'Bakiye 12.450 TL', lastOperationLabel: 'Son fiş: Bugün 10:24' },
-  { id: 'cus-2', name: 'Mini Kids', code: 'C-1002', city: 'İstanbul', balanceLabel: 'Bakiye 4.180 TL', lastOperationLabel: 'Son fiş: Dün' },
-  { id: 'cus-3', name: 'Nova Baby', code: 'C-1003', city: 'Ankara', balanceLabel: 'Bakiye 0 TL', lastOperationLabel: 'Son fiş: 2 gün önce' },
-  { id: 'cus-4', name: 'Melisa Baby Boutique', code: 'C-1004', city: 'İzmir', balanceLabel: 'Bakiye 8.920 TL', lastOperationLabel: 'Son fiş: Bu hafta' },
-  { id: 'cus-5', name: 'Bebek Dünyası', code: 'C-1005', city: 'Bursa', balanceLabel: 'Bakiye 1.340 TL', lastOperationLabel: 'Son fiş: 12 Mayıs' },
-  { id: 'cus-6', name: 'Happy Mini Store', code: 'C-1006', city: 'Antalya', balanceLabel: 'Bakiye 6.700 TL', lastOperationLabel: 'Son fiş: 8 Mayıs' },
-  { id: 'cus-7', name: 'Luna Kids Wear', code: 'C-1007', city: 'Gaziantep', balanceLabel: 'Bakiye 2.215 TL', lastOperationLabel: 'Son fiş: Nisan' },
+  { id: 'cus-1', name: 'ABC Baby Store', code: 'C-1001', city: 'İstanbul', currency: 'TRY', balanceLabel: 'Bakiye 12.450 TRY', lastOperationLabel: 'Son fiş: Bugün 10:24' },
+  { id: 'cus-2', name: 'Mini Kids', code: 'C-1002', city: 'İstanbul', currency: 'USD', balanceLabel: 'Bakiye 4.180 TRY', lastOperationLabel: 'Son fiş: Dün' },
+  { id: 'cus-3', name: 'Nova Baby', code: 'C-1003', city: 'Ankara', currency: 'EUR', balanceLabel: 'Bakiye 0 TRY', lastOperationLabel: 'Son fiş: 2 gün önce' },
+  { id: 'cus-4', name: 'Melisa Baby Boutique', code: 'C-1004', city: 'İzmir', currency: 'TRY', balanceLabel: 'Bakiye 8.920 TRY', lastOperationLabel: 'Son fiş: Bu hafta' },
+  { id: 'cus-5', name: 'Bebek Dünyası', code: 'C-1005', city: 'Bursa', currency: 'TRY', balanceLabel: 'Bakiye 1.340 TRY', lastOperationLabel: 'Son fiş: 12 Mayıs' },
+  { id: 'cus-6', name: 'Happy Mini Store', code: 'C-1006', city: 'Antalya', currency: 'USD', balanceLabel: 'Bakiye 6.700 TRY', lastOperationLabel: 'Son fiş: 8 Mayıs' },
+  { id: 'cus-7', name: 'Luna Kids Wear', code: 'C-1007', city: 'Gaziantep', currency: 'EUR', balanceLabel: 'Bakiye 2.215 TRY', lastOperationLabel: 'Son fiş: Nisan' },
 ];
 
 const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase('tr-TR');
@@ -65,6 +65,7 @@ export function SalesCustomerScreen({ onBack, onNavigate }: SalesCustomerScreenP
     await saveActiveSaleDraft({
       documentNo: '',
       customerName: selectedCustomer.name,
+      saleCurrency: selectedCustomer.currency || 'TRY',
       status: 'Taslak',
       lines: [],
       updatedAt: new Date().toISOString(),

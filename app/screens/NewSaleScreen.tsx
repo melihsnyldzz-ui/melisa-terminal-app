@@ -5,10 +5,12 @@ import { AppButton } from '../../components/AppButton';
 import { StatusPill } from '../../components/StatusPill';
 import { TerminalHeader } from '../../components/TerminalHeader';
 import { ToastMessage, ToastTone } from '../../components/ToastMessage';
+import { DEFAULT_EXCHANGE_RATES, SUPPORTED_CURRENCIES, calculateLineTotal, formatMoney, normalizeCurrencyCode, normalizeSaleLineCurrency } from '../utils/currencyUtils';
+import { formatSaleReceipt } from '../utils/receiptFormatter';
 import { createSaleMock, getMockProductByCode } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
 import { addAuditLog, addSalePrintJob, loadActiveSaleDraft, loadSelectedSalesCustomer, saveActiveSaleDraft } from '../../storage/localStorage';
-import type { ActiveSaleDraft, Product, SaleLine, SalePrintJob, SaleStatus } from '../../types';
+import type { ActiveSaleDraft, CurrencyCode, Product, SaleLine, SalePrintJob, SaleStatus } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
 type NewSaleScreenProps = {
@@ -19,14 +21,32 @@ type PendingProduct = Product & {
   time: string;
 };
 
-const formatPrice = (price: number, currency = 'TL') => `${price.toLocaleString('tr-TR')} ${currency}`;
 const parseQuantity = (value: string) => {
   const parsed = Number(value.replace(/[^0-9]/g, ''));
   if (!Number.isFinite(parsed) || parsed < 1) return 1;
   return parsed;
 };
 
-const getPrimaryCurrency = (lines: SaleLine[]) => lines.find((line) => line.currency)?.currency || 'TL';
+const makeSaleLine = (product: Product, quantity: number, saleCurrency: CurrencyCode, existingLine?: SaleLine): SaleLine => {
+  const sourceCurrency = normalizeCurrencyCode(product.sourceCurrency || product.currency);
+  const totals = calculateLineTotal(product.price, quantity, sourceCurrency, saleCurrency);
+  return {
+    ...product,
+    lineId: existingLine?.lineId || `${product.code}-${Date.now()}`,
+    quantity,
+    currency: sourceCurrency,
+    price: totals.convertedUnitPrice,
+    sourceCurrency,
+    saleCurrency,
+    exchangeRate: totals.exchangeRate,
+    originalUnitPrice: totals.originalUnitPrice,
+    convertedUnitPrice: totals.convertedUnitPrice,
+    originalLineTotal: totals.originalLineTotal,
+    convertedLineTotal: totals.convertedLineTotal,
+  };
+};
+
+const repriceLines = (lines: SaleLine[], saleCurrency: CurrencyCode) => lines.map((line) => normalizeSaleLineCurrency(line, saleCurrency));
 
 export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   const insets = useSafeAreaInsets();
@@ -36,6 +56,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   const bootstrappedRef = useRef(false);
   const [customer, setCustomer] = useState('');
   const [documentNo, setDocumentNo] = useState('');
+  const [saleCurrency, setSaleCurrency] = useState<CurrencyCode>('TRY');
   const [barcode, setBarcode] = useState('');
   const [quantityInput, setQuantityInput] = useState('1');
   const [pendingProduct, setPendingProduct] = useState<PendingProduct | null>(null);
@@ -44,9 +65,9 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
 
   const totalQuantity = useMemo(() => lines.reduce((sum, line) => sum + line.quantity, 0), [lines]);
-  const totalAmount = useMemo(() => lines.reduce((sum, line) => sum + line.quantity * line.price, 0), [lines]);
+  const totalAmount = useMemo(() => lines.reduce((sum, line) => sum + (line.convertedLineTotal || line.quantity * line.price), 0), [lines]);
   const pendingQuantity = useMemo(() => parseQuantity(quantityInput), [quantityInput]);
-  const pendingTotal = pendingProduct ? pendingProduct.price * pendingQuantity : 0;
+  const pendingPrice = pendingProduct ? calculateLineTotal(pendingProduct.price, pendingQuantity, normalizeCurrencyCode(pendingProduct.sourceCurrency || pendingProduct.currency), saleCurrency) : null;
   const status: SaleStatus = documentNo && lines.length > 0 ? 'Hazır' : 'Taslak';
   const canScan = Boolean(documentNo);
 
@@ -57,9 +78,11 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
 
       const hasActiveDraft = Boolean(draft && (draft.documentNo || draft.lines.length > 0));
       if (draft && hasActiveDraft) {
+        const draftCurrency = normalizeCurrencyCode(draft.saleCurrency);
         setCustomer(draft.customerName);
         setDocumentNo(draft.documentNo);
-        setLines(draft.lines);
+        setSaleCurrency(draftCurrency);
+        setLines(repriceLines(draft.lines, draftCurrency));
         setBanner({ message: `${draft.documentNo} yüklendi.`, tone: 'info' });
         setTimeout(() => barcodeInputRef.current?.focus(), 150);
         return;
@@ -71,10 +94,19 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
         return;
       }
 
+      const nextSaleCurrency = normalizeCurrencyCode(selectedSalesCustomer?.currency || draft?.saleCurrency);
       const sale = await createSaleMock(nextCustomerName);
       setCustomer(nextCustomerName);
       setDocumentNo(sale.documentNo);
-      await persistDraft([], sale.documentNo, nextCustomerName);
+      setSaleCurrency(nextSaleCurrency);
+      await persistDraft([], sale.documentNo, nextCustomerName, nextSaleCurrency);
+      await addAuditLog({
+        operationType: 'saleCurrency seçildi',
+        customerName: nextCustomerName,
+        documentNo: sale.documentNo,
+        description: `Fiş para birimi ${nextSaleCurrency} olarak seçildi.`,
+        status: 'success',
+      });
       await addAuditLog({
         operationType: 'Yeni fiş oluşturuldu',
         customerName: nextCustomerName,
@@ -93,13 +125,15 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     return () => clearTimeout(timer);
   }, [documentNo]);
 
-  const persistDraft = async (nextLines: SaleLine[] = lines, nextDocumentNo = documentNo, nextCustomer = customer) => {
+  const persistDraft = async (nextLines: SaleLine[] = lines, nextDocumentNo = documentNo, nextCustomer = customer, nextSaleCurrency = saleCurrency) => {
     if (!nextDocumentNo) return;
+    const normalizedSaleCurrency = normalizeCurrencyCode(nextSaleCurrency);
     const draft: ActiveSaleDraft = {
       documentNo: nextDocumentNo,
       customerName: nextCustomer || 'Seçili müşteri yok',
+      saleCurrency: normalizedSaleCurrency,
       status: nextLines.length > 0 ? 'Hazır' : 'Taslak',
-      lines: nextLines,
+      lines: repriceLines(nextLines, normalizedSaleCurrency),
       updatedAt: new Date().toISOString(),
     };
     await saveActiveSaleDraft(draft);
@@ -111,6 +145,24 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
 
   const focusQuantity = () => {
     setTimeout(() => quantityInputRef.current?.focus(), 80);
+  };
+
+  const selectSaleCurrency = async (nextCurrency: CurrencyCode) => {
+    if (nextCurrency === saleCurrency) return;
+    const previousCurrency = saleCurrency;
+    const nextLines = repriceLines(lines, nextCurrency);
+    setSaleCurrency(nextCurrency);
+    setLines(nextLines);
+    await persistDraft(nextLines, documentNo, customer, nextCurrency);
+    await addAuditLog({
+      operationType: previousCurrency ? 'saleCurrency değişti' : 'saleCurrency seçildi',
+      customerName: customer,
+      documentNo,
+      description: `${previousCurrency} -> ${nextCurrency}`,
+      status: 'warning',
+    });
+    setBanner({ message: `Fiş para birimi ${nextCurrency} olarak güncellendi.`, tone: 'info' });
+    focusScanner();
   };
 
   const scanProduct = async (rawCode?: string) => {
@@ -157,12 +209,13 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
         return;
       }
 
-      setPendingProduct({ ...product, time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) });
+      const sourceCurrency = normalizeCurrencyCode(product.sourceCurrency || product.currency);
+      setPendingProduct({ ...product, currency: sourceCurrency, sourceCurrency, time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) });
       await addAuditLog({
         operationType: 'Ürün okutuldu',
         customerName: customer,
         documentNo,
-        description: `${product.code} · ${product.name}`,
+        description: `${product.code} · ${product.name} · Kaynak ${formatMoney(product.price, sourceCurrency)}`,
         status: 'success',
       });
       setQuantityInput('1');
@@ -196,8 +249,8 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     const quantity = parseQuantity(quantityInput);
     const existingLine = lines.find((line) => line.code === pendingProduct.code);
     const nextLines = existingLine
-      ? lines.map((line) => (line.lineId === existingLine.lineId ? { ...line, quantity: line.quantity + quantity, price: pendingProduct.price, currency: pendingProduct.currency } : line))
-      : [...lines, { ...pendingProduct, lineId: `${pendingProduct.code}-${Date.now()}`, quantity }];
+      ? lines.map((line) => (line.lineId === existingLine.lineId ? makeSaleLine({ ...pendingProduct, price: line.originalUnitPrice || pendingProduct.price, currency: line.sourceCurrency || pendingProduct.currency }, line.quantity + quantity, saleCurrency, line) : line))
+      : [...lines, makeSaleLine(pendingProduct, quantity, saleCurrency)];
 
     setLines(nextLines);
     setPendingProduct(null);
@@ -207,7 +260,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       operationType: 'Ürün fişe eklendi',
       customerName: customer,
       documentNo,
-      description: `${pendingProduct.code} · ${pendingProduct.name} · ${quantity} adet`,
+      description: `${pendingProduct.code} · ${quantity} adet · ${saleCurrency}`,
       status: 'success',
     });
     setBanner({ message: `${pendingProduct.code} fişe eklendi.`, tone: 'success' });
@@ -232,7 +285,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   };
 
   const changeQuantity = async (lineId: string, delta: number) => {
-    const nextLines = lines.map((line) => (line.lineId === lineId ? { ...line, quantity: Math.max(1, line.quantity + delta) } : line));
+    const nextLines = lines.map((line) => (line.lineId === lineId ? normalizeSaleLineCurrency({ ...line, quantity: Math.max(1, line.quantity + delta) }, saleCurrency) : line));
     setLines(nextLines);
     await persistDraft(nextLines);
     focusScanner();
@@ -278,23 +331,45 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       return;
     }
 
-    await persistDraft();
-    const currency = getPrimaryCurrency(lines);
+    const saleLines = repriceLines(lines, saleCurrency);
+    await persistDraft(saleLines);
     await addAuditLog({
       operationType: 'Fiş tamamlandı',
       customerName: customer,
       documentNo,
-      description: `${lines.length} kalem · ${totalQuantity} adet · ${formatPrice(totalAmount, currency)}`,
+      description: `${saleLines.length} kalem · ${totalQuantity} adet · ${formatMoney(totalAmount, saleCurrency)}`,
       status: 'success',
     });
     const printJob: SalePrintJob = {
       id: `${documentNo}-${Date.now()}`,
       documentNo,
       customerName: customer || 'Seçili müşteri yok',
-      lineCount: lines.length,
+      lineCount: saleLines.length,
       totalQuantity,
       totalAmount,
-      currency,
+      currency: saleCurrency,
+      saleCurrency,
+      exchangeRateSnapshot: DEFAULT_EXCHANGE_RATES,
+      lines: saleLines.map((line) => ({
+        lineId: line.lineId,
+        code: line.code,
+        name: line.name,
+        quantity: line.quantity,
+        sourceCurrency: line.sourceCurrency || 'TRY',
+        saleCurrency,
+        exchangeRate: line.exchangeRate || 1,
+        originalUnitPrice: line.originalUnitPrice || line.price,
+        convertedUnitPrice: line.convertedUnitPrice || line.price,
+        originalLineTotal: line.originalLineTotal || line.quantity * line.price,
+        convertedLineTotal: line.convertedLineTotal || line.quantity * line.price,
+      })),
+      receiptText: formatSaleReceipt({
+        documentNo,
+        customerName: customer || 'Seçili müşteri yok',
+        saleCurrency,
+        lines: saleLines,
+        showSourcePrices: false,
+      }),
       status: 'Yazdırma bekliyor',
       createdAt: new Date().toISOString(),
     };
@@ -303,7 +378,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       operationType: 'Yazdırma kuyruğuna gönderildi',
       customerName: customer,
       documentNo,
-      description: `${lines.length} kalem yazdırma kuyruğuna alındı.`,
+      description: `${saleLines.length} kalem · ${formatMoney(totalAmount, saleCurrency)} yazdırma kuyruğuna alındı.`,
       status: 'success',
     });
     await addAuditLog({
@@ -313,7 +388,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       description: 'Vega/PC bridge olmadan local mock yazdırma kaydı oluşturuldu.',
       status: 'success',
     });
-    setBanner({ message: `${documentNo} yazdırma kuyruğuna alındı. ${lines.length} kalem · ${totalQuantity} adet · ${formatPrice(totalAmount, currency)}`, tone: 'success' });
+    setBanner({ message: `${documentNo} yazdırma kuyruğuna alındı. ${saleLines.length} kalem · ${totalQuantity} adet · ${formatMoney(totalAmount, saleCurrency)}`, tone: 'success' });
     notifySuccess();
     focusScanner();
   };
@@ -330,6 +405,17 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
             <Text style={styles.customerName} numberOfLines={1}>{customer || 'Müşteri seçilmedi'}</Text>
           </View>
           <StatusPill label={status} tone={status === 'Hazır' ? 'success' : 'warning'} />
+        </View>
+
+        <View style={styles.currencyPanel}>
+          <Text style={styles.currencyLabel}>FİŞ PARA BİRİMİ</Text>
+          <View style={styles.currencyButtons}>
+            {SUPPORTED_CURRENCIES.map((currency) => (
+              <Pressable key={currency} onPress={() => void selectSaleCurrency(currency)} style={({ pressed }) => [styles.currencyButton, saleCurrency === currency && styles.currencyButtonActive, pressed && styles.pressed]}>
+                <Text style={[styles.currencyButtonText, saleCurrency === currency && styles.currencyButtonTextActive]}>{currency}</Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
 
         <View style={styles.scanPanel}>
@@ -355,7 +441,8 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
             </View>
             <View style={styles.priceBlock}>
               <Text style={styles.priceLabel}>FİYAT</Text>
-              <Text style={styles.priceValue}>{pendingProduct ? formatPrice(pendingProduct.price, pendingProduct.currency) : '-'}</Text>
+              <Text style={styles.priceValue}>{pendingPrice ? formatMoney(pendingPrice.convertedUnitPrice, saleCurrency) : '-'}</Text>
+              {pendingProduct && pendingPrice && pendingPrice.sourceCurrency !== saleCurrency ? <Text style={styles.sourcePriceText}>Kaynak: {formatMoney(pendingPrice.originalUnitPrice, pendingPrice.sourceCurrency)}</Text> : null}
             </View>
           </View>
 
@@ -376,7 +463,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
             </Pressable>
             <View style={styles.pendingTotalBox}>
               <Text style={styles.pendingTotalLabel}>TOPLAM</Text>
-              <Text style={styles.pendingTotalValue}>{pendingProduct ? formatPrice(pendingTotal, pendingProduct.currency) : '-'}</Text>
+              <Text style={styles.pendingTotalValue}>{pendingPrice ? formatMoney(pendingPrice.convertedLineTotal, saleCurrency) : '-'}</Text>
             </View>
           </View>
 
@@ -414,8 +501,8 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
                       </Pressable>
                     </View>
                   </View>
-                  <Text style={[styles.lineMoney, styles.priceCol]} numberOfLines={1}>{formatPrice(line.price, line.currency)}</Text>
-                  <Text style={[styles.lineMoneyStrong, styles.totalCol]} numberOfLines={1}>{formatPrice(line.price * line.quantity, line.currency)}</Text>
+                  <Text style={[styles.lineMoney, styles.priceCol]} numberOfLines={1}>{formatMoney(line.convertedUnitPrice || line.price, saleCurrency)}</Text>
+                  <Text style={[styles.lineMoneyStrong, styles.totalCol]} numberOfLines={1}>{formatMoney(line.convertedLineTotal || line.price * line.quantity, saleCurrency)}</Text>
                 </View>
               ))
             )}
@@ -427,7 +514,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
         <View style={styles.bottomTotals}>
           <Text style={styles.bottomText}>Kalem {lines.length}</Text>
           <Text style={styles.bottomText}>Adet {totalQuantity}</Text>
-          <Text style={styles.bottomAmount}>{formatPrice(totalAmount)}</Text>
+          <Text style={styles.bottomAmount}>{formatMoney(totalAmount, saleCurrency)}</Text>
         </View>
         <AppButton label="YAZDIRMAYA GÖNDER" onPress={completeSale} variant="dark" compact />
       </View>
@@ -456,6 +543,29 @@ const styles = StyleSheet.create({
   topMain: { flex: 1, gap: 2 },
   documentNo: { color: colors.red, fontSize: typography.section, fontWeight: '900' },
   customerName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  currencyPanel: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.sm,
+    gap: spacing.xs,
+  },
+  currencyLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
+  currencyButtons: { flexDirection: 'row', gap: spacing.xs },
+  currencyButton: {
+    flex: 1,
+    minHeight: 34,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surfaceSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  currencyButtonActive: { backgroundColor: colors.anthracite, borderColor: colors.anthracite, borderBottomWidth: 2, borderBottomColor: colors.red },
+  currencyButtonText: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
+  currencyButtonTextActive: { color: colors.surface },
   scanPanel: {
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -502,6 +612,7 @@ const styles = StyleSheet.create({
   },
   priceLabel: { color: colors.line, fontSize: typography.small, fontWeight: '900' },
   priceValue: { color: colors.surface, fontSize: typography.body, fontWeight: '900', textAlign: 'center' },
+  sourcePriceText: { color: colors.line, fontSize: 9, fontWeight: '800', textAlign: 'center', marginTop: 2 },
   quantityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   quantityButton: {
     width: 44,
@@ -587,6 +698,7 @@ const styles = StyleSheet.create({
   lineQtyValue: { width: 24, color: colors.ink, fontSize: 11, fontWeight: '900', textAlign: 'center' },
   lineMoney: { color: colors.ink, fontSize: 10, fontWeight: '800' },
   lineMoneyStrong: { color: colors.anthracite, fontSize: 10, fontWeight: '900' },
+  pressed: { opacity: 0.86 },
   bottomBar: {
     borderTopWidth: 1,
     borderTopColor: colors.line,

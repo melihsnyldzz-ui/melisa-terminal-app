@@ -24,6 +24,7 @@ export type SalesCustomer = {
   name: string;
   code: string;
   city: string;
+  currency?: CurrencyCode;
   balanceLabel?: string;
   lastOperationLabel?: string;
 };
@@ -56,13 +57,23 @@ export type Product = {
   name: string;
   price: number;
   currency?: string;
+  sourceCurrency?: CurrencyCode;
   color?: string;
   size?: string;
 };
 
+export type CurrencyCode = 'TRY' | 'USD' | 'EUR';
+
 export type SaleLine = Product & {
   lineId: string;
   quantity: number;
+  sourceCurrency?: CurrencyCode;
+  saleCurrency?: CurrencyCode;
+  exchangeRate?: number;
+  originalUnitPrice?: number;
+  convertedUnitPrice?: number;
+  originalLineTotal?: number;
+  convertedLineTotal?: number;
 };
 
 export type SaleStatus = 'Taslak' | 'Hazır';
@@ -70,9 +81,31 @@ export type SaleStatus = 'Taslak' | 'Hazır';
 export type ActiveSaleDraft = {
   documentNo: string;
   customerName: string;
+  saleCurrency?: CurrencyCode;
   status: SaleStatus;
   lines: SaleLine[];
   updatedAt: string;
+};
+
+export type ExchangeRateSnapshot = {
+  USD_TO_TRY: number;
+  EUR_TO_TRY: number;
+  EUR_TO_USD: number;
+  USD_TO_EUR: number;
+};
+
+export type SalePrintJobLine = {
+  lineId: string;
+  code: string;
+  name: string;
+  quantity: number;
+  sourceCurrency: CurrencyCode;
+  saleCurrency: CurrencyCode;
+  exchangeRate: number;
+  originalUnitPrice: number;
+  convertedUnitPrice: number;
+  originalLineTotal: number;
+  convertedLineTotal: number;
 };
 
 export type SalePrintJob = {
@@ -83,6 +116,10 @@ export type SalePrintJob = {
   totalQuantity: number;
   totalAmount: number;
   currency: string;
+  saleCurrency?: CurrencyCode;
+  exchangeRateSnapshot?: ExchangeRateSnapshot;
+  lines?: SalePrintJobLine[];
+  receiptText?: string;
   status: 'Yazdırma bekliyor' | 'Yazdırıldı' | 'Yazdırma hatası';
   createdAt: string;
 };
@@ -99,6 +136,8 @@ export type AuditLogOperationType =
   | 'Yazdırma kuyruğuna gönderildi'
   | 'Mock yazdırıldı'
   | 'PC bridge’e gönderildi'
+  | 'saleCurrency seçildi'
+  | 'saleCurrency değişti'
   | 'Hata oluştu';
 
 export type AuditLogEntry = {

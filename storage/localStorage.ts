@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DEFAULT_EXCHANGE_RATES, normalizeCurrencyCode, normalizeSaleLineCurrency } from '../app/utils/currencyUtils';
 import type { ActivePickingDraft, ActiveSaleDraft, AuditLogEntry, FailedOperation, OpenDocument, PickingLine, SaleLine, SalePrintJob, SalesCustomer, TerminalSettings, UserSession } from '../types';
 
 const KEYS = {
@@ -27,7 +28,7 @@ const defaultSettings: TerminalSettings = {
 const normalizeSaleLine = (line: SaleLine): SaleLine => {
   const quantity = Number.isFinite(line.quantity) && line.quantity > 0 ? line.quantity : 1;
   const price = Number.isFinite(line.price) && line.price >= 0 ? line.price : 0;
-  return { ...line, quantity, price };
+  return normalizeSaleLineCurrency({ ...line, quantity, price }, normalizeCurrencyCode(line.saleCurrency || line.currency));
 };
 
 const normalizePickingLine = (line: PickingLine): PickingLine => {
@@ -44,11 +45,13 @@ const normalizePickingLine = (line: PickingLine): PickingLine => {
 
 const normalizeActiveSaleDraft = (draft: ActiveSaleDraft | null): ActiveSaleDraft | null => {
   if (!draft) return null;
+  const saleCurrency = normalizeCurrencyCode(draft.saleCurrency);
   return {
     ...draft,
     customerName: draft.customerName || 'Seçili müşteri yok',
+    saleCurrency,
     status: draft.lines?.length ? 'Hazır' : 'Taslak',
-    lines: Array.isArray(draft.lines) ? draft.lines.map(normalizeSaleLine) : [],
+    lines: Array.isArray(draft.lines) ? draft.lines.map((line) => normalizeSaleLineCurrency(normalizeSaleLine(line), saleCurrency)) : [],
   };
 };
 
@@ -71,7 +74,10 @@ const normalizeSalePrintJobs = (jobs: SalePrintJob[]): SalePrintJob[] => Array.i
   lineCount: Number.isFinite(job.lineCount) ? job.lineCount : 0,
   totalQuantity: Number.isFinite(job.totalQuantity) ? job.totalQuantity : 0,
   totalAmount: Number.isFinite(job.totalAmount) ? job.totalAmount : 0,
-  currency: job.currency || 'TL',
+  currency: normalizeCurrencyCode(job.saleCurrency || job.currency),
+  saleCurrency: normalizeCurrencyCode(job.saleCurrency || job.currency),
+  exchangeRateSnapshot: job.exchangeRateSnapshot || DEFAULT_EXCHANGE_RATES,
+  lines: Array.isArray(job.lines) ? job.lines : [],
   status: job.status || 'Yazdırma bekliyor',
 })) : [];
 

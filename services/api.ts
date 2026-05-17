@@ -6,14 +6,14 @@ const LOCAL_PRICE_TIMEOUT_MS = 1800;
 const HEALTH_ENDPOINTS = ['/health', '/status', '/'];
 
 const productTemplates: Product[] = [
-  { code: 'MB-1001', name: 'Bebek Takim', price: 485, currency: 'TL' },
-  { code: 'MB-1002', name: 'Hastane Cikisi', price: 620, currency: 'TL' },
-  { code: 'MB-1003', name: 'Tulum', price: 295, currency: 'TL' },
-  { code: 'MB-1004', name: 'Zibin Seti', price: 210, currency: 'TL' },
-  { code: 'MB-1005', name: 'Cocuk Elbise', price: 540, currency: 'TL' },
-  { code: 'MB-1006', name: 'Kapitone Yelek', price: 390, currency: 'TL' },
-  { code: 'MB-1007', name: 'Organik Body Set', price: 330, currency: 'TL' },
-  { code: 'MB-1008', name: 'Kiz Bebek Takim', price: 575, currency: 'TL' },
+  { code: 'MB-1001', name: 'Bebek Takim', price: 485, currency: 'TRY' },
+  { code: 'MB-1002', name: 'Hastane Cikisi', price: 18.5, currency: 'USD' },
+  { code: 'MB-1003', name: 'Tulum', price: 295, currency: 'TRY' },
+  { code: 'MB-1004', name: 'Zibin Seti', price: 6.4, currency: 'EUR' },
+  { code: 'MB-1005', name: 'Cocuk Elbise', price: 540, currency: 'TRY' },
+  { code: 'MB-1006', name: 'Kapitone Yelek', price: 9.25, currency: 'USD' },
+  { code: 'MB-1007', name: 'Organik Body Set', price: 330, currency: 'TRY' },
+  { code: 'MB-1008', name: 'Kiz Bebek Takim', price: 11.8, currency: 'EUR' },
 ];
 
 function getMockProductFallback(code: string): Product {
