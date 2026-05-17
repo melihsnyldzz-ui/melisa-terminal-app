@@ -48,6 +48,7 @@ const modules: Array<{ label: string; description: string; screen: AppScreen; co
   { label: 'Vega Hazırlık', description: 'Write-back kontrolü', screen: 'vegaWriteBackReadiness', code: 'VGA' },
   { label: 'Vega Kolon Keşfi', description: 'Tablo/kolon hazırlığı', screen: 'vegaSchemaDiscovery', code: 'KŞF' },
   { label: 'Vega Test Fişi Planı', description: 'Taslak alan eşleme', screen: 'vegaTestSlipPlan', code: 'PLN' },
+  { label: 'Vega Eşleşme Kontrolü', description: 'Cari/stok ön kontrol', screen: 'vegaMatchCheck', code: 'EŞL' },
   { label: 'Gün Sonu Özeti', description: 'Kapanış kontrolü', screen: 'endOfDaySummary', code: 'SON' },
   { label: 'Offline Kuyruk', description: 'Sync hazırlığı', screen: 'offlineQueue', code: 'SYN' },
   { label: 'Gönderilemeyenler', description: 'Kuyruk işlemleri', screen: 'failedQueue', code: 'ERR' },
