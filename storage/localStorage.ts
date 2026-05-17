@@ -50,8 +50,9 @@ const normalizeActiveSaleDraft = (draft: ActiveSaleDraft | null): ActiveSaleDraf
     ...draft,
     customerName: draft.customerName || 'Seçili müşteri yok',
     saleCurrency,
+    exchangeRateSnapshot: draft.exchangeRateSnapshot || DEFAULT_EXCHANGE_RATES,
     status: draft.lines?.length ? 'Hazır' : 'Taslak',
-    lines: Array.isArray(draft.lines) ? draft.lines.map((line) => normalizeSaleLineCurrency(normalizeSaleLine(line), saleCurrency)) : [],
+    lines: Array.isArray(draft.lines) ? draft.lines.map((line) => normalizeSaleLineCurrency(normalizeSaleLine(line), saleCurrency, draft.exchangeRateSnapshot || DEFAULT_EXCHANGE_RATES)) : [],
   };
 };
 

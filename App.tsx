@@ -13,6 +13,7 @@ import { NewSaleScreen } from './app/screens/NewSaleScreen';
 import { OpenDocumentsScreen } from './app/screens/OpenDocumentsScreen';
 import { PickingScreen } from './app/screens/PickingScreen';
 import { QRAlbumScreen } from './app/screens/QRAlbumScreen';
+import { SaleReviewScreen } from './app/screens/SaleReviewScreen';
 import { SalesCustomerScreen } from './app/screens/SalesCustomerScreen';
 import { SettingsScreen } from './app/screens/SettingsScreen';
 import { colors } from './app/theme';
@@ -104,7 +105,8 @@ export default function App() {
   const renderScreen = () => {
     if (screen === 'login') return <LoginScreen onLogin={handleLogin} systemMessage={backHint} />;
     if (screen === 'salesCustomer') return <SalesCustomerScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
-    if (screen === 'newSale') return <NewSaleScreen onBack={() => navigateTo('salesCustomer')} />;
+    if (screen === 'newSale') return <NewSaleScreen onBack={() => navigateTo('salesCustomer')} onNavigate={navigateTo} />;
+    if (screen === 'saleReview') return <SaleReviewScreen onBack={() => navigateTo('newSale')} onDone={() => navigateTo('dashboard')} />;
     if (screen === 'picking') return <PickingScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'openDocuments') return <OpenDocumentsScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
     if (screen === 'qrAlbum') return <QRAlbumScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;

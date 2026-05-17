@@ -6,15 +6,15 @@ import { StatusPill } from '../../components/StatusPill';
 import { TerminalHeader } from '../../components/TerminalHeader';
 import { ToastMessage, ToastTone } from '../../components/ToastMessage';
 import { DEFAULT_EXCHANGE_RATES, SUPPORTED_CURRENCIES, calculateLineTotal, formatMoney, getEffectiveExchangeRates, normalizeCurrencyCode, normalizeSaleLineCurrency } from '../utils/currencyUtils';
-import { formatSaleReceipt } from '../utils/receiptFormatter';
 import { createSaleMock, getMockProductByCode } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
-import { addAuditLog, addSalePrintJob, loadActiveSaleDraft, loadSelectedSalesCustomer, saveActiveSaleDraft } from '../../storage/localStorage';
-import type { ActiveSaleDraft, CurrencyCode, ExchangeRateSnapshot, Product, SaleLine, SalePrintJob, SaleStatus } from '../../types';
+import { addAuditLog, loadActiveSaleDraft, loadSelectedSalesCustomer, saveActiveSaleDraft } from '../../storage/localStorage';
+import type { ActiveSaleDraft, AppScreen, CurrencyCode, ExchangeRateSnapshot, Product, SaleLine, SaleStatus } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
 type NewSaleScreenProps = {
   onBack: () => void;
+  onNavigate: (screen: AppScreen) => void;
 };
 
 type PendingProduct = Product & {
@@ -48,7 +48,7 @@ const makeSaleLine = (product: Product, quantity: number, saleCurrency: Currency
 
 const repriceLines = (lines: SaleLine[], saleCurrency: CurrencyCode, rates: ExchangeRateSnapshot) => lines.map((line) => normalizeSaleLineCurrency(line, saleCurrency, rates));
 
-export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
+export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
   const insets = useSafeAreaInsets();
   const barcodeInputRef = useRef<TextInput>(null);
   const quantityInputRef = useRef<TextInput>(null);
@@ -134,6 +134,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       documentNo: nextDocumentNo,
       customerName: nextCustomer || 'Seçili müşteri yok',
       saleCurrency: normalizedSaleCurrency,
+      exchangeRateSnapshot: rates,
       status: nextLines.length > 0 ? 'Hazır' : 'Taslak',
       lines: repriceLines(nextLines, normalizedSaleCurrency, rates),
       updatedAt: new Date().toISOString(),
@@ -319,7 +320,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     focusScanner();
   };
 
-  const completeSale = async () => {
+  const reviewSale = async () => {
     if (!documentNo) {
       setBanner({ message: 'Tamamlamak için fiş gerekli.', tone: 'warning' });
       notifyWarning();
@@ -336,64 +337,13 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     const saleLines = repriceLines(lines, saleCurrency, exchangeRates);
     await persistDraft(saleLines, documentNo, customer, saleCurrency, exchangeRates);
     await addAuditLog({
-      operationType: 'Fiş tamamlandı',
+      operationType: 'Fiş review açıldı',
       customerName: customer,
       documentNo,
       description: `${saleLines.length} kalem · ${totalQuantity} adet · ${formatMoney(totalAmount, saleCurrency)}`,
       status: 'success',
     });
-    const printJob: SalePrintJob = {
-      id: `${documentNo}-${Date.now()}`,
-      documentNo,
-      customerName: customer || 'Seçili müşteri yok',
-      lineCount: saleLines.length,
-      totalQuantity,
-      totalAmount,
-      currency: saleCurrency,
-      saleCurrency,
-      exchangeRateSnapshot: exchangeRates,
-      lines: saleLines.map((line) => ({
-        lineId: line.lineId,
-        code: line.code,
-        name: line.name,
-        quantity: line.quantity,
-        sourceCurrency: line.sourceCurrency || 'TRY',
-        saleCurrency,
-        exchangeRate: line.exchangeRate || 1,
-        originalUnitPrice: line.originalUnitPrice || line.price,
-        convertedUnitPrice: line.convertedUnitPrice || line.price,
-        originalLineTotal: line.originalLineTotal || line.quantity * line.price,
-        convertedLineTotal: line.convertedLineTotal || line.quantity * line.price,
-      })),
-      receiptText: formatSaleReceipt({
-        documentNo,
-        customerName: customer || 'Seçili müşteri yok',
-        saleCurrency,
-        lines: saleLines,
-        exchangeRateSnapshot: exchangeRates,
-        showSourcePrices: false,
-      }),
-      status: 'Yazdırma bekliyor',
-      createdAt: new Date().toISOString(),
-    };
-    await addSalePrintJob(printJob);
-    await addAuditLog({
-      operationType: 'Yazdırma kuyruğuna gönderildi',
-      customerName: customer,
-      documentNo,
-      description: `${saleLines.length} kalem · ${formatMoney(totalAmount, saleCurrency)} yazdırma kuyruğuna alındı.`,
-      status: 'success',
-    });
-    await addAuditLog({
-      operationType: 'Mock yazdırıldı',
-      customerName: customer,
-      documentNo,
-      description: 'Vega/PC bridge olmadan local mock yazdırma kaydı oluşturuldu.',
-      status: 'success',
-    });
-    setBanner({ message: `${documentNo} yazdırma kuyruğuna alındı. ${saleLines.length} kalem · ${totalQuantity} adet · ${formatMoney(totalAmount, saleCurrency)}`, tone: 'success' });
-    notifySuccess();
-    focusScanner();
+    onNavigate('saleReview');
   };
 
   return (
@@ -519,7 +469,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
           <Text style={styles.bottomText}>Adet {totalQuantity}</Text>
           <Text style={styles.bottomAmount}>{formatMoney(totalAmount, saleCurrency)}</Text>
         </View>
-        <AppButton label="YAZDIRMAYA GÖNDER" onPress={completeSale} variant="dark" compact />
+        <AppButton label="FİŞİ TAMAMLA" onPress={reviewSale} variant="dark" compact />
       </View>
     </View>
   );

@@ -3,6 +3,7 @@ export type AppScreen =
   | 'dashboard'
   | 'salesCustomer'
   | 'newSale'
+  | 'saleReview'
   | 'picking'
   | 'openDocuments'
   | 'qrAlbum'
@@ -83,6 +84,7 @@ export type ActiveSaleDraft = {
   documentNo: string;
   customerName: string;
   saleCurrency?: CurrencyCode;
+  exchangeRateSnapshot?: ExchangeRateSnapshot;
   status: SaleStatus;
   lines: SaleLine[];
   updatedAt: string;
@@ -145,6 +147,9 @@ export type AuditLogOperationType =
   | 'saleCurrency seçildi'
   | 'saleCurrency değişti'
   | 'Kur ayarı değişti'
+  | 'Fiş review açıldı'
+  | 'Fiş onaylandı'
+  | 'Fiş review uyarısı oluştu'
   | 'Hata oluştu';
 
 export type AuditLogEntry = {
