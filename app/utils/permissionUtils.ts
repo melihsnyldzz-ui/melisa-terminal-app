@@ -1,7 +1,7 @@
 import type { AppScreen, Permission, PersonnelRole, PersonnelUser } from '../../types';
 
 const rolePermissions: Record<PersonnelRole, Permission[]> = {
-  admin: ['sales', 'openDocuments', 'picking', 'review', 'printQueue', 'printEventHistory', 'printDailySummary', 'pilotTest', 'pilotIssues', 'performanceTest', 'pilotFeedback', 'pilotReport', 'pilotCloseout', 'pilotGuide', 'pilotDataCleanup', 'vegaWriteBackReadiness', 'endOfDaySummary', 'offlineQueue', 'currencySettings', 'auditLog', 'settings', 'messages', 'qrAlbum', 'dataUpdate', 'terminalSettings'],
+  admin: ['sales', 'openDocuments', 'picking', 'review', 'printQueue', 'printEventHistory', 'printDailySummary', 'pilotTest', 'pilotIssues', 'performanceTest', 'pilotFeedback', 'pilotReport', 'pilotCloseout', 'pilotGuide', 'pilotDataCleanup', 'vegaWriteBackReadiness', 'vegaSchemaDiscovery', 'endOfDaySummary', 'offlineQueue', 'currencySettings', 'auditLog', 'settings', 'messages', 'qrAlbum', 'dataUpdate', 'terminalSettings'],
   depo: ['sales', 'openDocuments', 'picking', 'printQueue', 'pilotFeedback', 'pilotGuide', 'settings', 'terminalSettings', 'messages', 'qrAlbum'],
   kasa: ['sales', 'openDocuments', 'review', 'printQueue', 'pilotFeedback', 'pilotGuide', 'settings', 'messages', 'qrAlbum'],
 };
@@ -26,6 +26,7 @@ export const screenPermissions: Partial<Record<AppScreen, Permission>> = {
   pilotGuide: 'pilotGuide',
   pilotDataCleanup: 'pilotDataCleanup',
   vegaWriteBackReadiness: 'vegaWriteBackReadiness',
+  vegaSchemaDiscovery: 'vegaSchemaDiscovery',
   endOfDaySummary: 'endOfDaySummary',
   offlineQueue: 'offlineQueue',
   currencySettings: 'currencySettings',
