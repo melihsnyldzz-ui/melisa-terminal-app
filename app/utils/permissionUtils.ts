@@ -1,7 +1,7 @@
 import type { AppScreen, Permission, PersonnelRole, PersonnelUser } from '../../types';
 
 const rolePermissions: Record<PersonnelRole, Permission[]> = {
-  admin: ['sales', 'openDocuments', 'picking', 'review', 'printQueue', 'printEventHistory', 'printDailySummary', 'pilotTest', 'pilotIssues', 'performanceTest', 'pilotFeedback', 'endOfDaySummary', 'offlineQueue', 'currencySettings', 'auditLog', 'settings', 'messages', 'qrAlbum', 'dataUpdate', 'terminalSettings'],
+  admin: ['sales', 'openDocuments', 'picking', 'review', 'printQueue', 'printEventHistory', 'printDailySummary', 'pilotTest', 'pilotIssues', 'performanceTest', 'pilotFeedback', 'pilotReport', 'endOfDaySummary', 'offlineQueue', 'currencySettings', 'auditLog', 'settings', 'messages', 'qrAlbum', 'dataUpdate', 'terminalSettings'],
   depo: ['sales', 'openDocuments', 'picking', 'printQueue', 'pilotFeedback', 'settings', 'terminalSettings', 'messages', 'qrAlbum'],
   kasa: ['sales', 'openDocuments', 'review', 'printQueue', 'pilotFeedback', 'settings', 'messages', 'qrAlbum'],
 };
@@ -21,6 +21,7 @@ export const screenPermissions: Partial<Record<AppScreen, Permission>> = {
   pilotIssues: 'pilotIssues',
   performanceTest: 'performanceTest',
   pilotFeedback: 'pilotFeedback',
+  pilotReport: 'pilotReport',
   endOfDaySummary: 'endOfDaySummary',
   offlineQueue: 'offlineQueue',
   currencySettings: 'currencySettings',
