@@ -1,4 +1,5 @@
 export type AppScreen =
+  | 'personnelSelect'
   | 'login'
   | 'dashboard'
   | 'salesCustomer'
@@ -20,6 +21,14 @@ export type UserSession = {
   branch: string;
   terminalId: string;
   offlineMode: boolean;
+};
+
+export type PersonnelUser = {
+  id: string;
+  code: string;
+  name: string;
+  role: string;
+  isActive: boolean;
 };
 
 export type SalesCustomer = {
@@ -89,6 +98,12 @@ export type ActiveSaleDraft = {
   saleCurrency?: CurrencyCode;
   exchangeRateSnapshot?: ExchangeRateSnapshot;
   draftStatus?: SaleDraftStatus;
+  createdBy?: string;
+  createdByCode?: string;
+  createdByName?: string;
+  updatedBy?: string;
+  updatedByCode?: string;
+  updatedByName?: string;
   status: SaleStatus;
   lines: SaleLine[];
   updatedAt: string;
@@ -132,6 +147,9 @@ export type SalePrintJob = {
   exchangeRateSnapshot?: ExchangeRateSnapshot;
   lines?: SalePrintJobLine[];
   receiptText?: string;
+  createdBy?: string;
+  createdByCode?: string;
+  createdByName?: string;
   status: 'Yazdırma bekliyor' | 'Yazdırıldı' | 'Yazdırma hatası';
   createdAt: string;
 };
@@ -166,6 +184,8 @@ export type AuditLogEntry = {
   createdAt: string;
   deviceName: string;
   personnelName: string;
+  personnelId?: string;
+  personnelCode?: string;
   customerName?: string;
   documentNo?: string;
   description: string;

@@ -8,6 +8,8 @@ export function formatSaleReceipt(params: {
   saleCurrency: CurrencyCode;
   lines: SaleLine[];
   exchangeRateSnapshot?: ExchangeRateSnapshot;
+  operatorName?: string;
+  showOperator?: boolean;
   showSourcePrices?: boolean;
 }) {
   const rates = params.exchangeRateSnapshot || DEFAULT_EXCHANGE_RATES;
@@ -25,5 +27,6 @@ export function formatSaleReceipt(params: {
     `MUSTERI: ${params.customerName}`,
     ...lineTexts,
     `GENEL TOPLAM: ${formatMoney(totalAmount, params.saleCurrency)}`,
+    ...(params.showOperator && params.operatorName ? [`Operator: ${params.operatorName}`] : []),
   ].join('\n');
 }

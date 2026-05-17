@@ -146,6 +146,7 @@ function DraftCard({ draft, onContinue, onReview, onDelete }: {
         <InfoItem label="Toplam" value={formatMoney(totalAmount, saleCurrency)} wide />
         <InfoItem label="Güncelleme" value={formatUpdatedAt(draft.updatedAt)} wide />
       </View>
+      <Text style={styles.operatorText}>Oluşturan: {draft.createdByName || 'Personel'}{draft.createdByCode ? ` · ${draft.createdByCode}` : ''}</Text>
 
       <ActionRow
         actions={[
@@ -186,6 +187,7 @@ const styles = StyleSheet.create({
   cardMain: { flex: 1, gap: 2 },
   documentNo: { color: colors.red, fontSize: typography.section, fontWeight: '900' },
   customerName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  operatorText: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
   metricRow: { flexDirection: 'row', gap: spacing.xs },
   infoItem: {
     flex: 1,

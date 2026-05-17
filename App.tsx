@@ -13,6 +13,7 @@ import { NewSaleScreen } from './app/screens/NewSaleScreen';
 import { OpenSaleDraftsScreen } from './app/screens/OpenSaleDraftsScreen';
 import { OpenDocumentsScreen } from './app/screens/OpenDocumentsScreen';
 import { PickingScreen } from './app/screens/PickingScreen';
+import { PersonnelSelectScreen } from './app/screens/PersonnelSelectScreen';
 import { QRAlbumScreen } from './app/screens/QRAlbumScreen';
 import { SaleReviewScreen } from './app/screens/SaleReviewScreen';
 import { SalesCustomerScreen } from './app/screens/SalesCustomerScreen';
@@ -21,20 +22,22 @@ import { colors } from './app/theme';
 import { HoneywellPreviewFrame } from './components/HoneywellPreviewFrame';
 import { ScreenErrorBoundary } from './components/ScreenErrorBoundary';
 import { checkLocalPriceService } from './services/api';
-import { clearSession, loadSession, loadSettings, saveSession } from './storage/localStorage';
-import type { AppScreen, UserSession } from './types';
+import { clearCurrentUser, clearSession, loadCurrentUser, loadSession, loadSettings, saveCurrentUser, saveSession } from './storage/localStorage';
+import type { AppScreen, PersonnelUser, UserSession } from './types';
 
 export default function App() {
-  const [screen, setScreen] = useState<AppScreen>('login');
+  const [screen, setScreen] = useState<AppScreen>('personnelSelect');
   const [session, setSession] = useState<UserSession | null>(null);
+  const [currentUser, setCurrentUser] = useState<PersonnelUser | null>(null);
   const [backHint, setBackHint] = useState('');
   const lastBackPressRef = useRef(0);
   const backHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    loadSession().then((savedSession) => {
-      if (savedSession) {
+    Promise.all([loadSession(), loadCurrentUser()]).then(([savedSession, savedUser]) => {
+      if (savedSession && savedUser) {
         setSession(savedSession);
+        setCurrentUser(savedUser);
         setScreen('dashboard');
       }
     });
@@ -86,6 +89,22 @@ export default function App() {
     setScreen('dashboard');
   };
 
+  const handlePersonnelSelect = async (user: PersonnelUser) => {
+    const settings = await loadSettings();
+    const nextSession: UserSession = {
+      username: user.name,
+      branch: settings.branch,
+      terminalId: settings.terminalId,
+      offlineMode: true,
+    };
+    setCurrentUser(user);
+    setSession(nextSession);
+    await saveCurrentUser(user);
+    await saveSession(nextSession);
+    setBackHint('');
+    setScreen('dashboard');
+  };
+
   const navigateTo = (nextScreen: AppScreen) => {
     setBackHint('');
     setScreen(nextScreen);
@@ -93,17 +112,20 @@ export default function App() {
 
   const recoverToDashboard = () => {
     setBackHint('Ekran güvenli moda alındı. Gerekirse Ayarlar > Aktif Taslağı Sıfırla yap.');
-    setScreen(session ? 'dashboard' : 'login');
+    setScreen(session && currentUser ? 'dashboard' : 'personnelSelect');
   };
 
   const handleLogout = async () => {
     await clearSession();
+    await clearCurrentUser();
     setSession(null);
+    setCurrentUser(null);
     setBackHint('');
-    setScreen('login');
+    setScreen('personnelSelect');
   };
 
   const renderScreen = () => {
+    if (screen === 'personnelSelect') return <PersonnelSelectScreen onSelect={handlePersonnelSelect} systemMessage={backHint} />;
     if (screen === 'login') return <LoginScreen onLogin={handleLogin} systemMessage={backHint} />;
     if (screen === 'salesCustomer') return <SalesCustomerScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
     if (screen === 'newSale') return <NewSaleScreen onBack={() => navigateTo('salesCustomer')} onNavigate={navigateTo} />;
@@ -118,7 +140,7 @@ export default function App() {
     if (screen === 'auditLog') return <AuditLogScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'currencySettings') return <CurrencySettingsScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'settings') return <SettingsScreen onBack={() => navigateTo('dashboard')} onLogout={handleLogout} session={session} />;
-    return <DashboardScreen session={session} onNavigate={navigateTo} systemMessage={backHint} />;
+    return <DashboardScreen session={session} currentUser={currentUser} onNavigate={navigateTo} systemMessage={backHint} />;
   };
 
   const appContent = (

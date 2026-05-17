@@ -7,8 +7,8 @@ import { StatusPill } from '../../components/StatusPill';
 import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
-import { addAuditLog, addSalePrintJob, loadActiveSaleDraft, upsertSaleDraft } from '../../storage/localStorage';
-import type { ActiveSaleDraft, CurrencyCode, ExchangeRateSnapshot, SaleLine, SalePrintJob } from '../../types';
+import { addAuditLog, addSalePrintJob, loadActiveSaleDraft, loadCurrentUser, upsertSaleDraft } from '../../storage/localStorage';
+import type { ActiveSaleDraft, CurrencyCode, ExchangeRateSnapshot, PersonnelUser, SaleLine, SalePrintJob } from '../../types';
 import { DEFAULT_EXCHANGE_RATES, formatMoney, loadCurrencySettings, normalizeCurrencyCode, normalizeSaleLineCurrency } from '../utils/currencyUtils';
 import { formatSaleReceipt } from '../utils/receiptFormatter';
 import { colors, radius, spacing, typography } from '../theme';
@@ -25,13 +25,15 @@ const normalizeReviewLines = (lines: SaleLine[], saleCurrency: CurrencyCode, rat
 export function SaleReviewScreen({ onBack, onDone }: SaleReviewScreenProps) {
   const warningLoggedRef = useRef(false);
   const [draft, setDraft] = useState<ActiveSaleDraft | null>(null);
+  const [currentUser, setCurrentUser] = useState<PersonnelUser | null>(null);
   const [usesDefaultRates, setUsesDefaultRates] = useState(false);
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
 
   useEffect(() => {
-    Promise.all([loadActiveSaleDraft(), loadCurrencySettings()]).then(([savedDraft, currencySettings]) => {
+    Promise.all([loadActiveSaleDraft(), loadCurrencySettings(), loadCurrentUser()]).then(([savedDraft, currencySettings, savedUser]) => {
       setDraft(savedDraft);
       setUsesDefaultRates(!currencySettings);
+      setCurrentUser(savedUser);
     });
   }, []);
 
@@ -116,8 +118,13 @@ export function SaleReviewScreen({ onBack, onDone }: SaleReviewScreenProps) {
         saleCurrency: review.saleCurrency,
         lines: review.lines,
         exchangeRateSnapshot: review.rates,
+        operatorName: currentUser?.name || draft.updatedByName,
+        showOperator: false,
         showSourcePrices: false,
       }),
+      createdBy: currentUser?.id || draft.updatedBy || draft.createdBy,
+      createdByCode: currentUser?.code || draft.updatedByCode || draft.createdByCode,
+      createdByName: currentUser?.name || draft.updatedByName || draft.createdByName,
       status: 'Yazdırma bekliyor',
       createdAt: new Date().toISOString(),
     };
@@ -173,6 +180,7 @@ export function SaleReviewScreen({ onBack, onDone }: SaleReviewScreenProps) {
         <View style={styles.headerMain}>
           <Text style={styles.documentNo}>{draft.documentNo}</Text>
           <Text style={styles.customerName} numberOfLines={1}>{draft.customerName}</Text>
+          <Text style={styles.operatorText}>İşlem yapan: {currentUser?.name || draft.updatedByName || 'Personel'}{(currentUser?.code || draft.updatedByCode) ? ` · ${currentUser?.code || draft.updatedByCode}` : ''}</Text>
         </View>
         <StatusPill label={review.saleCurrency} tone="dark" />
       </View>
@@ -255,6 +263,7 @@ const styles = StyleSheet.create({
   headerMain: { flex: 1, gap: 2 },
   documentNo: { color: colors.surface, fontSize: typography.section, fontWeight: '900' },
   customerName: { color: colors.surface, fontSize: typography.body, fontWeight: '900' },
+  operatorText: { color: colors.line, fontSize: typography.small, fontWeight: '900' },
   warningPanel: {
     backgroundColor: colors.warningSoft,
     borderRadius: radius.md,

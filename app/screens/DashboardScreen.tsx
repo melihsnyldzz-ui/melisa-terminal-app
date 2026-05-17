@@ -7,11 +7,12 @@ import { ToastMessage } from '../../components/ToastMessage';
 import { getFailedOperationsMock, getMessagesMock, getOpenDocumentsMock } from '../../services/api';
 import { loadActiveSaleDraft, loadFailedOperationsSnapshot, saveFailedOperations } from '../../storage/localStorage';
 import type { ActiveSaleDraft } from '../../types';
-import type { AppScreen, OpenDocument, UserSession } from '../../types';
+import type { AppScreen, OpenDocument, PersonnelUser, UserSession } from '../../types';
 import { colors, radius, shadows, spacing, typography } from '../theme';
 
 type DashboardScreenProps = {
   session: UserSession | null;
+  currentUser: PersonnelUser | null;
   onNavigate: (screen: AppScreen) => void;
   systemMessage?: string;
 };
@@ -35,7 +36,7 @@ const modules: Array<{ label: string; description: string; screen: AppScreen; co
   { label: 'Ayarlar', description: 'Terminal bilgileri', screen: 'settings', code: 'SET' },
 ];
 
-export function DashboardScreen({ session, onNavigate, systemMessage }: DashboardScreenProps) {
+export function DashboardScreen({ session, currentUser, onNavigate, systemMessage }: DashboardScreenProps) {
   const insets = useSafeAreaInsets();
   const [unreadCount, setUnreadCount] = useState(0);
   const [urgentCount, setUrgentCount] = useState(0);
@@ -75,6 +76,7 @@ export function DashboardScreen({ session, onNavigate, systemMessage }: Dashboar
           <View>
             <Text style={styles.kicker}>INDUSTRIAL FAST MODE</Text>
             <Text style={styles.title}>Merhaba, {personName}</Text>
+            {currentUser ? <Text style={styles.userLine}>{currentUser.code} · {currentUser.role}</Text> : null}
           </View>
           <StatusPill label="Hazır" tone="success" />
         </View>
@@ -164,6 +166,7 @@ const styles = StyleSheet.create({
   },
   kicker: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
   title: { color: colors.surface, fontSize: typography.section, fontWeight: '900' },
+  userLine: { color: colors.line, fontSize: typography.small, fontWeight: '900', marginTop: 2 },
   quickBar: { flexDirection: 'row', gap: spacing.xs },
   quickButton: {
     flex: 1,
