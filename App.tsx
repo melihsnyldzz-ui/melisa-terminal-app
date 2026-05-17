@@ -17,6 +17,7 @@ import { OpenDocumentsScreen } from './app/screens/OpenDocumentsScreen';
 import { PickingScreen } from './app/screens/PickingScreen';
 import { PersonnelSelectScreen } from './app/screens/PersonnelSelectScreen';
 import { PerformanceTestScreen } from './app/screens/PerformanceTestScreen';
+import { PilotFeedbackScreen } from './app/screens/PilotFeedbackScreen';
 import { PilotIssueScreen } from './app/screens/PilotIssueScreen';
 import { PilotTestScreen } from './app/screens/PilotTestScreen';
 import { PrintDailySummaryScreen } from './app/screens/PrintDailySummaryScreen';
@@ -165,6 +166,7 @@ export default function App() {
     if (screen === 'pilotTest') return <PilotTestScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
     if (screen === 'pilotIssues') return <PilotIssueScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'performanceTest') return <PerformanceTestScreen onBack={() => navigateTo('dashboard')} />;
+    if (screen === 'pilotFeedback') return <PilotFeedbackScreen onBack={() => navigateTo('dashboard')} currentUser={currentUser} />;
     if (screen === 'endOfDaySummary') return <EndOfDaySummaryScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
     if (screen === 'offlineQueue') return <OfflineQueueScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'dataUpdate') return <DataUpdateScreen onBack={() => navigateTo('dashboard')} />;
