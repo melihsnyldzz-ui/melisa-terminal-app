@@ -254,6 +254,15 @@ export function VegaSchemaDiscoveryScreen({ onBack }: VegaSchemaDiscoveryScreenP
         <InfoBox label="Eksik/net değil" value={summary.missing.toString()} tone="danger" />
       </View>
 
+      <View style={styles.detailIntroPanel}>
+        <View style={styles.detailIntroTextBlock}>
+          <Text style={styles.kicker}>DETAY KOLON LİSTESİ</Text>
+          <Text style={styles.detailIntroTitle}>Genel sonuçtan sonra alan bazlı kontrol</Text>
+          <Text style={styles.detailIntroText}>Önce yukarıdaki satışa hazır mı sonucuna bak. Detayda hangi tablo veya alanın eksik/net olmadığı tek tek listelenir.</Text>
+        </View>
+        <StatusPill label="Detay" tone="info" />
+      </View>
+
       <View style={styles.targetList}>
         {visibleTargets.map((target) => (
           <View key={target.id} style={[styles.targetCard, target.tone === 'success' && styles.targetSuccess, target.tone === 'warning' && styles.targetWarning, target.tone === 'danger' && styles.targetDanger]}>
@@ -385,6 +394,19 @@ const styles = StyleSheet.create({
   schemaTableName: { color: colors.text, fontSize: typography.small, fontWeight: '800', lineHeight: 15 },
   schemaFacts: { flexDirection: 'row', gap: spacing.xs },
   summaryGrid: { flexDirection: 'row', gap: spacing.xs },
+  detailIntroPanel: {
+    backgroundColor: colors.surfaceSoft,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  detailIntroTextBlock: { flex: 1, gap: 2 },
+  detailIntroTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900', lineHeight: 17 },
+  detailIntroText: { color: colors.text, fontSize: typography.small, fontWeight: '800', lineHeight: 16 },
   infoBox: {
     flex: 1,
     backgroundColor: colors.surface,

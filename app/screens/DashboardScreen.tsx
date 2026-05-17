@@ -20,6 +20,18 @@ type DashboardScreenProps = {
   systemMessage?: string;
 };
 
+type DashboardModule = {
+  label: string;
+  description: string;
+  screen: AppScreen;
+  code: string;
+};
+
+type DashboardModuleGroup = {
+  title: string;
+  modules: DashboardModule[];
+};
+
 const staffActions: Array<{ label: string; helper: string; screen: AppScreen; tone?: 'primary' | 'dark' | 'warning' }> = [
   { label: 'SATIŞ', helper: 'Müşteri seç, fiş aç', screen: 'salesCustomer', tone: 'primary' },
   { label: 'AÇIK FİŞLER', helper: 'Bekleyen fişlere bak', screen: 'openDocuments', tone: 'warning' },
@@ -29,34 +41,61 @@ const staffActions: Array<{ label: string; helper: string; screen: AppScreen; to
   { label: 'KULLANIM REHBERİ', helper: 'Satış ve hata adımları', screen: 'pilotGuide' },
 ];
 
-const modules: Array<{ label: string; description: string; screen: AppScreen; code: string }> = [
-  { label: 'Depo Toplama', description: 'Barkodla tikle', screen: 'picking', code: 'TOP' },
-  { label: 'Satış Taslakları', description: 'Yarım kalan fişler', screen: 'openSaleDrafts', code: 'TAS' },
-  { label: 'Açık Fişler', description: 'Bekleyen fişler', screen: 'openDocuments', code: 'AÇK' },
-  { label: 'QR Albüm', description: 'Ürün görselleri', screen: 'qrAlbum', code: 'QR' },
-  { label: 'Mesajlar', description: 'Operasyon notları', screen: 'messages', code: 'MSG' },
-  { label: 'Yazdırma Kuyruğu', description: 'Fiş tekrar yazdırma', screen: 'printQueue', code: 'PRN' },
-  { label: 'Yazdırma Geçmişi', description: 'Fiş olay defteri', screen: 'printEventHistory', code: 'PGÇ' },
-  { label: 'Günlük Yazdırma Özeti', description: 'Bugünkü print durumu', screen: 'printDailySummary', code: 'GÜN' },
-  { label: 'Pilot Test', description: 'Saha öncesi kontrol', screen: 'pilotTest', code: 'PLT' },
-  { label: 'Pilot Hataları', description: 'Saha test sorunları', screen: 'pilotIssues', code: 'HAT' },
-  { label: 'Performans Testi', description: 'Yoğun kullanım izleme', screen: 'performanceTest', code: 'PER' },
-  { label: 'Pilot Geri Bildirim', description: 'Personel notları', screen: 'pilotFeedback', code: 'GBL' },
-  { label: 'Pilot Raporu', description: 'Genel saha özeti', screen: 'pilotReport', code: 'RPR' },
-  { label: 'Pilot Kapanış', description: 'Test günü kapanışı', screen: 'pilotCloseout', code: 'KPN' },
-  { label: 'Pilot Veri Temizleme', description: 'Test kayıtlarını temizle', screen: 'pilotDataCleanup', code: 'CLN' },
-  { label: 'Vega Hazırlık', description: 'Write-back kontrolü', screen: 'vegaWriteBackReadiness', code: 'VGA' },
-  { label: 'Vega Kolon Keşfi', description: 'Tablo/kolon hazırlığı', screen: 'vegaSchemaDiscovery', code: 'KŞF' },
-  { label: 'Vega Test Fişi Planı', description: 'Taslak alan eşleme', screen: 'vegaTestSlipPlan', code: 'PLN' },
-  { label: 'Vega Eşleşme Kontrolü', description: 'Cari/stok ön kontrol', screen: 'vegaMatchCheck', code: 'EŞL' },
-  { label: 'Gün Sonu Özeti', description: 'Kapanış kontrolü', screen: 'endOfDaySummary', code: 'SON' },
-  { label: 'Offline Kuyruk', description: 'Sync hazırlığı', screen: 'offlineQueue', code: 'SYN' },
-  { label: 'Gönderilemeyenler', description: 'Kuyruk işlemleri', screen: 'failedQueue', code: 'ERR' },
-  { label: 'İşlem Geçmişi', description: 'Terminal audit log', screen: 'auditLog', code: 'LOG' },
-  { label: 'Kur Ayarları', description: 'Para birimi oranları', screen: 'currencySettings', code: 'KUR' },
-  { label: 'Terminal Ayarları', description: 'Cihaz varsayılanları', screen: 'terminalSettings', code: 'CIH' },
-  { label: 'Ayarlar', description: 'Terminal bilgileri', screen: 'settings', code: 'SET' },
+const adminModuleGroups: DashboardModuleGroup[] = [
+  {
+    title: 'OPERASYON',
+    modules: [
+      { label: 'Açık Fişler', description: 'Bekleyen fişler', screen: 'openDocuments', code: 'AÇK' },
+      { label: 'Satış Taslakları', description: 'Yarım kalan fişler', screen: 'openSaleDrafts', code: 'TAS' },
+      { label: 'Depo Toplama', description: 'Barkodla tikle', screen: 'picking', code: 'TOP' },
+      { label: 'Gönderilemeyenler', description: 'Kuyruk işlemleri', screen: 'failedQueue', code: 'ERR' },
+      { label: 'QR Albüm', description: 'Ürün görselleri', screen: 'qrAlbum', code: 'QR' },
+      { label: 'Mesajlar', description: 'Operasyon notları', screen: 'messages', code: 'MSG' },
+    ],
+  },
+  {
+    title: 'YAZDIRMA',
+    modules: [
+      { label: 'Yazdırma Kuyruğu', description: 'Fiş tekrar yazdırma', screen: 'printQueue', code: 'PRN' },
+      { label: 'Yazdırma Geçmişi', description: 'Fiş olay defteri', screen: 'printEventHistory', code: 'PGÇ' },
+      { label: 'Günlük Yazdırma Özeti', description: 'Bugünkü print durumu', screen: 'printDailySummary', code: 'GÜN' },
+      { label: 'Gün Sonu Özeti', description: 'Kapanış kontrolü', screen: 'endOfDaySummary', code: 'SON' },
+    ],
+  },
+  {
+    title: 'PİLOT TEST',
+    modules: [
+      { label: 'Pilot Test', description: 'Saha öncesi kontrol', screen: 'pilotTest', code: 'PLT' },
+      { label: 'Pilot Hataları', description: 'Saha test sorunları', screen: 'pilotIssues', code: 'HAT' },
+      { label: 'Performans Testi', description: 'Yoğun kullanım izleme', screen: 'performanceTest', code: 'PER' },
+      { label: 'Pilot Geri Bildirim', description: 'Personel notları', screen: 'pilotFeedback', code: 'GBL' },
+      { label: 'Pilot Raporu', description: 'Genel saha özeti', screen: 'pilotReport', code: 'RPR' },
+      { label: 'Pilot Kapanış', description: 'Test günü kapanışı', screen: 'pilotCloseout', code: 'KPN' },
+      { label: 'Pilot Veri Temizleme', description: 'Test kayıtlarını temizle', screen: 'pilotDataCleanup', code: 'CLN' },
+    ],
+  },
+  {
+    title: 'VEGA HAZIRLIK',
+    modules: [
+      { label: 'Vega Hazırlık', description: 'Write-back kontrolü', screen: 'vegaWriteBackReadiness', code: 'VGA' },
+      { label: 'Vega Kolon Keşfi', description: 'Tablo/kolon hazırlığı', screen: 'vegaSchemaDiscovery', code: 'KŞF' },
+      { label: 'Vega Test Fişi Planı', description: 'Taslak alan eşleme', screen: 'vegaTestSlipPlan', code: 'PLN' },
+      { label: 'Vega Eşleşme Kontrolü', description: 'Cari/stok ön kontrol', screen: 'vegaMatchCheck', code: 'EŞL' },
+    ],
+  },
+  {
+    title: 'SİSTEM / AYARLAR',
+    modules: [
+      { label: 'Ayarlar', description: 'Terminal bilgileri', screen: 'settings', code: 'SET' },
+      { label: 'Terminal Ayarları', description: 'Cihaz varsayılanları', screen: 'terminalSettings', code: 'CIH' },
+      { label: 'Kur Ayarları', description: 'Para birimi oranları', screen: 'currencySettings', code: 'KUR' },
+      { label: 'İşlem Geçmişi', description: 'Terminal audit log', screen: 'auditLog', code: 'LOG' },
+      { label: 'Offline Kuyruk', description: 'Sync hazırlığı', screen: 'offlineQueue', code: 'SYN' },
+    ],
+  },
 ];
+
+const modules = adminModuleGroups.flatMap((group) => group.modules);
 
 type MainStatusSnapshot = {
   bridgeConnected: boolean | null;
@@ -136,6 +175,13 @@ export function DashboardScreen({ session, currentUser, onNavigate, systemMessag
   const visibleStaffActions = staffActions.filter((action) => canOpenScreen(currentUser, action.screen));
   const staffScreens = new Set(staffActions.map((action) => action.screen));
   const visibleModules = modules.filter((module) => canOpenScreen(currentUser, module.screen) && (isAdmin || !staffScreens.has(module.screen)));
+  const visibleModuleGroups = adminModuleGroups
+    .map((group) => ({
+      ...group,
+      modules: group.modules.filter((module) => canOpenScreen(currentUser, module.screen) && (isAdmin || !staffScreens.has(module.screen))),
+    }))
+    .filter((group) => group.modules.length > 0);
+  const hasVisibleMenus = isAdmin ? visibleModuleGroups.length > 0 : visibleModules.length > 0;
   const hasMainIssue = mainStatus.bridgeConnected === false
     || mainStatus.openSaleDraftCount > 0
     || mainStatus.pendingPrintCount > 0
@@ -208,21 +254,28 @@ export function DashboardScreen({ session, currentUser, onNavigate, systemMessag
           <SummaryBox label="Risk" value={failedCount.toString()} tone={failedCount > 0 ? 'warning' : 'dark'} />
         </View>
 
-        {visibleModules.length > 0 ? (
+        {hasVisibleMenus ? (
           <View style={styles.menuSection}>
-            <Text style={styles.sectionKicker}>{isAdmin ? 'ADMIN VE DİĞER MENÜLER' : 'DİĞER İŞLER'}</Text>
-            <View style={styles.menuGrid}>
-              {visibleModules.map((module) => (
-                <Pressable key={module.screen} onPress={() => onNavigate(module.screen)} style={({ pressed }) => [styles.module, module.screen === 'picking' && styles.moduleFeatured, pressed && styles.pressed]}>
-                  <View style={styles.codeBox}><Text style={styles.codeText}>{module.code}</Text></View>
-                  <View style={styles.moduleTextBlock}>
-                    <Text style={styles.moduleText}>{module.label}</Text>
-                    <Text style={styles.moduleDescription}>{module.description}</Text>
+            <Text style={styles.sectionKicker}>{isAdmin ? 'ADMIN MENÜ GRUPLARI' : 'DİĞER İŞLER'}</Text>
+            {isAdmin ? (
+              <View style={styles.adminGroupList}>
+                {visibleModuleGroups.map((group) => (
+                  <View key={group.title} style={styles.menuGroupCard}>
+                    <View style={styles.menuGroupHeader}>
+                      <Text style={styles.menuGroupTitle}>{group.title}</Text>
+                      <Text style={styles.menuGroupCount}>{group.modules.length} ekran</Text>
+                    </View>
+                    <View style={styles.menuGrid}>
+                      {group.modules.map((module) => <ModuleCard key={module.screen} module={module} unreadCount={unreadCount} onNavigate={onNavigate} />)}
+                    </View>
                   </View>
-                  {module.screen === 'messages' && unreadCount > 0 ? <View style={styles.moduleUnreadBadge}><Text style={styles.moduleUnreadText}>{unreadCount}</Text></View> : null}
-                </Pressable>
-              ))}
-            </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.menuGrid}>
+                {visibleModules.map((module) => <ModuleCard key={module.screen} module={module} unreadCount={unreadCount} onNavigate={onNavigate} />)}
+              </View>
+            )}
           </View>
         ) : null}
 
@@ -245,6 +298,19 @@ type StatusBoxProps = {
   value: string;
   tone?: 'success' | 'warning' | 'danger';
 };
+
+function ModuleCard({ module, unreadCount, onNavigate }: { module: DashboardModule; unreadCount: number; onNavigate: (screen: AppScreen) => void }) {
+  return (
+    <Pressable onPress={() => onNavigate(module.screen)} style={({ pressed }) => [styles.module, module.screen === 'picking' && styles.moduleFeatured, pressed && styles.pressed]}>
+      <View style={styles.codeBox}><Text style={styles.codeText}>{module.code}</Text></View>
+      <View style={styles.moduleTextBlock}>
+        <Text style={styles.moduleText} numberOfLines={1}>{module.label}</Text>
+        <Text style={styles.moduleDescription} numberOfLines={1}>{module.description}</Text>
+      </View>
+      {module.screen === 'messages' && unreadCount > 0 ? <View style={styles.moduleUnreadBadge}><Text style={styles.moduleUnreadText}>{unreadCount}</Text></View> : null}
+    </Pressable>
+  );
+}
 
 function StatusBox({ label, value, tone = 'success' }: StatusBoxProps) {
   return (
@@ -390,6 +456,19 @@ const styles = StyleSheet.create({
   summaryWarning: { color: colors.amber },
   summaryLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900', marginTop: 2 },
   menuSection: { gap: spacing.xs },
+  adminGroupList: { gap: spacing.sm },
+  menuGroupCard: {
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    gap: spacing.xs,
+    ...shadows.subtle,
+  },
+  menuGroupHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  menuGroupTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  menuGroupCount: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   module: {
     width: '48.7%',

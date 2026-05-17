@@ -65,6 +65,7 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
   const [pendingDeleteLineId, setPendingDeleteLineId] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
   const [quickSaleModeEnabled, setQuickSaleModeEnabled] = useState(false);
+  const [saleInitializing, setSaleInitializing] = useState(true);
 
   const totalQuantity = useMemo(() => lines.reduce((sum, line) => sum + line.quantity, 0), [lines]);
   const totalAmount = useMemo(() => lines.reduce((sum, line) => sum + (line.convertedLineTotal || line.quantity * line.price), 0), [lines]);
@@ -72,6 +73,8 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
   const pendingPrice = pendingProduct ? calculateLineTotal(pendingProduct.price, pendingQuantity, normalizeCurrencyCode(pendingProduct.sourceCurrency || pendingProduct.currency), saleCurrency, exchangeRates) : null;
   const status: SaleStatus = documentNo && lines.length > 0 ? 'Hazır' : 'Taslak';
   const canScan = Boolean(documentNo);
+  const customerDisplayName = customer || (saleInitializing ? 'Müşteri yükleniyor...' : 'Müşteri seçilmedi');
+  const documentDisplayNo = documentNo || (saleInitializing ? 'Satış hazırlanıyor...' : 'Fiş hazırlanıyor');
 
   useEffect(() => {
     Promise.all([loadActiveSaleDraft(), loadSelectedSalesCustomer(), getEffectiveExchangeRates(), loadTerminalDeviceSettings(), loadSettings()]).then(async ([draft, selectedSalesCustomer, effectiveRates, terminalSettings, terminalSettingsLocal]) => {
@@ -89,12 +92,14 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
         setLines(repriceLines(draft.lines, draftCurrency, effectiveRates));
         setBanner({ message: `${draft.documentNo} yüklendi.`, tone: 'info' });
         setTimeout(() => barcodeInputRef.current?.focus(), 150);
+        setSaleInitializing(false);
         return;
       }
 
       const nextCustomerName = draft?.customerName || selectedSalesCustomer?.name;
       if (!nextCustomerName) {
         setBanner({ message: 'Satış için müşteri seçimi gerekli.', tone: 'warning' });
+        setSaleInitializing(false);
         return;
       }
 
@@ -120,6 +125,10 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
       });
       setBanner({ message: `${sale.documentNo} hazır.`, tone: 'success' });
       setTimeout(() => barcodeInputRef.current?.focus(), 150);
+      setSaleInitializing(false);
+    }).catch(() => {
+      setBanner({ message: 'Satış hazırlanamadı. Müşteri seçimini kontrol et.', tone: 'warning' });
+      setSaleInitializing(false);
     });
   }, []);
 
@@ -412,8 +421,8 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
         <View style={styles.topPanel}>
           <View style={styles.topMain}>
             <Text style={styles.customerLabel}>MÜŞTERİ</Text>
-            <Text style={styles.customerName} numberOfLines={1}>{customer || 'Müşteri seçilmedi'}</Text>
-            <Text style={styles.documentNo}>{documentNo || 'Fiş hazırlanıyor'} · {saleCurrency}</Text>
+            <Text style={styles.customerName} numberOfLines={1}>{customerDisplayName}</Text>
+            <Text style={styles.documentNo} numberOfLines={1}>{documentDisplayNo} · {saleCurrency}</Text>
           </View>
           <StatusPill label={status} tone={status === 'Hazır' ? 'success' : 'warning'} />
         </View>
@@ -533,9 +542,9 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
 
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + spacing.sm }]}>
         <View style={styles.bottomTotals}>
-          <Text style={styles.bottomText}>Kalem {lines.length}</Text>
-          <Text style={styles.bottomText}>Adet {totalQuantity}</Text>
-          <Text style={styles.bottomAmount}>{formatMoney(totalAmount, saleCurrency)}</Text>
+          <Text style={styles.bottomText} numberOfLines={1}>Kalem {lines.length}</Text>
+          <Text style={styles.bottomText} numberOfLines={1}>Adet {totalQuantity}</Text>
+          <Text style={styles.bottomAmount} numberOfLines={1}>{formatMoney(totalAmount, saleCurrency)}</Text>
         </View>
         <AppButton label="FİŞİ TAMAMLA" onPress={reviewSale} variant="dark" compact />
       </View>
@@ -753,7 +762,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  bottomTotals: { flex: 1, gap: 1 },
+  bottomTotals: { flex: 1, minWidth: 0, gap: 1 },
   bottomText: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
   bottomAmount: { color: colors.red, fontSize: typography.section, fontWeight: '900' },
 });
