@@ -7,12 +7,13 @@ import { ScreenShell } from '../../components/ScreenShell';
 import { StatusPill } from '../../components/StatusPill';
 import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
-import { checkLocalPriceService } from '../../services/api';
-import type { LocalPriceConnectionResult } from '../../services/api';
+import { checkLocalPriceService, checkPrintBridgeHealth } from '../../services/api';
+import type { LocalPriceConnectionResult, PrintBridgeResult } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
 import { clearActiveSaleDraft, loadSettings, saveSettings } from '../../storage/localStorage';
 import type { PersonnelUser, TerminalSettings, UserSession } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
+import { formatBridgeCheckedAt } from '../utils/printBridgeHealthUtils';
 
 type SettingsScreenProps = {
   onBack: () => void;
@@ -46,6 +47,9 @@ export function SettingsScreen({ onBack, onLogout, session, currentUser }: Setti
   const [lastSync, setLastSync] = useState('Bugün 09:40');
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
   const [connectionResult, setConnectionResult] = useState<LocalPriceConnectionResult | null>(null);
+  const [bridgeConnectionResult, setBridgeConnectionResult] = useState<PrintBridgeResult | null>(null);
+  const [connectionTesting, setConnectionTesting] = useState(false);
+  const [connectionCheckedAt, setConnectionCheckedAt] = useState<string | undefined>(undefined);
   const isAdmin = currentUser?.role === 'admin';
 
   useEffect(() => {
@@ -85,6 +89,28 @@ export function SettingsScreen({ onBack, onLogout, session, currentUser }: Setti
     setConnectionResult(result);
     setBanner({ message: result.message, tone: result.ok ? 'success' : 'error' });
     if (result.ok) {
+      notifySuccess();
+      return;
+    }
+    notifyWarning();
+  };
+
+  const runConnectionTest = async () => {
+    setConnectionTesting(true);
+    const [priceResult, bridgeResult] = await Promise.all([
+      checkLocalPriceService(settings),
+      checkPrintBridgeHealth(),
+    ]);
+    setConnectionResult(priceResult);
+    setBridgeConnectionResult(bridgeResult);
+    setConnectionCheckedAt(new Date().toISOString());
+    setConnectionTesting(false);
+    const allOk = priceResult.ok && bridgeResult.ok;
+    setBanner({
+      message: allOk ? 'Bağlantı testi başarılı.' : 'Bağlantı testinde kontrol edilmesi gereken yer var.',
+      tone: allOk ? 'success' : 'warning',
+    });
+    if (allOk) {
       notifySuccess();
       return;
     }
@@ -135,6 +161,34 @@ export function SettingsScreen({ onBack, onLogout, session, currentUser }: Setti
           </View>
         </View>
         <AppButton label="Ayarları Kaydet" onPress={save} compact />
+      </Section>
+
+      <Section title="Bağlantı Testi">
+        <View style={styles.connectionTestHeader}>
+          <View style={styles.connectionTestTitleBlock}>
+            <Text style={styles.connectionTitle}>Terminal bağlantıları</Text>
+            <Text style={styles.helperText}>Fiyat sistemi ve yazdırma bilgisayarı güvenli şekilde kontrol edilir.</Text>
+          </View>
+          <StatusPill label={connectionTesting ? 'Kontrol' : connectionCheckedAt ? 'Test edildi' : 'Bekliyor'} tone={connectionTesting ? 'warning' : connectionCheckedAt ? 'success' : 'info'} />
+        </View>
+        <ConnectionTestRow
+          label="Fiyat servisi"
+          message={connectionTesting ? 'Fiyat sistemi kontrol ediliyor.' : connectionResult ? (connectionResult.ok ? 'Fiyat sistemi çalışıyor.' : 'Fiyat sistemine ulaşılamıyor.') : 'Henüz test edilmedi.'}
+          tone={connectionTesting ? 'warning' : connectionResult ? (connectionResult.ok ? 'success' : 'danger') : 'info'}
+        />
+        <ConnectionTestRow
+          label="Yazdırma bilgisayarı"
+          message={connectionTesting ? 'Yazdırma bilgisayarı kontrol ediliyor.' : bridgeConnectionResult ? (bridgeConnectionResult.ok ? 'Yazdırma bilgisayarı bağlı.' : 'Yazdırma bilgisayarına ulaşılamıyor.') : 'Henüz test edilmedi.'}
+          tone={connectionTesting ? 'warning' : bridgeConnectionResult ? (bridgeConnectionResult.ok ? 'success' : 'danger') : 'info'}
+        />
+        <View style={styles.connectionInfoBox}>
+          <Text style={styles.connectionText}>Fiyat API adresi: {connectionResult?.url || settings.apiBaseUrl || 'Eksik'}</Text>
+          <Text style={styles.connectionText}>Yazdırma API adresi: {bridgeConnectionResult?.url || settings.apiBaseUrl || 'Eksik'}</Text>
+          <Text style={styles.connectionText}>Son kontrol: {formatBridgeCheckedAt(connectionCheckedAt)}</Text>
+          {connectionResult && !connectionResult.ok ? <Text style={styles.connectionText}>Fiyat: {connectionResult.reason || 'Servis açık değil veya ağ bağlantısı yok.'}</Text> : null}
+          {bridgeConnectionResult && !bridgeConnectionResult.ok ? <Text style={styles.connectionText}>Yazdırma: {bridgeConnectionResult.reason || 'Servis açık değil veya ağ bağlantısı yok.'}</Text> : null}
+        </View>
+        <AppButton label={connectionTesting ? 'Kontrol Ediliyor' : 'Bağlantıyı Test Et'} onPress={runConnectionTest} variant="secondary" compact />
       </Section>
 
       <Section title="Bağlantı">
@@ -243,6 +297,24 @@ function HealthCard({ label, value, tone }: HealthCardProps) {
     <View style={styles.healthCard}>
       <Text style={[styles.healthValue, tone === 'warning' && styles.healthWarning]} numberOfLines={1}>{value}</Text>
       <Text style={styles.healthLabel}>{label}</Text>
+    </View>
+  );
+}
+
+type ConnectionTestRowProps = {
+  label: string;
+  message: string;
+  tone: 'success' | 'warning' | 'danger' | 'info';
+};
+
+function ConnectionTestRow({ label, message, tone }: ConnectionTestRowProps) {
+  return (
+    <View style={styles.connectionTestRow}>
+      <View style={styles.connectionTestTextBlock}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        <Text style={styles.helperText}>{message}</Text>
+      </View>
+      <StatusPill label={tone === 'success' ? 'Çalışıyor' : tone === 'danger' ? 'Ulaşılamıyor' : tone === 'warning' ? 'Kontrol' : 'Bekliyor'} tone={tone} />
     </View>
   );
 }
@@ -370,6 +442,29 @@ const styles = StyleSheet.create({
   },
   connectionTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
   connectionText: { color: colors.text, fontSize: typography.small, fontWeight: '800', lineHeight: 16 },
+  connectionTestHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
+  connectionTestTitleBlock: { flex: 1, gap: 2 },
+  connectionTestRow: {
+    minHeight: 54,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surfaceSoft,
+    padding: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  connectionTestTextBlock: { flex: 1, gap: 2 },
+  connectionInfoBox: {
+    backgroundColor: colors.surfaceSoft,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.sm,
+    gap: 2,
+  },
   toggleRow: {
     minHeight: 42,
     borderRadius: radius.md,
