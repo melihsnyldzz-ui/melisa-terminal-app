@@ -8,6 +8,7 @@ import { getFailedOperationsMock, getMessagesMock, getOpenDocumentsMock } from '
 import { loadActiveSaleDraft, loadFailedOperationsSnapshot, saveFailedOperations } from '../../storage/localStorage';
 import type { ActiveSaleDraft } from '../../types';
 import type { AppScreen, OpenDocument, PersonnelUser, UserSession } from '../../types';
+import { canOpenScreen } from '../utils/permissionUtils';
 import { colors, radius, shadows, spacing, typography } from '../theme';
 
 type DashboardScreenProps = {
@@ -65,6 +66,8 @@ export function DashboardScreen({ session, currentUser, onNavigate, systemMessag
   const personName = session?.username || 'Personel';
   const activeLineCount = activeDraft?.lines.length ?? 0;
   const activeTotalQuantity = activeDraft?.lines.reduce((sum, line) => sum + line.quantity, 0) ?? 0;
+  const visibleQuickActions = quickActions.filter((action) => canOpenScreen(currentUser, action.screen));
+  const visibleModules = modules.filter((module) => canOpenScreen(currentUser, module.screen));
 
   return (
     <View style={styles.container}>
@@ -76,13 +79,13 @@ export function DashboardScreen({ session, currentUser, onNavigate, systemMessag
           <View>
             <Text style={styles.kicker}>INDUSTRIAL FAST MODE</Text>
             <Text style={styles.title}>Merhaba, {personName}</Text>
-            {currentUser ? <Text style={styles.userLine}>{currentUser.code} · {currentUser.role}</Text> : null}
+            {currentUser ? <Text style={styles.userLine}>{currentUser.code} · {currentUser.role.toUpperCase()}</Text> : null}
           </View>
           <StatusPill label="Hazır" tone="success" />
         </View>
 
         <View style={styles.quickBar}>
-          {quickActions.map((action) => (
+          {visibleQuickActions.map((action) => (
             <Pressable key={action.label} onPress={() => onNavigate(action.screen)} style={({ pressed }) => [styles.quickButton, action.tone === 'primary' && styles.quickPrimary, action.tone === 'dark' && styles.quickDark, pressed && styles.pressed]}>
               <Text style={[styles.quickText, (action.tone === 'primary' || action.tone === 'dark') && styles.quickTextLight]}>{action.label}</Text>
               {action.screen === 'messages' && unreadCount > 0 ? <View style={styles.quickUnreadDot}><Text style={styles.quickUnreadText}>{unreadCount}</Text></View> : null}
@@ -114,7 +117,7 @@ export function DashboardScreen({ session, currentUser, onNavigate, systemMessag
         </View>
 
         <View style={styles.menuGrid}>
-          {modules.map((module) => (
+          {visibleModules.map((module) => (
             <Pressable key={module.screen} onPress={() => onNavigate(module.screen)} style={({ pressed }) => [styles.module, module.screen === 'picking' && styles.moduleFeatured, pressed && styles.pressed]}>
               <View style={styles.codeBox}><Text style={styles.codeText}>{module.code}</Text></View>
               <View style={styles.moduleTextBlock}>

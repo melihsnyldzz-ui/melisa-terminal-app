@@ -18,11 +18,13 @@ import { QRAlbumScreen } from './app/screens/QRAlbumScreen';
 import { SaleReviewScreen } from './app/screens/SaleReviewScreen';
 import { SalesCustomerScreen } from './app/screens/SalesCustomerScreen';
 import { SettingsScreen } from './app/screens/SettingsScreen';
+import { UnauthorizedScreen } from './app/screens/UnauthorizedScreen';
 import { colors } from './app/theme';
+import { canOpenScreen, screenPermissions } from './app/utils/permissionUtils';
 import { HoneywellPreviewFrame } from './components/HoneywellPreviewFrame';
 import { ScreenErrorBoundary } from './components/ScreenErrorBoundary';
 import { checkLocalPriceService } from './services/api';
-import { clearCurrentUser, clearSession, loadCurrentUser, loadSession, loadSettings, saveCurrentUser, saveSession } from './storage/localStorage';
+import { addAuditLog, clearCurrentUser, clearSession, loadCurrentUser, loadSession, loadSettings, saveCurrentUser, saveSession } from './storage/localStorage';
 import type { AppScreen, PersonnelUser, UserSession } from './types';
 
 export default function App() {
@@ -107,6 +109,17 @@ export default function App() {
 
   const navigateTo = (nextScreen: AppScreen) => {
     setBackHint('');
+    if (!canOpenScreen(currentUser, nextScreen)) {
+      const permission = screenPermissions[nextScreen];
+      void addAuditLog({
+        operationType: 'Yetkisiz erişim denemesi',
+        description: `${currentUser?.code || 'Bilinmeyen'} ${nextScreen} ekranına erişmek istedi${permission ? ` (${permission})` : ''}.`,
+        status: 'warning',
+      });
+      setBackHint('Bu işlem için yetkiniz yok');
+      setScreen('unauthorized');
+      return;
+    }
     setScreen(nextScreen);
   };
 
@@ -126,6 +139,7 @@ export default function App() {
 
   const renderScreen = () => {
     if (screen === 'personnelSelect') return <PersonnelSelectScreen onSelect={handlePersonnelSelect} systemMessage={backHint} />;
+    if (screen === 'unauthorized') return <UnauthorizedScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'login') return <LoginScreen onLogin={handleLogin} systemMessage={backHint} />;
     if (screen === 'salesCustomer') return <SalesCustomerScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
     if (screen === 'newSale') return <NewSaleScreen onBack={() => navigateTo('salesCustomer')} onNavigate={navigateTo} />;

@@ -42,7 +42,7 @@ export function PersonnelSelectScreen({ onSelect, systemMessage }: PersonnelSele
             <Pressable key={user.id} onPress={() => onSelect(user)} style={({ pressed }) => [styles.userRow, pressed && styles.pressed]}>
               <View style={styles.userMain}>
                 <Text style={styles.userName}>{user.name}</Text>
-                <Text style={styles.userMeta}>{user.code} · {user.role}</Text>
+                <Text style={styles.userMeta}>{user.code} · {user.role.toUpperCase()}</Text>
               </View>
               <StatusPill label="Seç" tone="success" />
             </Pressable>

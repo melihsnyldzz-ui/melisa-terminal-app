@@ -1,5 +1,6 @@
 export type AppScreen =
   | 'personnelSelect'
+  | 'unauthorized'
   | 'login'
   | 'dashboard'
   | 'salesCustomer'
@@ -27,9 +28,24 @@ export type PersonnelUser = {
   id: string;
   code: string;
   name: string;
-  role: string;
+  role: PersonnelRole;
   isActive: boolean;
 };
+
+export type PersonnelRole = 'admin' | 'depo' | 'kasa';
+
+export type Permission =
+  | 'sales'
+  | 'openDocuments'
+  | 'picking'
+  | 'review'
+  | 'printQueue'
+  | 'currencySettings'
+  | 'auditLog'
+  | 'settings'
+  | 'messages'
+  | 'qrAlbum'
+  | 'dataUpdate';
 
 export type SalesCustomer = {
   id: string;
@@ -176,6 +192,7 @@ export type AuditLogOperationType =
   | 'Açık fişe devam edildi'
   | 'Açık fiş silindi'
   | 'Açık fiş review’a gönderildi'
+  | 'Yetkisiz erişim denemesi'
   | 'Hata oluştu';
 
 export type AuditLogEntry = {

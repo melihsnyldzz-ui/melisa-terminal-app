@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DEFAULT_EXCHANGE_RATES, normalizeCurrencyCode, normalizeSaleLineCurrency } from '../app/utils/currencyUtils';
+import { normalizePersonnelRole } from '../app/utils/permissionUtils';
 import type { ActivePickingDraft, ActiveSaleDraft, AuditLogEntry, FailedOperation, OpenDocument, PersonnelUser, PickingLine, SaleLine, SalePrintJob, SalesCustomer, TerminalSettings, UserSession } from '../types';
 
 const KEYS = {
@@ -20,9 +21,10 @@ const KEYS = {
 const MAX_AUDIT_LOGS = 500;
 
 const defaultPersonnelUsers: PersonnelUser[] = [
-  { id: 'personnel-depo01', code: 'DEPO01', name: 'Ahmet', role: 'Depo', isActive: true },
-  { id: 'personnel-depo02', code: 'DEPO02', name: 'Mehmet', role: 'Depo', isActive: true },
-  { id: 'personnel-kasa01', code: 'KASA01', name: 'Ayşe', role: 'Kasa', isActive: true },
+  { id: 'personnel-depo01', code: 'DEPO01', name: 'Ahmet', role: 'depo', isActive: true },
+  { id: 'personnel-depo02', code: 'DEPO02', name: 'Mehmet', role: 'depo', isActive: true },
+  { id: 'personnel-kasa01', code: 'KASA01', name: 'Ayşe', role: 'kasa', isActive: true },
+  { id: 'personnel-admin01', code: 'ADMIN', name: 'Admin', role: 'admin', isActive: true },
 ];
 
 const defaultSettings: TerminalSettings = {
@@ -143,7 +145,12 @@ export async function clearSession(): Promise<void> {
 
 export async function loadPersonnelUsers(): Promise<PersonnelUser[]> {
   const users = await readJson<PersonnelUser[]>(KEYS.personnelUsers, defaultPersonnelUsers);
-  const safeUsers = Array.isArray(users) && users.length > 0 ? users : defaultPersonnelUsers;
+  const sourceUsers = Array.isArray(users) && users.length > 0 ? users : defaultPersonnelUsers;
+  const mergedUsers = [
+    ...sourceUsers.map((user) => ({ ...user, role: normalizePersonnelRole(user.role) })),
+    ...defaultPersonnelUsers.filter((defaultUser) => !sourceUsers.some((user) => user.code === defaultUser.code)),
+  ];
+  const safeUsers = mergedUsers.map((user) => ({ ...user, role: normalizePersonnelRole(user.role) }));
   await writeJson(KEYS.personnelUsers, safeUsers);
   return safeUsers;
 }
@@ -153,11 +160,12 @@ export async function savePersonnelUsers(users: PersonnelUser[]): Promise<void> 
 }
 
 export async function loadCurrentUser(): Promise<PersonnelUser | null> {
-  return readJson<PersonnelUser | null>(KEYS.currentUser, null);
+  const user = await readJson<PersonnelUser | null>(KEYS.currentUser, null);
+  return user ? { ...user, role: normalizePersonnelRole(user.role) } : null;
 }
 
 export async function saveCurrentUser(user: PersonnelUser): Promise<void> {
-  await writeJson(KEYS.currentUser, user);
+  await writeJson(KEYS.currentUser, { ...user, role: normalizePersonnelRole(user.role) });
 }
 
 export async function clearCurrentUser(): Promise<void> {
