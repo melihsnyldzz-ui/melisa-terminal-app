@@ -32,7 +32,7 @@ const filters: Array<{ key: FilterKey; label: string }> = [
 const statusLabels: Record<SalePrintJob['status'], string> = {
   'Yazdırma bekliyor': 'Bekliyor',
   'Yazdırıldı': 'Yazdırıldı',
-  'Yazdırma hatası': 'Hata',
+  'Yazdırma hatası': 'Hata aldı',
 };
 
 const statusTones: Record<SalePrintJob['status'], 'success' | 'warning' | 'danger'> = {
@@ -45,6 +45,19 @@ const formatDate = (value: string) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value || '-';
   return date.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+};
+
+const getPrintJobDisplayStatus = (job: SalePrintJob) => {
+  if ((job.retryCount || 0) > 0 && job.status !== 'Yazdırma hatası') return 'Tekrar denendi';
+  return statusLabels[job.status];
+};
+
+const sanitizePrintError = (value?: string) => {
+  if (!value) return undefined;
+  if (value.toLowerCase().includes('network') || value.toLowerCase().includes('http') || value.toLowerCase().includes('abort')) {
+    return 'Yazdırma bilgisayarına ulaşılamıyor. Servis açık değil veya ağ bağlantısı yok.';
+  }
+  return value;
 };
 
 export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
@@ -111,6 +124,9 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
       await updateJob(job.id, {
         status: 'Yazdırıldı',
         errorMessage: undefined,
+        lastError: undefined,
+        retryCount: (job.retryCount || 0) + 1,
+        lastBridgeStatus: 'connected',
         lastTriedAt: now,
         printedAt: now,
       });
@@ -127,10 +143,13 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
       const errorMessage = result.reason || result.message;
       await updateJob(job.id, {
         status: 'Yazdırma hatası',
-        errorMessage,
+        errorMessage: sanitizePrintError(errorMessage),
+        lastError: sanitizePrintError(errorMessage),
+        retryCount: (job.retryCount || 0) + 1,
+        lastBridgeStatus: 'disconnected',
         lastTriedAt: now,
       });
-      await addOfflineAction(createPrintRetryOfflineAction({ ...job, status: 'Yazdırma hatası', errorMessage, lastTriedAt: now }, errorMessage));
+      await addOfflineAction(createPrintRetryOfflineAction({ ...job, status: 'Yazdırma hatası', errorMessage: sanitizePrintError(errorMessage), lastError: sanitizePrintError(errorMessage), retryCount: (job.retryCount || 0) + 1, lastBridgeStatus: 'disconnected', lastTriedAt: now }, sanitizePrintError(errorMessage)));
       await addAuditLog({
         operationType: 'Hata oluştu',
         customerName: job.customerName,
@@ -215,33 +234,45 @@ function PrintJobCard({ job, expanded, busy, onToggle, onReprint }: {
           <Text style={styles.documentNo}>{job.documentNo}</Text>
           <Text style={styles.customerName} numberOfLines={1}>{job.customerName}</Text>
         </View>
-        <StatusPill label={statusLabels[job.status]} tone={statusTones[job.status]} />
+        <StatusPill label={getPrintJobDisplayStatus(job)} tone={statusTones[job.status]} />
       </View>
 
       <View style={styles.metricRow}>
-        <InfoItem label="Tarih" value={formatDate(job.createdAt)} />
+        <InfoItem label="Oluşturma" value={formatDate(job.createdAt)} />
         <InfoItem label="Kalem" value={job.lineCount.toString()} />
         <InfoItem label="Adet" value={job.totalQuantity.toString()} />
       </View>
       <View style={styles.metricRow}>
         <InfoItem label="Toplam" value={formatMoney(job.totalAmount, currency)} wide />
-        <InfoItem label="Para" value={currency} />
+        <InfoItem label="Deneme" value={(job.retryCount || 0).toString()} />
+      </View>
+      <View style={styles.metricRow}>
+        <InfoItem label="Son deneme" value={job.lastTriedAt ? formatDate(job.lastTriedAt) : '-'} />
+        <InfoItem label="Bridge" value={job.lastBridgeStatus === 'connected' ? 'Bağlı' : job.lastBridgeStatus === 'disconnected' ? 'Bağlı değil' : 'Bilinmiyor'} />
       </View>
 
-      {job.errorMessage ? (
+      {(job.lastError || job.errorMessage) ? (
         <View style={styles.errorBox}>
           <Text style={styles.errorTitle}>Son hata</Text>
-          <Text style={styles.errorText}>{job.errorMessage}</Text>
+          <Text style={styles.errorText}>{sanitizePrintError(job.lastError || job.errorMessage)}</Text>
         </View>
       ) : null}
 
       {expanded ? (
         <View style={styles.detailBox}>
-          <Text style={styles.detailText}>Job ID: {job.id}</Text>
+          <Text style={styles.detailTitle}>Fiş detayı</Text>
+          <Text style={styles.detailText}>Müşteri: {job.customerName}</Text>
+          <Text style={styles.detailText}>Fiş no: {job.documentNo}</Text>
+          <Text style={styles.detailText}>Toplam: {formatMoney(job.totalAmount, currency)}</Text>
+          <Text style={styles.detailText}>Kalem: {job.lineCount} · Adet: {job.totalQuantity}</Text>
+          <Text style={styles.detailText}>Oluşturma: {formatDate(job.createdAt)}</Text>
+          <Text style={styles.detailText}>Son deneme: {job.lastTriedAt ? formatDate(job.lastTriedAt) : '-'}</Text>
+          <Text style={styles.detailText}>Yazdırma: {job.printedAt ? formatDate(job.printedAt) : '-'}</Text>
+          <Text style={styles.detailText}>Tekrar deneme: {job.retryCount || 0}</Text>
+          <Text style={styles.detailText}>Son durum: {getPrintJobDisplayStatus(job)}</Text>
+          <Text style={styles.detailText}>Son hata: {sanitizePrintError(job.lastError || job.errorMessage) || '-'}</Text>
           {job.deviceName ? <Text style={styles.detailText}>Cihaz: {job.deviceName}</Text> : null}
           {job.createdByName ? <Text style={styles.detailText}>Operator: {job.createdByName}{job.createdByCode ? ` · ${job.createdByCode}` : ''}</Text> : null}
-          {job.lastTriedAt ? <Text style={styles.detailText}>Son deneme: {formatDate(job.lastTriedAt)}</Text> : null}
-          {job.printedAt ? <Text style={styles.detailText}>Yazdırma: {formatDate(job.printedAt)}</Text> : null}
         </View>
       ) : null}
 
@@ -354,6 +385,7 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
     gap: 2,
   },
+  detailTitle: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
   detailText: { color: colors.text, fontSize: typography.small, fontWeight: '800', lineHeight: 15 },
   pressed: { opacity: 0.86 },
 });

@@ -190,6 +190,9 @@ export type SalePrintJob = {
   errorMessage?: string;
   lastTriedAt?: string;
   printedAt?: string;
+  retryCount?: number;
+  lastError?: string;
+  lastBridgeStatus?: 'connected' | 'disconnected' | 'unknown';
   createdAt: string;
 };
 

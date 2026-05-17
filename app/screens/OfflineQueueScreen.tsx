@@ -188,15 +188,28 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
     const now = new Date().toISOString();
     const nextRetryCount = action.retryCount + 1;
     const lastError = result.reason || result.message;
+    const safeLastError = 'Yazdırma bilgisayarına ulaşılamıyor. Servis açık değil veya ağ bağlantısı yok.';
     await updateOfflineAction(action.id, {
       status: 'error',
       retryCount: nextRetryCount,
-      lastError,
+      lastError: safeLastError,
       retry: {
         ...action.retry,
         retryCount: nextRetryCount,
         lastTriedAt: now,
-        lastError,
+        lastError: safeLastError,
+      },
+      payload: {
+        type: 'printRetry',
+        printJob: {
+          ...action.payload.printJob,
+          status: 'Yazdırma hatası',
+          retryCount: nextRetryCount,
+          lastTriedAt: now,
+          lastError: safeLastError,
+          errorMessage: safeLastError,
+          lastBridgeStatus: 'disconnected',
+        },
       },
     });
     setBanner({ message: `${action.documentNo || action.id} tekrar denemesi başarısız.`, tone: 'error' });

@@ -107,6 +107,9 @@ const normalizeSalePrintJobs = (jobs: SalePrintJob[]): SalePrintJob[] => Array.i
   errorMessage: job.errorMessage,
   lastTriedAt: job.lastTriedAt,
   printedAt: job.printedAt,
+  retryCount: Number.isFinite(job.retryCount) && (job.retryCount || 0) > 0 ? job.retryCount : 0,
+  lastError: job.lastError || job.errorMessage,
+  lastBridgeStatus: job.lastBridgeStatus || 'unknown',
   status: job.status || 'Yazdırma bekliyor',
 })) : [];
 
