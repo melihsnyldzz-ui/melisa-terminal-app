@@ -79,6 +79,11 @@ export function SettingsScreen({ onBack, onLogout, session, currentUser }: Setti
       if (value) notifySuccess();
       return;
     }
+    if (key === 'quickSaleModeEnabled') {
+      setBanner({ message: value ? 'Hızlı satış modu açıldı.' : 'Hızlı satış modu kapatıldı.', tone: value ? 'success' : 'info' });
+      if (value) notifySuccess();
+      return;
+    }
     setBanner({ message: value ? 'Acil uyarı titreşimi açıldı.' : 'Acil uyarı titreşimi kapatıldı.', tone: value ? 'success' : 'info' });
     if (value) notifySuccess();
   };
@@ -253,6 +258,15 @@ export function SettingsScreen({ onBack, onLogout, session, currentUser }: Setti
           disabled={!settings.vibrationEnabled}
           onPress={() => savePreference('urgentVibrationEnabled', !settings.urgentVibrationEnabled)}
         />
+      </Section>
+
+      <Section title="Satış Kullanımı">
+        <ToggleRow
+          label="Hızlı satış modu"
+          enabled={Boolean(settings.quickSaleModeEnabled)}
+          onPress={() => savePreference('quickSaleModeEnabled', !settings.quickSaleModeEnabled)}
+        />
+        <Text style={styles.helperText}>Açıkken barkod okutulan ürün adet 1 ile otomatik fişe eklenir.</Text>
       </Section>
 
       <Section title="Güvenlik">

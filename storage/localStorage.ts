@@ -36,6 +36,7 @@ const defaultSettings: TerminalSettings = {
   apiMode: 'fallback',
   vibrationEnabled: true,
   urgentVibrationEnabled: true,
+  quickSaleModeEnabled: false,
 };
 
 const defaultTerminalDeviceSettings: TerminalDeviceSettings = {

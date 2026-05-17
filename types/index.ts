@@ -321,6 +321,7 @@ export type TerminalSettings = {
   apiMode: 'mock' | 'real' | 'fallback';
   vibrationEnabled: boolean;
   urgentVibrationEnabled: boolean;
+  quickSaleModeEnabled?: boolean;
 };
 
 export type FailedOperation = {

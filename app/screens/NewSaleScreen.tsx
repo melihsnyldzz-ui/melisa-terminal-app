@@ -8,7 +8,7 @@ import { ToastMessage, ToastTone } from '../../components/ToastMessage';
 import { DEFAULT_EXCHANGE_RATES, SUPPORTED_CURRENCIES, calculateLineTotal, formatMoney, getEffectiveExchangeRates, normalizeCurrencyCode, normalizeSaleLineCurrency } from '../utils/currencyUtils';
 import { createSaleMock, getMockProductByCode } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
-import { addAuditLog, loadActiveSaleDraft, loadSelectedSalesCustomer, loadTerminalDeviceSettings, saveActiveSaleDraft, upsertSaleDraft } from '../../storage/localStorage';
+import { addAuditLog, loadActiveSaleDraft, loadSelectedSalesCustomer, loadSettings, loadTerminalDeviceSettings, saveActiveSaleDraft, upsertSaleDraft } from '../../storage/localStorage';
 import type { ActiveSaleDraft, AppScreen, CurrencyCode, ExchangeRateSnapshot, Product, SaleLine, SaleStatus } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
@@ -64,6 +64,7 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
   const [lines, setLines] = useState<SaleLine[]>([]);
   const [pendingDeleteLineId, setPendingDeleteLineId] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
+  const [quickSaleModeEnabled, setQuickSaleModeEnabled] = useState(false);
 
   const totalQuantity = useMemo(() => lines.reduce((sum, line) => sum + line.quantity, 0), [lines]);
   const totalAmount = useMemo(() => lines.reduce((sum, line) => sum + (line.convertedLineTotal || line.quantity * line.price), 0), [lines]);
@@ -73,10 +74,11 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
   const canScan = Boolean(documentNo);
 
   useEffect(() => {
-    Promise.all([loadActiveSaleDraft(), loadSelectedSalesCustomer(), getEffectiveExchangeRates(), loadTerminalDeviceSettings()]).then(async ([draft, selectedSalesCustomer, effectiveRates, terminalSettings]) => {
+    Promise.all([loadActiveSaleDraft(), loadSelectedSalesCustomer(), getEffectiveExchangeRates(), loadTerminalDeviceSettings(), loadSettings()]).then(async ([draft, selectedSalesCustomer, effectiveRates, terminalSettings, terminalSettingsLocal]) => {
       if (bootstrappedRef.current) return;
       bootstrappedRef.current = true;
       setExchangeRates(effectiveRates);
+      setQuickSaleModeEnabled(Boolean(terminalSettingsLocal.quickSaleModeEnabled));
 
       const hasActiveDraft = Boolean(draft && (draft.documentNo || draft.lines.length > 0));
       if (draft && hasActiveDraft) {
@@ -179,6 +181,28 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
     focusScanner();
   };
 
+  const addProductToLines = async (product: PendingProduct, quantity: number, keepPendingProduct = false) => {
+    const existingLine = lines.find((line) => line.code === product.code);
+    const nextLines = existingLine
+      ? lines.map((line) => (line.lineId === existingLine.lineId ? makeSaleLine({ ...product, price: line.originalUnitPrice || product.price, currency: line.sourceCurrency || product.currency }, line.quantity + quantity, saleCurrency, exchangeRates, line) : line))
+      : [...lines, makeSaleLine(product, quantity, saleCurrency, exchangeRates)];
+
+    setLines(nextLines);
+    if (!keepPendingProduct) setPendingProduct(null);
+    setQuantityInput('1');
+    await persistDraft(nextLines);
+    await addAuditLog({
+      operationType: 'Ürün fişe eklendi',
+      customerName: customer,
+      documentNo,
+      description: `${product.code} · ${quantity} adet · ${saleCurrency}`,
+      status: 'success',
+    });
+    setBanner({ message: `${product.code} fişe eklendi.`, tone: 'success' });
+    notifySuccess();
+    focusScanner();
+  };
+
   const scanProduct = async (rawCode?: string) => {
     if (!documentNo) {
       setBanner({ message: 'Fiş hazırlanıyor. Müşteri seçimini kontrol et.', tone: 'warning' });
@@ -239,7 +263,8 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
       }
 
       const sourceCurrency = normalizeCurrencyCode(product.sourceCurrency || product.currency);
-      setPendingProduct({ ...product, currency: sourceCurrency, sourceCurrency, time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) });
+      const scannedProduct = { ...product, currency: sourceCurrency, sourceCurrency, time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) };
+      setPendingProduct(scannedProduct);
       await addAuditLog({
         operationType: 'Ürün okutuldu',
         customerName: customer,
@@ -249,6 +274,13 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
       });
       setQuantityInput('1');
       setPendingDeleteLineId(null);
+      if (quickSaleModeEnabled) {
+        await addProductToLines(scannedProduct, 1, true);
+        setTimeout(() => {
+          setPendingProduct((current) => (current?.code === scannedProduct.code ? null : current));
+        }, 1800);
+        return;
+      }
       setBanner({ message: `${product.code} bulundu.`, tone: 'success' });
       notifySuccess();
       focusQuantity();
@@ -276,25 +308,7 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
     }
 
     const quantity = parseQuantity(quantityInput);
-    const existingLine = lines.find((line) => line.code === pendingProduct.code);
-    const nextLines = existingLine
-      ? lines.map((line) => (line.lineId === existingLine.lineId ? makeSaleLine({ ...pendingProduct, price: line.originalUnitPrice || pendingProduct.price, currency: line.sourceCurrency || pendingProduct.currency }, line.quantity + quantity, saleCurrency, exchangeRates, line) : line))
-      : [...lines, makeSaleLine(pendingProduct, quantity, saleCurrency, exchangeRates)];
-
-    setLines(nextLines);
-    setPendingProduct(null);
-    setQuantityInput('1');
-    await persistDraft(nextLines);
-    await addAuditLog({
-      operationType: 'Ürün fişe eklendi',
-      customerName: customer,
-      documentNo,
-      description: `${pendingProduct.code} · ${quantity} adet · ${saleCurrency}`,
-      status: 'success',
-    });
-    setBanner({ message: `${pendingProduct.code} fişe eklendi.`, tone: 'success' });
-    notifySuccess();
-    focusScanner();
+    await addProductToLines(pendingProduct, quantity);
   };
 
   const handleBarcodeChange = (value: string) => {
@@ -415,7 +429,10 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
         </View>
 
         <View style={styles.scanPanel}>
-          <Text style={styles.scanTitle}>Barkod okut</Text>
+          <View style={styles.scanTitleRow}>
+            <Text style={styles.scanTitle}>Barkod okut</Text>
+            <StatusPill label={quickSaleModeEnabled ? 'Hızlı Mod Açık' : 'Normal Mod'} tone={quickSaleModeEnabled ? 'success' : 'info'} />
+          </View>
           <TextInput
             ref={barcodeInputRef}
             value={barcode}
@@ -575,6 +592,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   scanTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
+  scanTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   barcodeInput: {
     minHeight: 66,
     borderRadius: radius.md,
