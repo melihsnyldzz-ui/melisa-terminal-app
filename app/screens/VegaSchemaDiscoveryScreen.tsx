@@ -13,6 +13,7 @@ type VegaSchemaDiscoveryScreenProps = {
 };
 
 type DiscoveryTone = 'success' | 'warning' | 'danger';
+type SchemaReadinessStatus = 'ready' | 'missing' | 'noConnection' | 'unknown';
 
 type DiscoveryTarget = {
   id: string;
@@ -90,6 +91,70 @@ const targets: DiscoveryTarget[] = [
   },
 ];
 
+function getTargetByKey(result: VegaSchemaDiscoveryResult | null, key: string) {
+  return result?.targets.find((target) => target.key === key) || null;
+}
+
+function getMissingColumns(target: ReturnType<typeof getTargetByKey>) {
+  return target?.importantColumns.filter((column) => !column.exists).map((column) => column.name) || [];
+}
+
+function getReadinessStatus(result: VegaSchemaDiscoveryResult | null): SchemaReadinessStatus {
+  if (!result) return 'unknown';
+
+  const detail = `${result.message} ${result.reason || ''}`.toLocaleLowerCase('tr-TR');
+  if (!result.ok && (detail.includes('bağlantısı yok') || detail.includes('ulaşılamıyor') || detail.includes('geçersiz') || detail.includes('ağ bağlantısı'))) {
+    return 'noConnection';
+  }
+
+  const header = getTargetByKey(result, 'saleHeader');
+  const line = getTargetByKey(result, 'saleLine');
+  const headerReady = Boolean(header?.exists) && getMissingColumns(header).length === 0;
+  const lineReady = Boolean(line?.exists) && getMissingColumns(line).length === 0;
+
+  return headerReady && lineReady ? 'ready' : 'missing';
+}
+
+function getReadinessMeta(status: SchemaReadinessStatus) {
+  if (status === 'ready') {
+    return {
+      label: 'Hazır',
+      tone: 'success' as const,
+      title: 'Satış yazmaya hazır mı?',
+      message: 'Temel başlık ve satır tabloları ile gerekli kolonlar hazır görünüyor.',
+      decision: 'Canlı yazmaya yaklaşmadan önce yine de şirket ortamında test DB ile doğrula.',
+    };
+  }
+
+  if (status === 'missing') {
+    return {
+      label: 'Eksik var',
+      tone: 'danger' as const,
+      title: 'Satış yazmaya hazır mı?',
+      message: 'Satış yazmaya hazır değil. Eksik tablo veya gerekli kolon var.',
+      decision: 'Eksikler tamamlanmadan write-back açılmamalı.',
+    };
+  }
+
+  if (status === 'noConnection') {
+    return {
+      label: 'Vega bağlantısı yok',
+      tone: 'warning' as const,
+      title: 'Satış yazmaya hazır mı?',
+      message: 'Şu an Vega bağlantısı yok, şirket ortamında tekrar kontrol et.',
+      decision: 'Bağlantı doğrulanmadan tablo/kolon kararı verilmemeli.',
+    };
+  }
+
+  return {
+    label: 'Kontrol edilemedi',
+    tone: 'warning' as const,
+    title: 'Satış yazmaya hazır mı?',
+    message: 'Schema sonucu henüz okunmadı veya kontrol tamamlanmadı.',
+    decision: 'Endpoint kontrolünü yenile.',
+  };
+}
+
 export function VegaSchemaDiscoveryScreen({ onBack }: VegaSchemaDiscoveryScreenProps) {
   const [discoveryResult, setDiscoveryResult] = useState<VegaSchemaDiscoveryResult | null>(null);
   const [checking, setChecking] = useState(false);
@@ -113,6 +178,10 @@ export function VegaSchemaDiscoveryScreen({ onBack }: VegaSchemaDiscoveryScreenP
   const endpointAvailable = Boolean(discoveryResult);
   const resultTargets = discoveryResult?.targets || [];
   const targetStatusByKey = useMemo(() => new Map(resultTargets.map((target) => [target.key, target])), [resultTargets]);
+  const headerTarget = getTargetByKey(discoveryResult, 'saleHeader');
+  const lineTarget = getTargetByKey(discoveryResult, 'saleLine');
+  const readinessStatus = getReadinessStatus(discoveryResult);
+  const readinessMeta = getReadinessMeta(readinessStatus);
   const visibleTargets = targets.map((target) => {
     const resultTarget = target.id === 'sale-header-table'
       ? targetStatusByKey.get('saleHeader')
@@ -148,6 +217,18 @@ export function VegaSchemaDiscoveryScreen({ onBack }: VegaSchemaDiscoveryScreenP
         <Text style={styles.noticeText}>INSERT, UPDATE, DELETE, stok düşme, cari hareket veya otomatik satış fişi oluşturma işlemi yoktur. Şimdilik keşif hedefleri listelenir; güvenli endpoint hazır olunca read-only sonuçlar buraya bağlanabilir.</Text>
       </View>
 
+      <View style={[styles.readinessPanel, readinessMeta.tone === 'success' && styles.readinessSuccess, readinessMeta.tone === 'warning' && styles.readinessWarning, readinessMeta.tone === 'danger' && styles.readinessDanger]}>
+        <View style={styles.readinessTop}>
+          <View style={styles.readinessTextBlock}>
+            <Text style={styles.kicker}>GENEL DURUM</Text>
+            <Text style={styles.readinessTitle}>{readinessMeta.title}</Text>
+            <Text style={styles.readinessMessage}>{readinessMeta.message}</Text>
+          </View>
+          <StatusPill label={readinessMeta.label} tone={readinessMeta.tone} />
+        </View>
+        <Text style={styles.readinessDecision}>{readinessMeta.decision}</Text>
+      </View>
+
       <View style={styles.endpointPanel}>
         <View style={styles.endpointTextBlock}>
           <Text style={styles.endpointTitle}>Schema discovery endpoint</Text>
@@ -163,6 +244,9 @@ export function VegaSchemaDiscoveryScreen({ onBack }: VegaSchemaDiscoveryScreenP
         </View>
         <StatusPill label={checking ? 'Kontrol' : discoveryResult?.ok ? 'Hazır' : 'Hazır değil'} tone={checking ? 'warning' : discoveryResult?.ok ? 'success' : 'warning'} />
       </View>
+
+      <SchemaTargetSection title="Başlık tablosu" target={headerTarget} />
+      <SchemaTargetSection title="Satır tablosu" target={lineTarget} />
 
       <View style={styles.summaryGrid}>
         <InfoBox label="Hazır" value={summary.ready.toString()} tone="success" />
@@ -196,6 +280,43 @@ export function VegaSchemaDiscoveryScreen({ onBack }: VegaSchemaDiscoveryScreenP
   );
 }
 
+function SchemaTargetSection({ title, target }: { title: string; target: ReturnType<typeof getTargetByKey> }) {
+  const missingColumns = getMissingColumns(target);
+  const requiredCount = target?.importantColumns.length || 0;
+  const foundCount = requiredCount - missingColumns.length;
+  const tableTone: DiscoveryTone = target?.exists && missingColumns.length === 0 ? 'success' : target?.exists ? 'warning' : 'danger';
+  const tableLabel = target?.exists ? 'Tablo var' : 'Tablo yok';
+  const columnLabel = target?.exists && missingColumns.length === 0 ? 'Kolonlar tamam' : 'Eksik kolon var';
+
+  return (
+    <View style={[styles.schemaSection, tableTone === 'success' && styles.targetSuccess, tableTone === 'warning' && styles.targetWarning, tableTone === 'danger' && styles.targetDanger]}>
+      <View style={styles.schemaSectionTop}>
+        <View style={styles.schemaTitleBlock}>
+          <Text style={styles.schemaTitle}>{title}</Text>
+          <Text style={styles.schemaTableName}>{target ? `${target.schema}.${target.table}` : 'Sonuç bekleniyor'}</Text>
+        </View>
+        <StatusPill label={tableLabel} tone={tableTone} />
+      </View>
+
+      <View style={styles.schemaFacts}>
+        <InfoBox label="Toplam kolon" value={(target?.columnCount || 0).toString()} tone={target?.exists ? 'success' : 'danger'} />
+        <InfoBox label="Gerekli kolon" value={`${foundCount}/${requiredCount}`} tone={missingColumns.length === 0 && target?.exists ? 'success' : 'warning'} />
+      </View>
+
+      <View style={styles.expectedBox}>
+        <Text style={styles.expectedLabel}>{columnLabel}</Text>
+        <Text style={styles.expectedText}>
+          {target?.exists
+            ? missingColumns.length > 0
+              ? `Eksik: ${missingColumns.join(', ')}`
+              : 'Gerekli kolonlar tamam görünüyor.'
+            : 'Tablo bulunmadan kolon doğrulanamaz.'}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 function InfoBox({ label, value, tone }: { label: string; value: string; tone: DiscoveryTone }) {
   return (
     <View style={styles.infoBox}>
@@ -221,6 +342,21 @@ const styles = StyleSheet.create({
   kicker: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
   noticeTitle: { color: colors.success, fontSize: typography.body, fontWeight: '900', lineHeight: 17 },
   noticeText: { color: colors.text, fontSize: typography.small, fontWeight: '800', lineHeight: 16 },
+  readinessPanel: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderLeftWidth: 4,
+    padding: spacing.sm,
+    gap: spacing.xs,
+  },
+  readinessSuccess: { backgroundColor: colors.successSoft, borderColor: '#bce7c8', borderLeftColor: colors.success },
+  readinessWarning: { backgroundColor: colors.warningSoft, borderColor: '#efd5a7', borderLeftColor: colors.amber },
+  readinessDanger: { backgroundColor: colors.dangerSoft, borderColor: '#f3bcc5', borderLeftColor: colors.red },
+  readinessTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
+  readinessTextBlock: { flex: 1, gap: 2 },
+  readinessTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900', lineHeight: 18 },
+  readinessMessage: { color: colors.text, fontSize: typography.body, fontWeight: '900', lineHeight: 17 },
+  readinessDecision: { color: colors.muted, fontSize: typography.small, fontWeight: '800', lineHeight: 16 },
   endpointPanel: {
     backgroundColor: colors.warningSoft,
     borderRadius: radius.lg,
@@ -236,6 +372,18 @@ const styles = StyleSheet.create({
   endpointTextBlock: { flex: 1, gap: 2 },
   endpointTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
   endpointText: { color: colors.text, fontSize: typography.small, fontWeight: '800', lineHeight: 16 },
+  schemaSection: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderLeftWidth: 4,
+    padding: spacing.sm,
+    gap: spacing.xs,
+  },
+  schemaSectionTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
+  schemaTitleBlock: { flex: 1, gap: 2 },
+  schemaTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  schemaTableName: { color: colors.text, fontSize: typography.small, fontWeight: '800', lineHeight: 15 },
+  schemaFacts: { flexDirection: 'row', gap: spacing.xs },
   summaryGrid: { flexDirection: 'row', gap: spacing.xs },
   infoBox: {
     flex: 1,
