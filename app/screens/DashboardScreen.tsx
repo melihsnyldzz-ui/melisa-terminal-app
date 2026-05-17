@@ -26,6 +26,7 @@ const staffActions: Array<{ label: string; helper: string; screen: AppScreen; to
   { label: 'YAZDIRMA KUYRUĞU', helper: 'Fişi tekrar yazdır', screen: 'printQueue' },
   { label: 'TOPLAMA', helper: 'Depo işini yap', screen: 'picking', tone: 'dark' },
   { label: 'AYARLAR', helper: 'Terminal ve oturum', screen: 'settings' },
+  { label: 'KULLANIM REHBERİ', helper: 'Satış ve hata adımları', screen: 'pilotGuide' },
 ];
 
 const modules: Array<{ label: string; description: string; screen: AppScreen; code: string }> = [

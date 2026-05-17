@@ -1,9 +1,9 @@
 import type { AppScreen, Permission, PersonnelRole, PersonnelUser } from '../../types';
 
 const rolePermissions: Record<PersonnelRole, Permission[]> = {
-  admin: ['sales', 'openDocuments', 'picking', 'review', 'printQueue', 'printEventHistory', 'printDailySummary', 'pilotTest', 'pilotIssues', 'performanceTest', 'pilotFeedback', 'pilotReport', 'pilotCloseout', 'endOfDaySummary', 'offlineQueue', 'currencySettings', 'auditLog', 'settings', 'messages', 'qrAlbum', 'dataUpdate', 'terminalSettings'],
-  depo: ['sales', 'openDocuments', 'picking', 'printQueue', 'pilotFeedback', 'settings', 'terminalSettings', 'messages', 'qrAlbum'],
-  kasa: ['sales', 'openDocuments', 'review', 'printQueue', 'pilotFeedback', 'settings', 'messages', 'qrAlbum'],
+  admin: ['sales', 'openDocuments', 'picking', 'review', 'printQueue', 'printEventHistory', 'printDailySummary', 'pilotTest', 'pilotIssues', 'performanceTest', 'pilotFeedback', 'pilotReport', 'pilotCloseout', 'pilotGuide', 'endOfDaySummary', 'offlineQueue', 'currencySettings', 'auditLog', 'settings', 'messages', 'qrAlbum', 'dataUpdate', 'terminalSettings'],
+  depo: ['sales', 'openDocuments', 'picking', 'printQueue', 'pilotFeedback', 'pilotGuide', 'settings', 'terminalSettings', 'messages', 'qrAlbum'],
+  kasa: ['sales', 'openDocuments', 'review', 'printQueue', 'pilotFeedback', 'pilotGuide', 'settings', 'messages', 'qrAlbum'],
 };
 
 export const screenPermissions: Partial<Record<AppScreen, Permission>> = {
@@ -23,6 +23,7 @@ export const screenPermissions: Partial<Record<AppScreen, Permission>> = {
   pilotFeedback: 'pilotFeedback',
   pilotReport: 'pilotReport',
   pilotCloseout: 'pilotCloseout',
+  pilotGuide: 'pilotGuide',
   endOfDaySummary: 'endOfDaySummary',
   offlineQueue: 'offlineQueue',
   currencySettings: 'currencySettings',
