@@ -5,7 +5,11 @@ import { AppButton } from '../../components/AppButton';
 import { EmptyState } from '../../components/EmptyState';
 import { StatusPill } from '../../components/StatusPill';
 import { TerminalHeader } from '../../components/TerminalHeader';
-import { clearOfflineActions, loadOfflineActions, removeOfflineAction, removeOfflineActionsByStatus } from '../../storage/offlineQueueStorage';
+import { ToastMessage } from '../../components/ToastMessage';
+import type { ToastTone } from '../../components/ToastMessage';
+import { sendSaleReceiptToPrintBridge } from '../../services/api';
+import { notifySuccess, notifyWarning } from '../../services/feedback';
+import { clearOfflineActions, loadOfflineActions, removeOfflineAction, removeOfflineActionsByStatus, updateOfflineAction } from '../../storage/offlineQueueStorage';
 import type { OfflineQueueAction } from '../offline/offlineQueueTypes';
 import { getRetryPlan } from '../offline/retryScheduler';
 import { colors, radius, spacing, typography } from '../theme';
@@ -50,6 +54,8 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
   const [actions, setActions] = useState<OfflineQueueAction[]>([]);
   const [expandedActionId, setExpandedActionId] = useState<string | null>(null);
   const [jsonActionId, setJsonActionId] = useState<string | null>(null);
+  const [retryingActionId, setRetryingActionId] = useState<string | null>(null);
+  const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
 
   const loadQueue = useCallback(async () => {
     const savedActions = await loadOfflineActions();
@@ -131,6 +137,51 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
     );
   };
 
+  const manualRetry = async (action: OfflineQueueAction) => {
+    const retryPlan = getRetryPlan(action);
+    if (!retryPlan.retryEligible || retryingActionId) return;
+
+    if (action.payload.type === 'pendingSaleCompletion') {
+      setBanner({ message: 'Satış tamamlama retry akışı henüz desteklenmiyor.', tone: 'warning' });
+      notifyWarning();
+      return;
+    }
+
+    setRetryingActionId(action.id);
+    setBanner({ message: `${action.documentNo || action.id} tekrar deneniyor.`, tone: 'info' });
+    const result = await sendSaleReceiptToPrintBridge(action.payload.printJob);
+
+    if (result.ok) {
+      await removeOfflineAction(action.id);
+      setExpandedActionId((current) => (current === action.id ? null : current));
+      setJsonActionId((current) => (current === action.id ? null : current));
+      setBanner({ message: `${action.documentNo || action.id} başarıyla tekrar gönderildi.`, tone: 'success' });
+      notifySuccess();
+      await loadQueue();
+      setRetryingActionId(null);
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const nextRetryCount = action.retryCount + 1;
+    const lastError = result.reason || result.message;
+    await updateOfflineAction(action.id, {
+      status: 'error',
+      retryCount: nextRetryCount,
+      lastError,
+      retry: {
+        ...action.retry,
+        retryCount: nextRetryCount,
+        lastTriedAt: now,
+        lastError,
+      },
+    });
+    setBanner({ message: `${action.documentNo || action.id} tekrar denemesi başarısız.`, tone: 'error' });
+    notifyWarning();
+    await loadQueue();
+    setRetryingActionId(null);
+  };
+
   const renderAction = ({ item }: { item: OfflineQueueAction }) => (
     <OfflineQueueCard
       action={item}
@@ -138,7 +189,9 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
       showJson={jsonActionId === item.id}
       onToggleDetail={() => setExpandedActionId((current) => (current === item.id ? null : item.id))}
       onToggleJson={() => setJsonActionId((current) => (current === item.id ? null : item.id))}
+      onRetry={() => manualRetry(item)}
       onDelete={() => confirmDelete(item)}
+      retrying={retryingActionId === item.id}
     />
   );
 
@@ -162,8 +215,9 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
           <View style={styles.headerContent}>
             <View style={styles.noticeBox}>
               <Text style={styles.noticeTitle}>Altyapı modu</Text>
-              <Text style={styles.noticeText}>Bu ekran yalnızca local queue durumunu gösterir. Auto retry, background sync ve gerçek write-back bu sürümde çalışmaz.</Text>
+              <Text style={styles.noticeText}>Bu ekran local queue durumunu gösterir. Auto retry, background sync ve gerçek write-back bu sürümde çalışmaz; uygun kayıtlar sadece elle denenir.</Text>
             </View>
+            <ToastMessage message={banner?.message} tone={banner?.tone} />
 
             <View style={styles.summaryGrid}>
               <InfoBox label="Toplam" value={summary.total.toString()} />
@@ -192,12 +246,14 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
   );
 }
 
-function OfflineQueueCard({ action, expanded, showJson, onToggleDetail, onToggleJson, onDelete }: {
+function OfflineQueueCard({ action, expanded, showJson, retrying, onToggleDetail, onToggleJson, onRetry, onDelete }: {
   action: OfflineQueueAction;
   expanded: boolean;
   showJson: boolean;
+  retrying: boolean;
   onToggleDetail: () => void;
   onToggleJson: () => void;
+  onRetry: () => void;
   onDelete: () => void;
 }) {
   const isError = action.status === 'error';
@@ -260,16 +316,17 @@ function OfflineQueueCard({ action, expanded, showJson, onToggleDetail, onToggle
       <View style={styles.actionRow}>
         <SmallButton label={expanded ? 'Detayı Kapat' : 'Detay'} onPress={onToggleDetail} />
         <SmallButton label={showJson ? 'JSON Gizle' : 'JSON'} onPress={onToggleJson} />
+        {retryPlan.retryEligible ? <SmallButton label={retrying ? 'Deneniyor' : 'Tekrar Dene'} onPress={onRetry} success disabled={retrying} /> : null}
         <SmallButton label="Sil" onPress={onDelete} danger />
       </View>
     </View>
   );
 }
 
-function SmallButton({ label, onPress, danger = false }: { label: string; onPress: () => void; danger?: boolean }) {
+function SmallButton({ label, onPress, danger = false, success = false, disabled = false }: { label: string; onPress: () => void; danger?: boolean; success?: boolean; disabled?: boolean }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.smallButton, danger && styles.smallButtonDanger, pressed && styles.pressed]}>
-      <Text style={[styles.smallButtonText, danger && styles.smallButtonTextDanger]}>{label}</Text>
+    <Pressable onPress={disabled ? undefined : onPress} style={({ pressed }) => [styles.smallButton, danger && styles.smallButtonDanger, success && styles.smallButtonSuccess, disabled && styles.smallButtonDisabled, pressed && !disabled && styles.pressed]}>
+      <Text style={[styles.smallButtonText, danger && styles.smallButtonTextDanger, success && styles.smallButtonTextSuccess]}>{label}</Text>
     </Pressable>
   );
 }
@@ -384,8 +441,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   smallButtonDanger: { borderColor: colors.red, backgroundColor: colors.dangerSoft },
+  smallButtonSuccess: { borderColor: colors.success, backgroundColor: colors.successSoft },
+  smallButtonDisabled: { opacity: 0.55 },
   smallButtonText: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
   smallButtonTextDanger: { color: colors.red },
+  smallButtonTextSuccess: { color: colors.success },
   footer: {
     padding: spacing.sm,
     backgroundColor: colors.surface,
