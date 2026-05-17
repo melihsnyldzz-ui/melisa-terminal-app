@@ -3,6 +3,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../../components/AppButton';
 import { ScreenShell } from '../../components/ScreenShell';
 import { StatusPill } from '../../components/StatusPill';
+import { checkVegaCustomerStockMatch } from '../../services/api';
+import type { VegaCustomerMatch, VegaItemMatch, VegaMatchCheckResult } from '../../services/api';
 import { formatMoney, normalizeCurrencyCode } from '../utils/currencyUtils';
 import { loadActiveSaleDraft, loadSelectedSalesCustomer } from '../../storage/localStorage';
 import type { ActiveSaleDraft, AppScreen, SaleLine, SalesCustomer } from '../../types';
@@ -15,13 +17,17 @@ type VegaMatchCheckScreenProps = {
 
 type MatchTone = 'success' | 'warning' | 'danger';
 
-function getCustomerTone(draft: ActiveSaleDraft | null, customer: SalesCustomer | null): MatchTone {
+function getCustomerTone(draft: ActiveSaleDraft | null, customer: SalesCustomer | null, match?: VegaCustomerMatch): MatchTone {
   if (!draft?.customerName) return 'danger';
+  if (match?.status === 'found') return 'success';
+  if (match?.status === 'notFound') return 'danger';
   if (!customer?.code) return 'warning';
   return 'warning';
 }
 
-function getLineTone(line: SaleLine): MatchTone {
+function getLineTone(line: SaleLine, match?: VegaItemMatch): MatchTone {
+  if (match?.status === 'found') return match.priceFound === false ? 'warning' : 'success';
+  if (match?.status === 'notFound') return 'danger';
   const hasCode = Boolean(line.code);
   const hasName = Boolean(line.name);
   const hasPrice = Number.isFinite(line.convertedUnitPrice || line.price) && (line.convertedUnitPrice || line.price || 0) > 0;
@@ -44,23 +50,45 @@ function getLinePrice(line: SaleLine) {
 export function VegaMatchCheckScreen({ onBack, onNavigate }: VegaMatchCheckScreenProps) {
   const [draft, setDraft] = useState<ActiveSaleDraft | null>(null);
   const [customer, setCustomer] = useState<SalesCustomer | null>(null);
+  const [matchResult, setMatchResult] = useState<VegaMatchCheckResult | null>(null);
+  const [checking, setChecking] = useState(false);
+
+  const runMatchCheck = async () => {
+    setChecking(true);
+    const [activeDraft, selectedCustomer] = await Promise.all([loadActiveSaleDraft(), loadSelectedSalesCustomer()]);
+    setDraft(activeDraft);
+    setCustomer(selectedCustomer);
+    if (activeDraft?.documentNo) {
+      const result = await checkVegaCustomerStockMatch({
+        customerCode: selectedCustomer?.code || '',
+        customerName: activeDraft.customerName || selectedCustomer?.name || '',
+        items: activeDraft.lines.map((line) => ({
+          barcode: line.code,
+          stockCode: line.code,
+          productName: line.name,
+        })),
+      });
+      setMatchResult(result);
+    } else {
+      setMatchResult(null);
+    }
+    setChecking(false);
+  };
 
   useEffect(() => {
-    Promise.all([loadActiveSaleDraft(), loadSelectedSalesCustomer()]).then(([activeDraft, selectedCustomer]) => {
-      setDraft(activeDraft);
-      setCustomer(selectedCustomer);
-    });
+    void runMatchCheck();
   }, []);
 
-  const customerTone = getCustomerTone(draft, customer);
+  const matchByCode = useMemo(() => new Map((matchResult?.itemMatches || []).map((match) => [String(match.barcode || match.stockCode || '').toUpperCase(), match])), [matchResult]);
+  const customerTone = getCustomerTone(draft, customer, matchResult?.customerMatch);
   const lineStats = useMemo(() => {
-    const tones = draft?.lines.map(getLineTone) || [];
+    const tones = draft?.lines.map((line) => getLineTone(line, matchByCode.get(String(line.code || '').toUpperCase()))) || [];
     return {
       ready: tones.filter((tone) => tone === 'success').length,
       risky: tones.filter((tone) => tone === 'warning').length,
       missing: tones.filter((tone) => tone === 'danger').length,
     };
-  }, [draft]);
+  }, [draft, matchByCode]);
   const hasIssue = customerTone !== 'success' || lineStats.risky > 0 || lineStats.missing > 0;
 
   return (
@@ -73,17 +101,27 @@ export function VegaMatchCheckScreen({ onBack, onNavigate }: VegaMatchCheckScree
           </View>
           <StatusPill label="Read-only" tone="danger" />
         </View>
-        <Text style={styles.panelText}>INSERT, UPDATE, DELETE, satış fişi oluşturma, stok düşme veya cari hareket işlemi yoktur. Ayrı Vega cari/stok doğrulama endpoint’i olmadığı için bu ekran güvenli ön kontrol gösterir.</Text>
+        <Text style={styles.panelText}>INSERT, UPDATE, DELETE, satış fişi oluşturma, stok düşme veya cari hareket işlemi yoktur. Endpoint ulaşılamazsa güvenli ön kontrol fallback olarak kalır.</Text>
       </View>
 
       {!draft?.documentNo ? (
         <View style={styles.emptyPanel}>
           <Text style={styles.emptyTitle}>Kontrol için önce test satış taslağı aç.</Text>
-          <Text style={styles.emptyText}>Müşteri seçip satış ekranında ürün ekleyince cari/stok eşleşme kontrolü burada görünecek.</Text>
-          <AppButton label="Test Satışı Aç" onPress={() => onNavigate('salesCustomer')} variant="primary" compact />
+            <Text style={styles.emptyText}>Müşteri seçip satış ekranında ürün ekleyince cari/stok eşleşme kontrolü burada görünecek.</Text>
+            <AppButton label="Test Satışı Aç" onPress={() => onNavigate('salesCustomer')} variant="primary" compact />
         </View>
       ) : (
         <>
+          <View style={styles.endpointPanel}>
+            <View style={styles.flexText}>
+              <Text style={styles.endpointTitle}>Read-only match endpoint</Text>
+              <Text style={styles.panelText}>{checking ? 'Vega eşleşme endpoint’i kontrol ediliyor.' : matchResult?.message || 'Endpoint sonucu henüz alınmadı.'}</Text>
+              <Text style={styles.panelText}>Adres: {matchResult ? `${matchResult.url}${matchResult.endpoint}` : '/api/vega/match-check'}</Text>
+              {matchResult?.reason ? <Text style={styles.panelText}>Not: {matchResult.reason}</Text> : null}
+            </View>
+            <StatusPill label={checking ? 'Kontrol' : matchResult?.ok ? 'Okundu' : 'Fallback'} tone={checking ? 'warning' : matchResult?.ok ? 'success' : 'warning'} />
+          </View>
+
           <View style={[styles.resultPanel, hasIssue ? styles.resultWarning : styles.resultSuccess]}>
             <View style={styles.panelTop}>
               <View style={styles.flexText}>
@@ -94,7 +132,7 @@ export function VegaMatchCheckScreen({ onBack, onNavigate }: VegaMatchCheckScree
               </View>
               <StatusPill label={hasIssue ? 'Kontrol gerekli' : 'Hazır'} tone={hasIssue ? 'warning' : 'success'} />
             </View>
-            <Text style={styles.panelText}>Vega doğrulaması için ileride read-only cari/stok match endpoint’i bağlanmalı.</Text>
+            <Text style={styles.panelText}>{matchResult?.ok ? 'Vega’dan read-only eşleşme sonucu okundu.' : 'Vega doğrulaması okunamadı; terminal verisiyle güvenli ön kontrol gösteriliyor.'}</Text>
           </View>
 
           <View style={styles.summaryGrid}>
@@ -110,8 +148,9 @@ export function VegaMatchCheckScreen({ onBack, onNavigate }: VegaMatchCheckScree
           <View style={[styles.matchCard, customerTone === 'danger' && styles.cardDanger, customerTone === 'warning' && styles.cardWarning]}>
             <InfoLine label="Terminal müşteri" value={draft.customerName || 'Müşteri yok'} />
             <InfoLine label="Terminal müşteri kodu" value={customer?.code || 'Kod yok'} />
-            <InfoLine label="Vega cari kodu" value={customer?.code ? `${customer.code} aday` : 'Bulunmadı'} />
-            <InfoLine label="Durum" value={customer?.code ? 'Aday cari kodu var, Vega doğrulaması için endpoint gerekli.' : 'Cari kodu eksik veya Vega’da doğrulanmadı.'} />
+            <InfoLine label="Vega cari kodu" value={matchResult?.customerMatch.candidateCustomerCode || (customer?.code ? `${customer.code} aday` : 'Bulunmadı')} />
+            <InfoLine label="Vega cari adı" value={matchResult?.customerMatch.candidateCustomerName || 'Doğrulanmadı'} />
+            <InfoLine label="Durum" value={matchResult?.customerMatch.message || (customer?.code ? 'Aday cari kodu var, Vega doğrulaması için endpoint gerekli.' : 'Cari kodu eksik veya Vega’da doğrulanmadı.')} />
           </View>
 
           <View style={styles.sectionHeader}>
@@ -120,7 +159,7 @@ export function VegaMatchCheckScreen({ onBack, onNavigate }: VegaMatchCheckScree
           </View>
           {draft.lines.length > 0 ? (
             <View style={styles.lineList}>
-              {draft.lines.map((line, index) => <StockMatchCard key={line.lineId || `${line.code}-${index}`} line={line} index={index} />)}
+              {draft.lines.map((line, index) => <StockMatchCard key={line.lineId || `${line.code}-${index}`} line={line} index={index} match={matchByCode.get(String(line.code || '').toUpperCase())} />)}
             </View>
           ) : (
             <View style={styles.emptyPanel}>
@@ -134,8 +173,8 @@ export function VegaMatchCheckScreen({ onBack, onNavigate }: VegaMatchCheckScree
   );
 }
 
-function StockMatchCard({ line, index }: { line: SaleLine; index: number }) {
-  const tone = getLineTone(line);
+function StockMatchCard({ line, index, match }: { line: SaleLine; index: number; match?: VegaItemMatch }) {
+  const tone = getLineTone(line, match);
   const currency = normalizeCurrencyCode(line.saleCurrency || line.currency);
   const price = getLinePrice(line);
 
@@ -150,9 +189,10 @@ function StockMatchCard({ line, index }: { line: SaleLine; index: number }) {
       </View>
       <InfoLine label="Barkod" value={line.code || 'Barkod yok'} />
       <InfoLine label="Terminal stok kodu" value={line.code || 'Stok kodu yok'} />
-      <InfoLine label="Vega stok kodu / stok no" value={line.code ? `${line.code} aday` : 'Bulunmadı'} />
-      <InfoLine label="Fiyat" value={price > 0 ? formatMoney(price, currency) : 'Fiyat yok'} />
-      <InfoLine label="Durum" value={tone === 'danger' ? 'Barkod, ürün adı veya fiyat eksik.' : 'Terminal verisi var; Vega doğrulaması için read-only endpoint gerekli.'} />
+      <InfoLine label="Vega stok kodu / stok no" value={match?.candidateStockCode || match?.candidateStockNo ? `${match?.candidateStockCode || '-'} / ${match?.candidateStockNo || '-'}` : line.code ? `${line.code} aday` : 'Bulunmadı'} />
+      <InfoLine label="Vega ürün adı" value={match?.candidateProductName || 'Doğrulanmadı'} />
+      <InfoLine label="Fiyat" value={(match?.priceFound ?? price > 0) ? formatMoney(price, currency) : 'Fiyat yok'} />
+      <InfoLine label="Durum" value={match?.message || (tone === 'danger' ? 'Barkod, ürün adı veya fiyat eksik.' : 'Terminal verisi var; Vega doğrulaması için read-only endpoint gerekli.')} />
     </View>
   );
 }
@@ -211,6 +251,17 @@ const styles = StyleSheet.create({
   resultSuccess: { backgroundColor: colors.successSoft, borderColor: '#bce7c8', borderLeftColor: colors.success },
   resultWarning: { backgroundColor: colors.warningSoft, borderColor: '#efd5a7', borderLeftColor: colors.amber },
   resultTitle: { fontSize: typography.body, fontWeight: '900', lineHeight: 17 },
+  endpointPanel: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  endpointTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
   summaryGrid: { flexDirection: 'row', gap: spacing.xs },
   infoBox: {
     flex: 1,

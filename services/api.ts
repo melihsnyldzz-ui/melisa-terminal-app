@@ -108,6 +108,44 @@ export type VegaSchemaDiscoveryResult = {
   reason?: string;
 };
 
+export type VegaMatchStatus = 'found' | 'notFound' | 'unknown';
+
+export type VegaCustomerMatch = {
+  status: VegaMatchStatus;
+  terminalCustomerCode?: string;
+  terminalCustomerName?: string;
+  candidateCustomerCode?: string;
+  candidateCustomerName?: string;
+  message?: string;
+};
+
+export type VegaItemMatchRequest = {
+  barcode?: string;
+  stockCode?: string;
+  productName?: string;
+};
+
+export type VegaItemMatch = VegaItemMatchRequest & {
+  status: VegaMatchStatus;
+  candidateStockCode?: string;
+  candidateStockNo?: string;
+  candidateProductName?: string;
+  priceFound?: boolean;
+  message?: string;
+};
+
+export type VegaMatchCheckResult = {
+  ok: boolean;
+  mode: 'read-only';
+  message: string;
+  safetyMessage: string;
+  url: string;
+  endpoint: string;
+  customerMatch: VegaCustomerMatch;
+  itemMatches: VegaItemMatch[];
+  reason?: string;
+};
+
 async function getProductFromLocalPriceService(code: string, apiBaseUrl: string): Promise<LocalPriceLookupResult> {
   const baseUrl = normalizeApiBaseUrl(apiBaseUrl);
   if (!baseUrl) return { status: 'invalid-url', reason: 'API adresi gecersiz. Adres http://192.168.1.45:8787 formatinda olmali.' };
@@ -370,6 +408,105 @@ export async function checkVegaSchemaDiscovery(settings?: TerminalSettings): Pro
       endpoint,
       relationshipNote: 'header.IND = line.EVRAKNO',
       targets: fallbackTargets,
+      reason: reason ? 'Servis açık değil veya ağ bağlantısı yok.' : undefined,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export async function checkVegaCustomerStockMatch(input: {
+  customerCode?: string;
+  customerName?: string;
+  items: VegaItemMatchRequest[];
+  settings?: TerminalSettings;
+}): Promise<VegaMatchCheckResult> {
+  const endpoint = '/api/vega/match-check';
+  const loadedSettings = input.settings || await loadSettings();
+  const baseUrl = normalizeApiBaseUrl(loadedSettings.apiBaseUrl);
+  const fallbackCustomer: VegaCustomerMatch = {
+    status: 'unknown',
+    terminalCustomerCode: input.customerCode || '',
+    terminalCustomerName: input.customerName || '',
+    candidateCustomerCode: '',
+    candidateCustomerName: '',
+    message: 'Vega doğrulaması için endpoint gerekli.',
+  };
+  const fallbackItems: VegaItemMatch[] = input.items.map((item) => ({
+    ...item,
+    status: 'unknown',
+    candidateStockCode: '',
+    candidateStockNo: '',
+    candidateProductName: '',
+    priceFound: false,
+    message: 'Vega doğrulaması için endpoint gerekli.',
+  }));
+
+  if (!baseUrl) {
+    return {
+      ok: false,
+      mode: 'read-only',
+      message: 'API adresi geçersiz.',
+      safetyMessage: 'Read-only Vega match check; veri yazma yapılmaz.',
+      url: loadedSettings.apiBaseUrl,
+      endpoint,
+      customerMatch: fallbackCustomer,
+      itemMatches: fallbackItems,
+      reason: 'Adres http://192.168.1.45:8787 formatında olmalı.',
+    };
+  }
+
+  const loopbackReason = getLoopbackReason(baseUrl);
+  if (loopbackReason) {
+    return {
+      ok: false,
+      mode: 'read-only',
+      message: 'Vega bağlantısı yok.',
+      safetyMessage: 'Read-only Vega match check; veri yazma yapılmaz.',
+      url: baseUrl,
+      endpoint,
+      customerMatch: fallbackCustomer,
+      itemMatches: fallbackItems,
+      reason: loopbackReason,
+    };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), LOCAL_PRICE_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${baseUrl}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        customerCode: input.customerCode || '',
+        customerName: input.customerName || '',
+        items: input.items,
+      }),
+    });
+    const payload = await response.json() as Omit<VegaMatchCheckResult, 'url' | 'endpoint'> & { error?: string };
+    return {
+      ok: response.ok && Boolean(payload.ok),
+      mode: 'read-only',
+      message: payload.message || 'Vega cari/stok eşleşme sonucu alındı.',
+      safetyMessage: payload.safetyMessage || 'Read-only Vega match check; veri yazma yapılmaz.',
+      url: baseUrl,
+      endpoint,
+      customerMatch: payload.customerMatch || fallbackCustomer,
+      itemMatches: Array.isArray(payload.itemMatches) ? payload.itemMatches : fallbackItems,
+      reason: payload.reason || payload.error,
+    };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Bağlantı hatası';
+    return {
+      ok: false,
+      mode: 'read-only',
+      message: 'Vega match endpoint’ine ulaşılamıyor.',
+      safetyMessage: 'Read-only Vega match check; veri yazma yapılmaz.',
+      url: baseUrl,
+      endpoint,
+      customerMatch: fallbackCustomer,
+      itemMatches: fallbackItems,
       reason: reason ? 'Servis açık değil veya ağ bağlantısı yok.' : undefined,
     };
   } finally {
