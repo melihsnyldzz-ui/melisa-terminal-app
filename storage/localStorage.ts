@@ -280,6 +280,19 @@ export async function saveSaleDrafts(drafts: ActiveSaleDraft[]): Promise<void> {
   await writeJson(KEYS.saleDrafts, normalizedDrafts);
 }
 
+const isTestSaleDraft = (draft: ActiveSaleDraft): boolean => {
+  const source = `${draft.documentNo || ''} ${draft.customerName || ''} ${draft.status || ''}`.toLocaleLowerCase('tr-TR');
+  return source.includes('test') || source.includes('deneme') || source.includes('pilot');
+};
+
+export async function clearTestSaleDrafts(): Promise<void> {
+  const [drafts, activeDraft] = await Promise.all([loadSaleDrafts(), loadActiveSaleDraft()]);
+  await saveSaleDrafts(drafts.filter((draft) => !isTestSaleDraft(draft)));
+  if (activeDraft && isTestSaleDraft(activeDraft)) {
+    await clearActiveSaleDraft();
+  }
+}
+
 export async function upsertSaleDraft(draft: ActiveSaleDraft, draftStatus: ActiveSaleDraft['draftStatus'] = 'open'): Promise<void> {
   const [currentUser, terminalSettings] = await Promise.all([loadCurrentUser(), loadTerminalDeviceSettings()]);
   const currentUserFields = currentUser ? {
@@ -347,6 +360,21 @@ export async function loadAuditLogs(): Promise<AuditLogEntry[]> {
 
 export async function saveAuditLogs(logs: AuditLogEntry[]): Promise<void> {
   await writeJson(KEYS.auditLogs, normalizeAuditLogs(logs));
+}
+
+const isPilotIssueAuditLog = (log: AuditLogEntry): boolean => {
+  const source = `${log.operationType} ${log.description}`.toLocaleLowerCase('tr-TR');
+  return source.includes('bulunamadı')
+    || source.includes('urun bulunamadi')
+    || source.includes('ürün bulunamadı')
+    || source.includes('fiyat')
+    || source.includes('hata')
+    || log.status === 'error';
+};
+
+export async function clearPilotIssueAuditLogs(): Promise<void> {
+  const logs = await loadAuditLogs();
+  await saveAuditLogs(logs.filter((log) => !isPilotIssueAuditLog(log)));
 }
 
 export async function addAuditLog(entry: Omit<AuditLogEntry, 'id' | 'createdAt' | 'deviceName' | 'deviceId' | 'personnelName' | 'personnelId' | 'personnelCode'> & Partial<Pick<AuditLogEntry, 'deviceId' | 'deviceName' | 'personnelId' | 'personnelCode' | 'personnelName'>>): Promise<void> {

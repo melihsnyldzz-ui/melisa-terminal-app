@@ -44,6 +44,7 @@ const modules: Array<{ label: string; description: string; screen: AppScreen; co
   { label: 'Pilot Geri Bildirim', description: 'Personel notları', screen: 'pilotFeedback', code: 'GBL' },
   { label: 'Pilot Raporu', description: 'Genel saha özeti', screen: 'pilotReport', code: 'RPR' },
   { label: 'Pilot Kapanış', description: 'Test günü kapanışı', screen: 'pilotCloseout', code: 'KPN' },
+  { label: 'Pilot Veri Temizleme', description: 'Test kayıtlarını temizle', screen: 'pilotDataCleanup', code: 'CLN' },
   { label: 'Gün Sonu Özeti', description: 'Kapanış kontrolü', screen: 'endOfDaySummary', code: 'SON' },
   { label: 'Offline Kuyruk', description: 'Sync hazırlığı', screen: 'offlineQueue', code: 'SYN' },
   { label: 'Gönderilemeyenler', description: 'Kuyruk işlemleri', screen: 'failedQueue', code: 'ERR' },

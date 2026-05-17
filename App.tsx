@@ -21,6 +21,7 @@ import { PilotCloseoutScreen } from './app/screens/PilotCloseoutScreen';
 import { PilotFeedbackScreen } from './app/screens/PilotFeedbackScreen';
 import { PilotIssueScreen } from './app/screens/PilotIssueScreen';
 import { PilotGuideScreen } from './app/screens/PilotGuideScreen';
+import { PilotDataCleanupScreen } from './app/screens/PilotDataCleanupScreen';
 import { PilotReportScreen } from './app/screens/PilotReportScreen';
 import { PilotTestScreen } from './app/screens/PilotTestScreen';
 import { PrintDailySummaryScreen } from './app/screens/PrintDailySummaryScreen';
@@ -173,6 +174,7 @@ export default function App() {
     if (screen === 'pilotReport') return <PilotReportScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'pilotCloseout') return <PilotCloseoutScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
     if (screen === 'pilotGuide') return <PilotGuideScreen onBack={() => navigateTo('dashboard')} currentUser={currentUser} />;
+    if (screen === 'pilotDataCleanup') return <PilotDataCleanupScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'endOfDaySummary') return <EndOfDaySummaryScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
     if (screen === 'offlineQueue') return <OfflineQueueScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'dataUpdate') return <DataUpdateScreen onBack={() => navigateTo('dashboard')} />;

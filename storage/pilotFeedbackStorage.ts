@@ -79,4 +79,8 @@ export async function addPilotFeedback(input: {
   return entry;
 }
 
+export async function clearPilotFeedback(): Promise<void> {
+  await writeFeedback([]);
+}
+
 export { PILOT_FEEDBACK_KEY };
