@@ -165,7 +165,7 @@ export default function App() {
     if (screen === 'auditLog') return <AuditLogScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'currencySettings') return <CurrencySettingsScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'terminalSettings') return <TerminalSettingsScreen onBack={() => navigateTo('dashboard')} />;
-    if (screen === 'settings') return <SettingsScreen onBack={() => navigateTo('dashboard')} onLogout={handleLogout} session={session} />;
+    if (screen === 'settings') return <SettingsScreen onBack={() => navigateTo('dashboard')} onLogout={handleLogout} session={session} currentUser={currentUser} />;
     return <DashboardScreen session={session} currentUser={currentUser} onNavigate={navigateTo} systemMessage={backHint} />;
   };
 

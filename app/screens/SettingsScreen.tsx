@@ -11,13 +11,14 @@ import { checkLocalPriceService } from '../../services/api';
 import type { LocalPriceConnectionResult } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
 import { clearActiveSaleDraft, loadSettings, saveSettings } from '../../storage/localStorage';
-import type { TerminalSettings, UserSession } from '../../types';
+import type { PersonnelUser, TerminalSettings, UserSession } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
 type SettingsScreenProps = {
   onBack: () => void;
   onLogout: () => void;
   session: UserSession | null;
+  currentUser: PersonnelUser | null;
 };
 
 const branchOptions = ['Merkez Depo', 'Mağaza', 'Sevkiyat'];
@@ -33,7 +34,7 @@ const apiModeLabels: Record<TerminalSettings['apiMode'], string> = {
   fallback: 'Servis varsa kullan, yoksa mock',
 };
 
-export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProps) {
+export function SettingsScreen({ onBack, onLogout, session, currentUser }: SettingsScreenProps) {
   const [settings, setSettings] = useState<TerminalSettings>({
     terminalId: 'MB-TERM-001',
     branch: session?.branch ?? 'Merkez Depo',
@@ -45,6 +46,7 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
   const [lastSync, setLastSync] = useState('Bugün 09:40');
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
   const [connectionResult, setConnectionResult] = useState<LocalPriceConnectionResult | null>(null);
+  const isAdmin = currentUser?.role === 'admin';
 
   useEffect(() => {
     loadSettings().then(setSettings);
@@ -136,22 +138,31 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
       </Section>
 
       <Section title="Bağlantı">
-        <Field label="Local fiyat servisi adresi" value={settings.apiBaseUrl} onChangeText={(value) => update('apiBaseUrl', value)} placeholder="http://192.168.1.45:8787" />
-        <Text style={styles.helperText}>Android terminalde localhost kullanma. PC IPv4 adresini yaz: http://192.168.1.45:8787</Text>
-        <View style={styles.field}>
-          <Text style={styles.label}>Fiyat Kaynağı</Text>
-          <View style={styles.priceSourceGrid}>
-            {apiModeOptions.map((option) => (
-              <Pressable
-                key={option.value}
-                onPress={() => savePreference('apiMode', option.value)}
-                style={({ pressed }) => [styles.priceSourceButton, settings.apiMode === option.value && styles.segmentButtonActive, pressed && styles.pressed]}
-              >
-                <Text style={[styles.segmentText, settings.apiMode === option.value && styles.segmentTextActive]}>{option.label}</Text>
-              </Pressable>
-            ))}
+        {isAdmin ? (
+          <>
+            <Field label="Local fiyat servisi adresi" value={settings.apiBaseUrl} onChangeText={(value) => update('apiBaseUrl', value)} placeholder="http://192.168.1.45:8787" />
+            <Text style={styles.helperText}>Android terminalde localhost kullanma. PC IPv4 adresini yaz: http://192.168.1.45:8787</Text>
+            <View style={styles.field}>
+              <Text style={styles.label}>Fiyat Kaynağı</Text>
+              <View style={styles.priceSourceGrid}>
+                {apiModeOptions.map((option) => (
+                  <Pressable
+                    key={option.value}
+                    onPress={() => savePreference('apiMode', option.value)}
+                    style={({ pressed }) => [styles.priceSourceButton, settings.apiMode === option.value && styles.segmentButtonActive, pressed && styles.pressed]}
+                  >
+                    <Text style={[styles.segmentText, settings.apiMode === option.value && styles.segmentTextActive]}>{option.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          </>
+        ) : (
+          <View style={styles.securityBox}>
+            <Text style={styles.securityTitle}>Bağlantı ayarı admin tarafından yönetilir.</Text>
+            <Text style={styles.securityText}>Fiyat kaynağı: {apiModeLabels[settings.apiMode]}. Adres değişikliği için admin kullanıcısı gerekir.</Text>
           </View>
-        </View>
+        )}
         <View style={styles.inlineRow}>
           <Text style={styles.rowLabel}>Durum</Text>
           <StatusPill label={settings.apiBaseUrl.trim() ? 'Hazır' : 'Bekliyor'} tone={settings.apiBaseUrl.trim() ? 'success' : 'warning'} />
@@ -164,7 +175,7 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
             {connectionResult.reason ? <Text style={styles.connectionText}>Neden: {connectionResult.reason}</Text> : null}
           </View>
         ) : null}
-        <AppButton label="Bağlantıyı Kontrol Et" onPress={checkConnection} variant="secondary" compact />
+        {isAdmin ? <AppButton label="Bağlantıyı Kontrol Et" onPress={checkConnection} variant="secondary" compact /> : null}
       </Section>
 
       <Section title="Senkron">
@@ -195,7 +206,7 @@ export function SettingsScreen({ onBack, onLogout, session }: SettingsScreenProp
           <Text style={styles.securityTitle}>Güvenli çalışma modu</Text>
           <Text style={styles.securityText}>Taslaklar cihazda saklanır. Yeni Fiş açılmazsa aktif taslağı sıfırlayarak temiz başlangıç yapabilirsiniz.</Text>
         </View>
-        <AppButton label="Aktif Taslağı Sıfırla" onPress={resetActiveDraft} variant="secondary" compact />
+        {isAdmin ? <AppButton label="Aktif Taslağı Sıfırla" onPress={resetActiveDraft} variant="secondary" compact /> : null}
         <ActionRow
           actions={[
             { label: 'Kaydet', onPress: save, variant: 'secondary' },
