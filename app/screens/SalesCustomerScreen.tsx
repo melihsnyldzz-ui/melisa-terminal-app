@@ -6,7 +6,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { ScreenShell } from '../../components/ScreenShell';
 import { StatusPill } from '../../components/StatusPill';
 import { ToastMessage, ToastTone } from '../../components/ToastMessage';
-import { saveActiveSaleDraft, saveSelectedSalesCustomer } from '../../storage/localStorage';
+import { addAuditLog, saveActiveSaleDraft, saveSelectedSalesCustomer } from '../../storage/localStorage';
 import type { AppScreen, SalesCustomer } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
@@ -46,6 +46,12 @@ export function SalesCustomerScreen({ onBack, onNavigate }: SalesCustomerScreenP
   const selectCustomer = async (customer: SalesCustomer) => {
     setSelectedCustomer(customer);
     await saveSelectedSalesCustomer(customer);
+    await addAuditLog({
+      operationType: 'Müşteri seçildi',
+      customerName: customer.name,
+      description: `${customer.code} · ${customer.city}`,
+      status: 'success',
+    });
     setBanner({ message: `${customer.name} satış müşterisi olarak seçildi.`, tone: 'success' });
   };
 

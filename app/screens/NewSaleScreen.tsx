@@ -7,7 +7,7 @@ import { TerminalHeader } from '../../components/TerminalHeader';
 import { ToastMessage, ToastTone } from '../../components/ToastMessage';
 import { createSaleMock, getMockProductByCode } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
-import { addSalePrintJob, loadActiveSaleDraft, loadSelectedSalesCustomer, saveActiveSaleDraft } from '../../storage/localStorage';
+import { addAuditLog, addSalePrintJob, loadActiveSaleDraft, loadSelectedSalesCustomer, saveActiveSaleDraft } from '../../storage/localStorage';
 import type { ActiveSaleDraft, Product, SaleLine, SalePrintJob, SaleStatus } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
@@ -75,6 +75,13 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       setCustomer(nextCustomerName);
       setDocumentNo(sale.documentNo);
       await persistDraft([], sale.documentNo, nextCustomerName);
+      await addAuditLog({
+        operationType: 'Yeni fiş oluşturuldu',
+        customerName: nextCustomerName,
+        documentNo: sale.documentNo,
+        description: 'Mock satış fişi local taslak olarak hazırlandı.',
+        status: 'success',
+      });
       setBanner({ message: `${sale.documentNo} hazır.`, tone: 'success' });
       setTimeout(() => barcodeInputRef.current?.focus(), 150);
     });
@@ -137,6 +144,13 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       setBarcode('');
       if (!product) {
         setPendingProduct(null);
+        await addAuditLog({
+          operationType: 'Ürün okutuldu',
+          customerName: customer,
+          documentNo,
+          description: `${code} bulunamadı.`,
+          status: 'warning',
+        });
         setBanner({ message: `${code} bulunamadı.`, tone: 'warning' });
         notifyWarning();
         focusScanner();
@@ -144,6 +158,13 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       }
 
       setPendingProduct({ ...product, time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) });
+      await addAuditLog({
+        operationType: 'Ürün okutuldu',
+        customerName: customer,
+        documentNo,
+        description: `${product.code} · ${product.name}`,
+        status: 'success',
+      });
       setQuantityInput('1');
       setPendingDeleteLineId(null);
       setBanner({ message: `${product.code} bulundu.`, tone: 'success' });
@@ -153,6 +174,13 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       const message = error instanceof Error ? error.message : 'Ürün araması tamamlanamadı.';
       setBarcode('');
       setPendingProduct(null);
+      await addAuditLog({
+        operationType: 'Hata oluştu',
+        customerName: customer,
+        documentNo,
+        description: message,
+        status: 'error',
+      });
       setBanner({ message, tone: 'warning' });
       notifyWarning();
       focusScanner();
@@ -175,6 +203,13 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     setPendingProduct(null);
     setQuantityInput('1');
     await persistDraft(nextLines);
+    await addAuditLog({
+      operationType: 'Ürün fişe eklendi',
+      customerName: customer,
+      documentNo,
+      description: `${pendingProduct.code} · ${pendingProduct.name} · ${quantity} adet`,
+      status: 'success',
+    });
     setBanner({ message: `${pendingProduct.code} fişe eklendi.`, tone: 'success' });
     notifySuccess();
     focusScanner();
@@ -213,9 +248,17 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     }
 
     const nextLines = lines.filter((line) => line.lineId !== lineId);
+    const removedLine = lines.find((line) => line.lineId === lineId);
     setLines(nextLines);
     setPendingDeleteLineId(null);
     await persistDraft(nextLines);
+    await addAuditLog({
+      operationType: 'Ürün silindi',
+      customerName: customer,
+      documentNo,
+      description: removedLine ? `${removedLine.code} · ${removedLine.name}` : 'Satır fişten silindi.',
+      status: 'warning',
+    });
     setBanner({ message: 'Satır silindi.', tone: 'info' });
     notifyWarning();
     focusScanner();
@@ -237,6 +280,13 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
 
     await persistDraft();
     const currency = getPrimaryCurrency(lines);
+    await addAuditLog({
+      operationType: 'Fiş tamamlandı',
+      customerName: customer,
+      documentNo,
+      description: `${lines.length} kalem · ${totalQuantity} adet · ${formatPrice(totalAmount, currency)}`,
+      status: 'success',
+    });
     const printJob: SalePrintJob = {
       id: `${documentNo}-${Date.now()}`,
       documentNo,
@@ -249,6 +299,20 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       createdAt: new Date().toISOString(),
     };
     await addSalePrintJob(printJob);
+    await addAuditLog({
+      operationType: 'Yazdırma kuyruğuna gönderildi',
+      customerName: customer,
+      documentNo,
+      description: `${lines.length} kalem yazdırma kuyruğuna alındı.`,
+      status: 'success',
+    });
+    await addAuditLog({
+      operationType: 'Mock yazdırıldı',
+      customerName: customer,
+      documentNo,
+      description: 'Vega/PC bridge olmadan local mock yazdırma kaydı oluşturuldu.',
+      status: 'success',
+    });
     setBanner({ message: `${documentNo} yazdırma kuyruğuna alındı. ${lines.length} kalem · ${totalQuantity} adet · ${formatPrice(totalAmount, currency)}`, tone: 'success' });
     notifySuccess();
     focusScanner();

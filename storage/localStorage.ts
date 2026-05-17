@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ActivePickingDraft, ActiveSaleDraft, FailedOperation, OpenDocument, PickingLine, SaleLine, SalePrintJob, SalesCustomer, TerminalSettings, UserSession } from '../types';
+import type { ActivePickingDraft, ActiveSaleDraft, AuditLogEntry, FailedOperation, OpenDocument, PickingLine, SaleLine, SalePrintJob, SalesCustomer, TerminalSettings, UserSession } from '../types';
 
 const KEYS = {
   settings: 'melisa-terminal:settings',
@@ -10,7 +10,10 @@ const KEYS = {
   activeSaleDraft: 'melisa-terminal:active-sale-draft',
   activePickingDraft: 'melisa-terminal:active-picking-draft',
   salePrintJobs: 'melisa-terminal:sale-print-jobs',
+  auditLogs: 'melisa-terminal:audit-logs',
 };
+
+const MAX_AUDIT_LOGS = 500;
 
 const defaultSettings: TerminalSettings = {
   terminalId: 'MB-TERM-001',
@@ -71,6 +74,12 @@ const normalizeSalePrintJobs = (jobs: SalePrintJob[]): SalePrintJob[] => Array.i
   currency: job.currency || 'TL',
   status: job.status || 'Yazdırma bekliyor',
 })) : [];
+
+const normalizeAuditLogs = (logs: AuditLogEntry[]): AuditLogEntry[] => Array.isArray(logs)
+  ? logs
+    .filter((log) => log && log.id && log.operationType && log.createdAt)
+    .slice(0, MAX_AUDIT_LOGS)
+  : [];
 
 async function readJson<T>(key: string, fallback: T): Promise<T> {
   try {
@@ -172,6 +181,32 @@ export async function saveSalePrintJobs(jobs: SalePrintJob[]): Promise<void> {
 export async function addSalePrintJob(job: SalePrintJob): Promise<void> {
   const jobs = await loadSalePrintJobs();
   await saveSalePrintJobs([job, ...jobs]);
+}
+
+export async function loadAuditLogs(): Promise<AuditLogEntry[]> {
+  const logs = await readJson<AuditLogEntry[]>(KEYS.auditLogs, []);
+  return normalizeAuditLogs(logs);
+}
+
+export async function saveAuditLogs(logs: AuditLogEntry[]): Promise<void> {
+  await writeJson(KEYS.auditLogs, normalizeAuditLogs(logs));
+}
+
+export async function addAuditLog(entry: Omit<AuditLogEntry, 'id' | 'createdAt' | 'deviceName' | 'personnelName'> & Partial<Pick<AuditLogEntry, 'deviceName' | 'personnelName'>>): Promise<void> {
+  const [logs, session, settings] = await Promise.all([loadAuditLogs(), loadSession(), loadSettings()]);
+  const now = new Date().toISOString();
+  const nextEntry: AuditLogEntry = {
+    id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    createdAt: now,
+    deviceName: entry.deviceName || session?.terminalId || settings.terminalId || 'Bilinmeyen cihaz',
+    personnelName: entry.personnelName || session?.username || 'Personel',
+    operationType: entry.operationType,
+    customerName: entry.customerName,
+    documentNo: entry.documentNo,
+    description: entry.description,
+    status: entry.status,
+  };
+  await saveAuditLogs([nextEntry, ...logs].slice(0, MAX_AUDIT_LOGS));
 }
 
 export async function loadActivePickingDraft(): Promise<ActivePickingDraft | null> {

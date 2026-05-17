@@ -9,6 +9,7 @@ export type AppScreen =
   | 'messages'
   | 'failedQueue'
   | 'dataUpdate'
+  | 'auditLog'
   | 'settings';
 
 export type UserSession = {
@@ -84,6 +85,32 @@ export type SalePrintJob = {
   currency: string;
   status: 'Yazdırma bekliyor' | 'Yazdırıldı' | 'Yazdırma hatası';
   createdAt: string;
+};
+
+export type AuditLogStatus = 'success' | 'warning' | 'error';
+
+export type AuditLogOperationType =
+  | 'Müşteri seçildi'
+  | 'Yeni fiş oluşturuldu'
+  | 'Ürün okutuldu'
+  | 'Ürün fişe eklendi'
+  | 'Ürün silindi'
+  | 'Fiş tamamlandı'
+  | 'Yazdırma kuyruğuna gönderildi'
+  | 'Mock yazdırıldı'
+  | 'PC bridge’e gönderildi'
+  | 'Hata oluştu';
+
+export type AuditLogEntry = {
+  id: string;
+  operationType: AuditLogOperationType;
+  createdAt: string;
+  deviceName: string;
+  personnelName: string;
+  customerName?: string;
+  documentNo?: string;
+  description: string;
+  status: AuditLogStatus;
 };
 
 export type PickingLine = {

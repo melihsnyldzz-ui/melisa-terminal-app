@@ -29,6 +29,7 @@ const modules: Array<{ label: string; description: string; screen: AppScreen; co
   { label: 'QR Albüm', description: 'Ürün görselleri', screen: 'qrAlbum', code: 'QR' },
   { label: 'Mesajlar', description: 'Operasyon notları', screen: 'messages', code: 'MSG' },
   { label: 'Gönderilemeyenler', description: 'Kuyruk işlemleri', screen: 'failedQueue', code: 'ERR' },
+  { label: 'İşlem Geçmişi', description: 'Terminal audit log', screen: 'auditLog', code: 'LOG' },
   { label: 'Ayarlar', description: 'Terminal bilgileri', screen: 'settings', code: 'SET' },
 ];
 

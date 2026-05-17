@@ -7,7 +7,7 @@ import { StatusPill, statusToneFor } from '../../components/StatusPill';
 import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
 import { getOpenDocumentsMock } from '../../services/api';
-import { saveActivePickingDraft } from '../../storage/localStorage';
+import { addAuditLog, saveActivePickingDraft } from '../../storage/localStorage';
 import type { ActivePickingDraft, AppScreen, OpenDocument, OpenDocumentStatus, PickingLine } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
@@ -100,6 +100,13 @@ export function OpenDocumentsScreen({ onBack, onNavigate }: OpenDocumentsScreenP
     const message = document.status === 'Gönderilemedi'
       ? `${document.id} tekrar gönderim kuyruğuna alındı.`
       : `${document.id} gönderim için hazırlandı.`;
+    void addAuditLog({
+      operationType: document.status === 'Gönderilemedi' ? 'Hata oluştu' : 'PC bridge’e gönderildi',
+      customerName: document.customerName,
+      documentNo: document.id,
+      description: document.status === 'Gönderilemedi' ? 'Fiş gönderimi mock kuyrukta bekliyor.' : 'Mock gönderim hazırlandı; gerçek PC bridge çağrısı yapılmadı.',
+      status: document.status === 'Gönderilemedi' ? 'warning' : 'success',
+    });
     setBanner({ message, tone: document.status === 'Gönderilemedi' ? 'warning' : 'success' });
   };
 

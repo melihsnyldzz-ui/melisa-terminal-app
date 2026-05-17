@@ -5,7 +5,7 @@ import { StatusPill } from '../../components/StatusPill';
 import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
-import { loadActivePickingDraft, saveActivePickingDraft } from '../../storage/localStorage';
+import { addAuditLog, loadActivePickingDraft, saveActivePickingDraft } from '../../storage/localStorage';
 import type { ActivePickingDraft, PackingBox, PickingLine } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
@@ -159,6 +159,13 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
 
     const target = lines.find((line) => line.code === code);
     if (!target) {
+      void addAuditLog({
+        operationType: 'Hata oluştu',
+        customerName: safeDraft.customerName,
+        documentNo: safeDraft.documentNo,
+        description: `Toplama ekranında yanlış ürün okutuldu: ${code}`,
+        status: 'error',
+      });
       setBanner({ message: `YANLIŞ ÜRÜN: ${code}`, tone: 'error' });
       flashAlert('YANLIŞ ÜRÜN', 'error');
       notifyWarning();
@@ -169,6 +176,13 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
 
     setBarcode('');
     if (mode === 'packing') {
+      void addAuditLog({
+        operationType: 'Ürün okutuldu',
+        customerName: safeDraft.customerName,
+        documentNo: safeDraft.documentNo,
+        description: `${target.code} koli akışında okutuldu.`,
+        status: 'success',
+      });
       void addToActiveBox(target);
       return;
     }
@@ -182,6 +196,13 @@ export function PickingScreen({ onBack }: PickingScreenProps) {
     }
 
     const nextLines = lines.map((line) => (line.id === target.id ? { ...line, picked: Math.min(line.quantity, line.picked + 1) } : line));
+    void addAuditLog({
+      operationType: 'Ürün okutuldu',
+      customerName: safeDraft.customerName,
+      documentNo: safeDraft.documentNo,
+      description: `${target.code} · ${target.name}`,
+      status: 'success',
+    });
     void persistLines(nextLines, `✓ TOPLANDI: ${target.name}`);
     flashAlert('DOĞRU ÜRÜN', 'success');
     notifySuccess();

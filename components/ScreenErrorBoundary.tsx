@@ -1,6 +1,7 @@
 import { Component, ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '../app/theme';
+import { addAuditLog } from '../storage/localStorage';
 
 type ScreenErrorBoundaryProps = {
   children: ReactNode;
@@ -28,6 +29,11 @@ export class ScreenErrorBoundary extends Component<ScreenErrorBoundaryProps, Scr
 
   componentDidCatch(error: Error) {
     console.warn('Screen error:', this.props.screenName, error.message);
+    void addAuditLog({
+      operationType: 'Hata oluştu',
+      description: `${this.props.screenName}: ${error.message || 'Ekran beklenmeyen bir hata verdi.'}`,
+      status: 'error',
+    });
   }
 
   componentDidUpdate(previousProps: ScreenErrorBoundaryProps) {
