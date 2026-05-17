@@ -84,6 +84,11 @@ export function SettingsScreen({ onBack, onLogout, session, currentUser }: Setti
       if (value) notifySuccess();
       return;
     }
+    if (key === 'scanSoundEnabled') {
+      setBanner({ message: value ? 'Sesli geri bildirim açıldı.' : 'Sesli geri bildirim kapatıldı.', tone: value ? 'success' : 'info' });
+      if (value) notifySuccess();
+      return;
+    }
     setBanner({ message: value ? 'Acil uyarı titreşimi açıldı.' : 'Acil uyarı titreşimi kapatıldı.', tone: value ? 'success' : 'info' });
     if (value) notifySuccess();
   };
@@ -267,6 +272,12 @@ export function SettingsScreen({ onBack, onLogout, session, currentUser }: Setti
           onPress={() => savePreference('quickSaleModeEnabled', !settings.quickSaleModeEnabled)}
         />
         <Text style={styles.helperText}>Açıkken barkod okutulan ürün adet 1 ile otomatik fişe eklenir.</Text>
+        <ToggleRow
+          label="Sesli geri bildirim"
+          enabled={settings.scanSoundEnabled !== false}
+          onPress={() => savePreference('scanSoundEnabled', settings.scanSoundEnabled === false)}
+        />
+        <Text style={styles.helperText}>Başarılı ürün eklemede kısa başarı sesi, hatada farklı kısa uyarı sesi çalar.</Text>
       </Section>
 
       <Section title="Güvenlik">

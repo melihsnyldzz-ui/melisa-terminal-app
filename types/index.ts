@@ -322,6 +322,7 @@ export type TerminalSettings = {
   vibrationEnabled: boolean;
   urgentVibrationEnabled: boolean;
   quickSaleModeEnabled?: boolean;
+  scanSoundEnabled?: boolean;
 };
 
 export type FailedOperation = {

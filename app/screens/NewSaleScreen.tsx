@@ -7,7 +7,7 @@ import { TerminalHeader } from '../../components/TerminalHeader';
 import { ToastMessage, ToastTone } from '../../components/ToastMessage';
 import { DEFAULT_EXCHANGE_RATES, SUPPORTED_CURRENCIES, calculateLineTotal, formatMoney, getEffectiveExchangeRates, normalizeCurrencyCode, normalizeSaleLineCurrency } from '../utils/currencyUtils';
 import { createSaleMock, getMockProductByCode } from '../../services/api';
-import { notifySuccess, notifyWarning } from '../../services/feedback';
+import { notifyScanError, notifyScanSuccess, notifySuccess, notifyWarning } from '../../services/feedback';
 import { addAuditLog, loadActiveSaleDraft, loadSelectedSalesCustomer, loadSettings, loadTerminalDeviceSettings, saveActiveSaleDraft, upsertSaleDraft } from '../../storage/localStorage';
 import type { ActiveSaleDraft, AppScreen, CurrencyCode, ExchangeRateSnapshot, Product, SaleLine, SaleStatus } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
@@ -199,7 +199,7 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
       status: 'success',
     });
     setBanner({ message: `${product.code} fişe eklendi.`, tone: 'success' });
-    notifySuccess();
+    notifyScanSuccess();
     focusScanner();
   };
 
@@ -242,7 +242,7 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
           status: 'warning',
         });
         setBanner({ message: 'Ürün bulunamadı.', tone: 'warning' });
-        notifyWarning();
+        notifyScanError();
         focusScanner();
         return;
       }
@@ -257,7 +257,7 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
           status: 'error',
         });
         setBanner({ message: 'Fiyat alınamadı.', tone: 'warning' });
-        notifyWarning();
+        notifyScanError();
         focusScanner();
         return;
       }
@@ -296,7 +296,7 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
         status: 'error',
       });
       setBanner({ message: message.toLocaleLowerCase('tr-TR').includes('fiyat') ? 'Fiyat alınamadı.' : message, tone: 'warning' });
-      notifyWarning();
+      notifyScanError();
       focusScanner();
     }
   };

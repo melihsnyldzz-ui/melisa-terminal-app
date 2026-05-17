@@ -37,6 +37,7 @@ const defaultSettings: TerminalSettings = {
   vibrationEnabled: true,
   urgentVibrationEnabled: true,
   quickSaleModeEnabled: false,
+  scanSoundEnabled: true,
 };
 
 const defaultTerminalDeviceSettings: TerminalDeviceSettings = {
