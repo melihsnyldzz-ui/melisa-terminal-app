@@ -36,6 +36,7 @@ const modules: Array<{ label: string; description: string; screen: AppScreen; co
   { label: 'Yazdırma Kuyruğu', description: 'Fiş tekrar yazdırma', screen: 'printQueue', code: 'PRN' },
   { label: 'Yazdırma Geçmişi', description: 'Fiş olay defteri', screen: 'printEventHistory', code: 'PGÇ' },
   { label: 'Günlük Yazdırma Özeti', description: 'Bugünkü print durumu', screen: 'printDailySummary', code: 'GÜN' },
+  { label: 'Gün Sonu Özeti', description: 'Kapanış kontrolü', screen: 'endOfDaySummary', code: 'SON' },
   { label: 'Offline Kuyruk', description: 'Sync hazırlığı', screen: 'offlineQueue', code: 'SYN' },
   { label: 'Gönderilemeyenler', description: 'Kuyruk işlemleri', screen: 'failedQueue', code: 'ERR' },
   { label: 'İşlem Geçmişi', description: 'Terminal audit log', screen: 'auditLog', code: 'LOG' },

@@ -6,6 +6,7 @@ import { DashboardScreen } from './app/screens/DashboardScreen';
 import { DataUpdateScreen } from './app/screens/DataUpdateScreen';
 import { AuditLogScreen } from './app/screens/AuditLogScreen';
 import { CurrencySettingsScreen } from './app/screens/CurrencySettingsScreen';
+import { EndOfDaySummaryScreen } from './app/screens/EndOfDaySummaryScreen';
 import { FailedQueueScreen } from './app/screens/FailedQueueScreen';
 import { LoginScreen } from './app/screens/LoginScreen';
 import { MessagesScreen } from './app/screens/MessagesScreen';
@@ -158,6 +159,7 @@ export default function App() {
     if (screen === 'printQueue') return <PrintQueueScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'printEventHistory') return <PrintEventHistoryScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'printDailySummary') return <PrintDailySummaryScreen onBack={() => navigateTo('dashboard')} />;
+    if (screen === 'endOfDaySummary') return <EndOfDaySummaryScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
     if (screen === 'offlineQueue') return <OfflineQueueScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'dataUpdate') return <DataUpdateScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'auditLog') return <AuditLogScreen onBack={() => navigateTo('dashboard')} />;
