@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DEFAULT_EXCHANGE_RATES, normalizeCurrencyCode, normalizeSaleLineCurrency } from '../app/utils/currencyUtils';
 import { normalizePersonnelRole } from '../app/utils/permissionUtils';
+import { addPrintEvent } from './printEventStorage';
 import type { ActivePickingDraft, ActiveSaleDraft, AuditLogEntry, FailedOperation, OpenDocument, PersonnelUser, PickingLine, SaleLine, SalePrintJob, SalesCustomer, TerminalDeviceSettings, TerminalSettings, UserSession } from '../types';
 
 const KEYS = {
@@ -326,6 +327,15 @@ export async function addSalePrintJob(job: SalePrintJob): Promise<void> {
   };
   const jobs = await loadSalePrintJobs();
   await saveSalePrintJobs([jobWithUser, ...jobs]);
+  await addPrintEvent({
+    printJobId: jobWithUser.id,
+    draftId: jobWithUser.documentNo,
+    documentNo: jobWithUser.documentNo,
+    eventType: 'created',
+    message: `${jobWithUser.documentNo} yazdırma kuyruğuna eklendi.`,
+    bridgeStatus: 'unknown',
+    retryCount: jobWithUser.retryCount || 0,
+  });
 }
 
 export async function loadAuditLogs(): Promise<AuditLogEntry[]> {

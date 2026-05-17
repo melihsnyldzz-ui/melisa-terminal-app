@@ -11,6 +11,7 @@ import { checkPrintBridgeHealth, sendSaleReceiptToPrintBridge } from '../../serv
 import type { PrintBridgeResult } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
 import { clearOfflineActions, loadOfflineActions, removeOfflineAction, removeOfflineActionsByStatus, updateOfflineAction } from '../../storage/offlineQueueStorage';
+import { addPrintEvent } from '../../storage/printEventStorage';
 import type { OfflineQueueAction } from '../offline/offlineQueueTypes';
 import { getRetryPlan } from '../offline/retryScheduler';
 import { formatBridgeCheckedAt, toPrintBridgeHealthView } from '../utils/printBridgeHealthUtils';
@@ -165,8 +166,28 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
 
     setRetryingActionId(action.id);
     setBanner({ message: `${action.documentNo || action.id} tekrar deneniyor.`, tone: 'info' });
+    const nextRetryCount = action.retryCount + 1;
+    await addPrintEvent({
+      printJobId: action.payload.printJob.id,
+      draftId: action.documentNo,
+      documentNo: action.documentNo,
+      eventType: 'retryAttempt',
+      message: `${action.documentNo || action.id} offline kuyruktan tekrar denendi.`,
+      bridgeStatus: 'unknown',
+      retryCount: nextRetryCount,
+    });
     const health = await refreshBridgeHealth();
     if (!health.ok) {
+      await addPrintEvent({
+        printJobId: action.payload.printJob.id,
+        draftId: action.documentNo,
+        documentNo: action.documentNo,
+        eventType: 'retryError',
+        message: 'Yazdırma bilgisayarı kapalı olduğu için offline retry yapılmadı.',
+        bridgeStatus: 'disconnected',
+        retryCount: nextRetryCount,
+        errorMessage: 'Servis açık değil veya ağ bağlantısı yok.',
+      });
       setBanner({ message: 'Yazdırma bilgisayarına ulaşılamıyor. Servis açık değil veya ağ bağlantısı yok.', tone: 'warning' });
       notifyWarning();
       setRetryingActionId(null);
@@ -175,6 +196,15 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
     const result = await sendSaleReceiptToPrintBridge(action.payload.printJob);
 
     if (result.ok) {
+      await addPrintEvent({
+        printJobId: action.payload.printJob.id,
+        draftId: action.documentNo,
+        documentNo: action.documentNo,
+        eventType: 'retrySuccess',
+        message: `${action.documentNo || action.id} offline kuyruktan başarıyla gönderildi.`,
+        bridgeStatus: 'connected',
+        retryCount: nextRetryCount,
+      });
       await removeOfflineAction(action.id);
       setExpandedActionId((current) => (current === action.id ? null : current));
       setJsonActionId((current) => (current === action.id ? null : current));
@@ -186,9 +216,17 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
     }
 
     const now = new Date().toISOString();
-    const nextRetryCount = action.retryCount + 1;
-    const lastError = result.reason || result.message;
     const safeLastError = 'Yazdırma bilgisayarına ulaşılamıyor. Servis açık değil veya ağ bağlantısı yok.';
+    await addPrintEvent({
+      printJobId: action.payload.printJob.id,
+      draftId: action.documentNo,
+      documentNo: action.documentNo,
+      eventType: 'retryError',
+      message: `${action.documentNo || action.id} offline kuyruktan gönderilemedi.`,
+      bridgeStatus: 'disconnected',
+      retryCount: nextRetryCount,
+      errorMessage: safeLastError,
+    });
     await updateOfflineAction(action.id, {
       status: 'error',
       retryCount: nextRetryCount,

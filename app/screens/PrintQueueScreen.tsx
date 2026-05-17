@@ -11,7 +11,8 @@ import type { PrintBridgeResult } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
 import { addOfflineAction, createPrintRetryOfflineAction } from '../../storage/offlineQueueStorage';
 import { addAuditLog, loadSalePrintJobs, saveSalePrintJobs } from '../../storage/localStorage';
-import type { SalePrintJob } from '../../types';
+import { addPrintEvent, loadPrintEvents } from '../../storage/printEventStorage';
+import type { PrintEvent, SalePrintJob } from '../../types';
 import { formatMoney, normalizeCurrencyCode } from '../utils/currencyUtils';
 import { formatBridgeCheckedAt, toPrintBridgeHealthView } from '../utils/printBridgeHealthUtils';
 import { colors, radius, spacing, typography } from '../theme';
@@ -60,8 +61,19 @@ const sanitizePrintError = (value?: string) => {
   return value;
 };
 
+const printEventLabels: Record<PrintEvent['eventType'], string> = {
+  created: 'Oluşturuldu',
+  printAttempt: 'Yazdırma denendi',
+  printSuccess: 'Yazdırıldı',
+  printError: 'Yazdırma hatası',
+  retryAttempt: 'Tekrar denendi',
+  retrySuccess: 'Tekrar başarılı',
+  retryError: 'Tekrar hatası',
+};
+
 export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
   const [jobs, setJobs] = useState<SalePrintJob[]>([]);
+  const [printEvents, setPrintEvents] = useState<PrintEvent[]>([]);
   const [filter, setFilter] = useState<FilterKey>('all');
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [bridgeHealth, setBridgeHealth] = useState<PrintBridgeResult | null>(null);
@@ -76,8 +88,9 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
   }, []);
 
   const loadQueue = async () => {
-    const savedJobs = await loadSalePrintJobs();
+    const [savedJobs, savedEvents] = await Promise.all([loadSalePrintJobs(), loadPrintEvents()]);
     setJobs(savedJobs);
+    setPrintEvents(savedEvents);
   };
 
   const refreshHealth = async () => {
@@ -111,8 +124,29 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
     if (printingJobId) return;
     setPrintingJobId(job.id);
     const now = new Date().toISOString();
+    const nextRetryCount = (job.retryCount || 0) + 1;
+    await addPrintEvent({
+      printJobId: job.id,
+      draftId: job.documentNo,
+      documentNo: job.documentNo,
+      eventType: 'retryAttempt',
+      message: `${job.documentNo} için tekrar yazdırma denendi.`,
+      bridgeStatus: 'unknown',
+      retryCount: nextRetryCount,
+    });
     const health = await refreshHealth();
     if (!health.ok) {
+      await addPrintEvent({
+        printJobId: job.id,
+        draftId: job.documentNo,
+        documentNo: job.documentNo,
+        eventType: 'retryError',
+        message: 'Yazdırma bilgisayarına ulaşılamadığı için tekrar yazdırma yapılmadı.',
+        bridgeStatus: 'disconnected',
+        retryCount: nextRetryCount,
+        errorMessage: 'Servis açık değil veya ağ bağlantısı yok.',
+      });
+      await loadQueue();
       setBanner({ message: 'Yazdırma bilgisayarına ulaşılamıyor. Servis açık değil veya ağ bağlantısı yok.', tone: 'warning' });
       notifyWarning();
       setPrintingJobId(null);
@@ -125,10 +159,19 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
         status: 'Yazdırıldı',
         errorMessage: undefined,
         lastError: undefined,
-        retryCount: (job.retryCount || 0) + 1,
+        retryCount: nextRetryCount,
         lastBridgeStatus: 'connected',
         lastTriedAt: now,
         printedAt: now,
+      });
+      await addPrintEvent({
+        printJobId: job.id,
+        draftId: job.documentNo,
+        documentNo: job.documentNo,
+        eventType: 'retrySuccess',
+        message: `${job.documentNo} tekrar yazdırıldı.`,
+        bridgeStatus: 'connected',
+        retryCount: nextRetryCount,
       });
       await addAuditLog({
         operationType: 'PC bridge’e gönderildi',
@@ -145,11 +188,21 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
         status: 'Yazdırma hatası',
         errorMessage: sanitizePrintError(errorMessage),
         lastError: sanitizePrintError(errorMessage),
-        retryCount: (job.retryCount || 0) + 1,
+        retryCount: nextRetryCount,
         lastBridgeStatus: 'disconnected',
         lastTriedAt: now,
       });
-      await addOfflineAction(createPrintRetryOfflineAction({ ...job, status: 'Yazdırma hatası', errorMessage: sanitizePrintError(errorMessage), lastError: sanitizePrintError(errorMessage), retryCount: (job.retryCount || 0) + 1, lastBridgeStatus: 'disconnected', lastTriedAt: now }, sanitizePrintError(errorMessage)));
+      await addPrintEvent({
+        printJobId: job.id,
+        draftId: job.documentNo,
+        documentNo: job.documentNo,
+        eventType: 'retryError',
+        message: `${job.documentNo} tekrar yazdırılamadı.`,
+        bridgeStatus: 'disconnected',
+        retryCount: nextRetryCount,
+        errorMessage: sanitizePrintError(errorMessage),
+      });
+      await addOfflineAction(createPrintRetryOfflineAction({ ...job, status: 'Yazdırma hatası', errorMessage: sanitizePrintError(errorMessage), lastError: sanitizePrintError(errorMessage), retryCount: nextRetryCount, lastBridgeStatus: 'disconnected', lastTriedAt: now }, sanitizePrintError(errorMessage)));
       await addAuditLog({
         operationType: 'Hata oluştu',
         customerName: job.customerName,
@@ -161,6 +214,7 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
       notifyWarning();
     }
 
+    await loadQueue();
     setPrintingJobId(null);
   };
 
@@ -207,6 +261,7 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
           <PrintJobCard
             key={job.id}
             job={job}
+            events={printEvents.filter((event) => event.printJobId === job.id)}
             expanded={expandedJobId === job.id}
             busy={printingJobId === job.id}
             onToggle={() => setExpandedJobId((current) => (current === job.id ? null : job.id))}
@@ -218,8 +273,9 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
   );
 }
 
-function PrintJobCard({ job, expanded, busy, onToggle, onReprint }: {
+function PrintJobCard({ job, events, expanded, busy, onToggle, onReprint }: {
   job: SalePrintJob;
+  events: PrintEvent[];
   expanded: boolean;
   busy: boolean;
   onToggle: () => void;
@@ -273,6 +329,21 @@ function PrintJobCard({ job, expanded, busy, onToggle, onReprint }: {
           <Text style={styles.detailText}>Son hata: {sanitizePrintError(job.lastError || job.errorMessage) || '-'}</Text>
           {job.deviceName ? <Text style={styles.detailText}>Cihaz: {job.deviceName}</Text> : null}
           {job.createdByName ? <Text style={styles.detailText}>Operator: {job.createdByName}{job.createdByCode ? ` · ${job.createdByCode}` : ''}</Text> : null}
+          <View style={styles.eventPanel}>
+            <Text style={styles.detailTitle}>Olay geçmişi</Text>
+            {events.length === 0 ? (
+              <Text style={styles.detailText}>Bu fiş için olay kaydı yok.</Text>
+            ) : (
+              events.map((event) => (
+                <View key={event.id} style={styles.eventRow}>
+                  <Text style={styles.eventTitle}>{printEventLabels[event.eventType]} · {formatDate(event.createdAt)}</Text>
+                  <Text style={styles.eventText}>{event.message}</Text>
+                  <Text style={styles.eventMeta}>Bridge: {event.bridgeStatus === 'connected' ? 'Bağlı' : event.bridgeStatus === 'disconnected' ? 'Bağlı değil' : 'Bilinmiyor'} · Deneme: {event.retryCount || 0}</Text>
+                  {event.errorMessage ? <Text style={styles.eventError}>{event.errorMessage}</Text> : null}
+                </View>
+              ))
+            )}
+          </View>
         </View>
       ) : null}
 
@@ -387,5 +458,18 @@ const styles = StyleSheet.create({
   },
   detailTitle: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
   detailText: { color: colors.text, fontSize: typography.small, fontWeight: '800', lineHeight: 15 },
+  eventPanel: { marginTop: spacing.xs, gap: spacing.xs },
+  eventRow: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.xs,
+    gap: 2,
+  },
+  eventTitle: { color: colors.anthracite, fontSize: typography.small, fontWeight: '900' },
+  eventText: { color: colors.text, fontSize: typography.small, fontWeight: '800', lineHeight: 15 },
+  eventMeta: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
+  eventError: { color: colors.red, fontSize: typography.small, fontWeight: '800', lineHeight: 15 },
   pressed: { opacity: 0.86 },
 });

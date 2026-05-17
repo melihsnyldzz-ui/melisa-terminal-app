@@ -196,6 +196,30 @@ export type SalePrintJob = {
   createdAt: string;
 };
 
+export type PrintEventType =
+  | 'created'
+  | 'printAttempt'
+  | 'printSuccess'
+  | 'printError'
+  | 'retryAttempt'
+  | 'retrySuccess'
+  | 'retryError';
+
+export type PrintBridgeStatus = 'connected' | 'disconnected' | 'unknown';
+
+export type PrintEvent = {
+  id: string;
+  printJobId?: string;
+  draftId?: string;
+  documentNo?: string;
+  eventType: PrintEventType;
+  message: string;
+  createdAt: string;
+  bridgeStatus: PrintBridgeStatus;
+  retryCount?: number;
+  errorMessage?: string;
+};
+
 export type AuditLogStatus = 'success' | 'warning' | 'error';
 
 export type AuditLogOperationType =
