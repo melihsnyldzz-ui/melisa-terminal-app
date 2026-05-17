@@ -1,7 +1,11 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { AppButton } from '../../components/AppButton';
 import { ScreenShell } from '../../components/ScreenShell';
 import { StatusPill } from '../../components/StatusPill';
+import { ToastMessage } from '../../components/ToastMessage';
+import { checkVegaSchemaDiscovery } from '../../services/api';
+import type { VegaSchemaDiscoveryResult } from '../../services/api';
 import { colors, radius, spacing, typography } from '../theme';
 
 type VegaSchemaDiscoveryScreenProps = {
@@ -18,8 +22,6 @@ type DiscoveryTarget = {
   status: string;
   tone: DiscoveryTone;
 };
-
-const schemaDiscoveryEndpointAvailable = false;
 
 const targets: DiscoveryTarget[] = [
   {
@@ -89,14 +91,52 @@ const targets: DiscoveryTarget[] = [
 ];
 
 export function VegaSchemaDiscoveryScreen({ onBack }: VegaSchemaDiscoveryScreenProps) {
+  const [discoveryResult, setDiscoveryResult] = useState<VegaSchemaDiscoveryResult | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [banner, setBanner] = useState<{ message: string; tone: 'success' | 'warning' } | null>(null);
+
+  const refreshDiscovery = async () => {
+    setChecking(true);
+    const result = await checkVegaSchemaDiscovery();
+    setDiscoveryResult(result);
+    setChecking(false);
+    setBanner({
+      message: result.ok ? 'Schema discovery sonucu okundu. Veri yazılmadı.' : result.message,
+      tone: result.ok ? 'success' : 'warning',
+    });
+  };
+
+  useEffect(() => {
+    void refreshDiscovery();
+  }, []);
+
+  const endpointAvailable = Boolean(discoveryResult);
+  const resultTargets = discoveryResult?.targets || [];
+  const targetStatusByKey = useMemo(() => new Map(resultTargets.map((target) => [target.key, target])), [resultTargets]);
+  const visibleTargets = targets.map((target) => {
+    const resultTarget = target.id === 'sale-header-table'
+      ? targetStatusByKey.get('saleHeader')
+      : target.id === 'sale-line-table'
+        ? targetStatusByKey.get('saleLine')
+        : null;
+    if (!resultTarget) return target;
+    return {
+      ...target,
+      status: resultTarget.exists ? `${resultTarget.columnCount} kolon` : 'Tablo yok',
+      tone: resultTarget.exists ? 'success' as const : 'danger' as const,
+      expected: `${target.expected}. Önemli kolonlar: ${resultTarget.importantColumns.map((column) => `${column.name} ${column.exists ? 'var' : 'yok'}`).join(', ')}`,
+    };
+  });
   const summary = useMemo(() => ({
-    ready: targets.filter((target) => target.tone === 'success').length,
-    waiting: targets.filter((target) => target.tone === 'warning').length,
-    missing: targets.filter((target) => target.tone === 'danger').length,
-  }), []);
+    ready: visibleTargets.filter((target) => target.tone === 'success').length,
+    waiting: visibleTargets.filter((target) => target.tone === 'warning').length,
+    missing: visibleTargets.filter((target) => target.tone === 'danger').length,
+  }), [visibleTargets]);
 
   return (
     <ScreenShell title="Vega Kolon Keşfi" subtitle="Tablo/kolon hazırlığı" onBack={onBack}>
+      <ToastMessage message={banner?.message} tone={banner?.tone} />
+
       <View style={styles.noticePanel}>
         <View style={styles.noticeTop}>
           <View style={styles.noticeTextBlock}>
@@ -112,12 +152,16 @@ export function VegaSchemaDiscoveryScreen({ onBack }: VegaSchemaDiscoveryScreenP
         <View style={styles.endpointTextBlock}>
           <Text style={styles.endpointTitle}>Schema discovery endpoint</Text>
           <Text style={styles.endpointText}>
-            {schemaDiscoveryEndpointAvailable
-              ? 'Güvenli read-only schema endpoint kullanılabilir.'
-              : 'Endpoint hazır değil. Mevcut yapı CLI discovery scriptleri ve lokal raporlarla sınırlı.'}
+            {checking
+              ? 'Endpoint kontrol ediliyor.'
+              : endpointAvailable
+                ? `${discoveryResult?.message || 'Schema discovery sonucu alındı.'} ${discoveryResult?.reason || ''}`.trim()
+                : 'Endpoint sonucu henüz alınmadı.'}
           </Text>
+          <Text style={styles.endpointText}>Adres: {discoveryResult ? `${discoveryResult.url}${discoveryResult.endpoint}` : '/api/vega/schema-discovery'}</Text>
+          <Text style={styles.endpointText}>İlişki notu: {discoveryResult?.relationshipNote || 'header.IND = line.EVRAKNO'}</Text>
         </View>
-        <StatusPill label={schemaDiscoveryEndpointAvailable ? 'Hazır' : 'Hazır değil'} tone={schemaDiscoveryEndpointAvailable ? 'success' : 'warning'} />
+        <StatusPill label={checking ? 'Kontrol' : discoveryResult?.ok ? 'Hazır' : 'Hazır değil'} tone={checking ? 'warning' : discoveryResult?.ok ? 'success' : 'warning'} />
       </View>
 
       <View style={styles.summaryGrid}>
@@ -127,7 +171,7 @@ export function VegaSchemaDiscoveryScreen({ onBack }: VegaSchemaDiscoveryScreenP
       </View>
 
       <View style={styles.targetList}>
-        {targets.map((target) => (
+        {visibleTargets.map((target) => (
           <View key={target.id} style={[styles.targetCard, target.tone === 'success' && styles.targetSuccess, target.tone === 'warning' && styles.targetWarning, target.tone === 'danger' && styles.targetDanger]}>
             <View style={styles.targetTextBlock}>
               <Text style={styles.targetTitle}>{target.title}</Text>
@@ -144,8 +188,10 @@ export function VegaSchemaDiscoveryScreen({ onBack }: VegaSchemaDiscoveryScreenP
 
       <View style={styles.safeNextBox}>
         <Text style={styles.safeNextTitle}>Güvenli sonraki adım</Text>
-        <Text style={styles.safeNextText}>Local price service tarafında ayrı, read-only bir schema endpoint tasarlanmalı. Endpoint sadece INFORMATION_SCHEMA okuyan GET isteği olmalı; yazma kelimeleri ve canlı write-back kapısı fail-closed kalmalı.</Text>
+        <Text style={styles.safeNextText}>{discoveryResult?.safetyMessage || 'Endpoint sadece INFORMATION_SCHEMA okuyan GET isteği olmalı; yazma kelimeleri ve canlı write-back kapısı fail-closed kalmalı.'}</Text>
       </View>
+
+      <AppButton label={checking ? 'Kontrol Ediliyor' : 'Endpoint’i Yenile'} onPress={refreshDiscovery} variant="secondary" compact />
     </ScreenShell>
   );
 }

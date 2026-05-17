@@ -79,6 +79,35 @@ export type PrintBridgeResult = {
   reason?: string;
 };
 
+export type VegaSchemaDiscoveryColumn = {
+  name: string;
+  dataType?: string;
+  nullable?: boolean;
+};
+
+export type VegaSchemaDiscoveryTarget = {
+  key: string;
+  label: string;
+  schema: string;
+  table: string;
+  exists: boolean;
+  importantColumns: Array<{ name: string; exists: boolean }>;
+  columnCount: number;
+  columns: VegaSchemaDiscoveryColumn[];
+};
+
+export type VegaSchemaDiscoveryResult = {
+  ok: boolean;
+  mode: 'read-only';
+  message: string;
+  safetyMessage: string;
+  url: string;
+  endpoint: string;
+  relationshipNote?: string;
+  targets: VegaSchemaDiscoveryTarget[];
+  reason?: string;
+};
+
 async function getProductFromLocalPriceService(code: string, apiBaseUrl: string): Promise<LocalPriceLookupResult> {
   const baseUrl = normalizeApiBaseUrl(apiBaseUrl);
   if (!baseUrl) return { status: 'invalid-url', reason: 'API adresi gecersiz. Adres http://192.168.1.45:8787 formatinda olmali.' };
@@ -255,6 +284,96 @@ export async function checkPrintBridgeHealth(): Promise<PrintBridgeResult> {
       message: 'Yazdırma bilgisayarına ulaşılamıyor.',
       reason: reason ? 'Servis açık değil veya ağ bağlantısı yok.' : undefined,
     };
+  }
+}
+
+export async function checkVegaSchemaDiscovery(settings?: TerminalSettings): Promise<VegaSchemaDiscoveryResult> {
+  const endpoint = '/api/vega/schema-discovery';
+  const loadedSettings = settings || await loadSettings();
+  const baseUrl = normalizeApiBaseUrl(loadedSettings.apiBaseUrl);
+  const fallbackTargets: VegaSchemaDiscoveryTarget[] = [
+    {
+      key: 'saleHeader',
+      label: 'Satış fişi başlık tablosu',
+      schema: 'dbo',
+      table: 'F0102D0007TBLSTKCIKBASLIK',
+      exists: false,
+      importantColumns: ['IND', 'EVRAKNO', 'TARIH', 'CARI', 'CARIKODU', 'GENELTOPLAM'].map((name) => ({ name, exists: false })),
+      columnCount: 0,
+      columns: [],
+    },
+    {
+      key: 'saleLine',
+      label: 'Satış fişi satır tablosu',
+      schema: 'dbo',
+      table: 'F0102D0007TBLSTKCIKHAREKET',
+      exists: false,
+      importantColumns: ['IND', 'EVRAKNO', 'STOKNO', 'STOKKODU', 'BARKOD', 'MIKTAR', 'FIYAT', 'PB'].map((name) => ({ name, exists: false })),
+      columnCount: 0,
+      columns: [],
+    },
+  ];
+
+  if (!baseUrl) {
+    return {
+      ok: false,
+      mode: 'read-only',
+      message: 'API adresi geçersiz.',
+      safetyMessage: 'Read-only schema discovery; veri yazma yapılmaz.',
+      url: loadedSettings.apiBaseUrl,
+      endpoint,
+      relationshipNote: 'header.IND = line.EVRAKNO',
+      targets: fallbackTargets,
+      reason: 'Adres http://192.168.1.45:8787 formatında olmalı.',
+    };
+  }
+
+  const loopbackReason = getLoopbackReason(baseUrl);
+  if (loopbackReason) {
+    return {
+      ok: false,
+      mode: 'read-only',
+      message: 'Vega bağlantısı yok.',
+      safetyMessage: 'Read-only schema discovery; veri yazma yapılmaz.',
+      url: baseUrl,
+      endpoint,
+      relationshipNote: 'header.IND = line.EVRAKNO',
+      targets: fallbackTargets,
+      reason: loopbackReason,
+    };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), LOCAL_PRICE_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${baseUrl}${endpoint}`, { method: 'GET', signal: controller.signal });
+    const payload = await response.json() as Omit<VegaSchemaDiscoveryResult, 'url' | 'endpoint'> & { error?: string };
+    return {
+      ok: Boolean(payload.ok),
+      mode: 'read-only',
+      message: payload.message || 'Schema discovery sonucu alındı.',
+      safetyMessage: payload.safetyMessage || 'Read-only schema discovery; veri yazma yapılmaz.',
+      url: baseUrl,
+      endpoint,
+      relationshipNote: payload.relationshipNote || 'header.IND = line.EVRAKNO',
+      targets: Array.isArray(payload.targets) ? payload.targets : fallbackTargets,
+      reason: payload.reason || payload.error,
+    };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Bağlantı hatası';
+    return {
+      ok: false,
+      mode: 'read-only',
+      message: 'Schema discovery endpoint’ine ulaşılamıyor.',
+      safetyMessage: 'Read-only schema discovery; veri yazma yapılmaz.',
+      url: baseUrl,
+      endpoint,
+      relationshipNote: 'header.IND = line.EVRAKNO',
+      targets: fallbackTargets,
+      reason: reason ? 'Servis açık değil veya ağ bağlantısı yok.' : undefined,
+    };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

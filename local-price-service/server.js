@@ -33,6 +33,23 @@ const sqlConfig = {
   },
 };
 
+const vegaSchemaTargets = [
+  {
+    key: 'saleHeader',
+    label: 'Satış fişi başlık tablosu',
+    schema: 'dbo',
+    table: 'F0102D0007TBLSTKCIKBASLIK',
+    importantColumns: ['IND', 'EVRAKNO', 'TARIH', 'CARI', 'CARIKODU', 'GENELTOPLAM'],
+  },
+  {
+    key: 'saleLine',
+    label: 'Satış fişi satır tablosu',
+    schema: 'dbo',
+    table: 'F0102D0007TBLSTKCIKHAREKET',
+    importantColumns: ['IND', 'EVRAKNO', 'STOKNO', 'STOKKODU', 'BARKOD', 'MIKTAR', 'FIYAT', 'PB'],
+  },
+];
+
 let sqlPoolPromise;
 let lastSqlStatus = demoMode ? 'demo-mode' : 'not-connected';
 
@@ -105,6 +122,51 @@ async function getSqlProduct(code) {
   };
 }
 
+async function discoverVegaSchema() {
+  const pool = await getSqlPool();
+  const targets = [];
+
+  for (const target of vegaSchemaTargets) {
+    const request = pool.request();
+    request.input('schema', sql.NVarChar(128), target.schema);
+    request.input('table', sql.NVarChar(128), target.table);
+    const result = await request.query(`
+      SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH, NUMERIC_PRECISION, NUMERIC_SCALE
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = @schema AND TABLE_NAME = @table
+      ORDER BY ORDINAL_POSITION
+    `);
+
+    const columns = result.recordset.map((column) => ({
+      name: String(column.COLUMN_NAME || ''),
+      dataType: String(column.DATA_TYPE || ''),
+      nullable: String(column.IS_NULLABLE || '') === 'YES',
+      maxLength: column.CHARACTER_MAXIMUM_LENGTH,
+      numericPrecision: column.NUMERIC_PRECISION,
+      numericScale: column.NUMERIC_SCALE,
+    }));
+    const upperColumns = new Set(columns.map((column) => column.name.toUpperCase()));
+    const importantColumns = target.importantColumns.map((columnName) => ({
+      name: columnName,
+      exists: upperColumns.has(columnName),
+    }));
+
+    targets.push({
+      key: target.key,
+      label: target.label,
+      schema: target.schema,
+      table: target.table,
+      exists: columns.length > 0,
+      importantColumns,
+      columnCount: columns.length,
+      columns,
+    });
+  }
+
+  lastSqlStatus = 'connected';
+  return targets;
+}
+
 app.use(cors());
 app.use(express.json());
 
@@ -139,6 +201,76 @@ app.get('/product-price', async (request, response) => {
       code,
       message: 'SQL fiyat sorgusu çalıştırılamadı',
       error: error instanceof Error ? error.message : 'Bilinmeyen SQL hatası',
+    });
+  }
+});
+
+app.get('/api/vega/schema-discovery', async (_request, response) => {
+  const safetyMessage = 'Read-only schema discovery. Bu endpoint sadece INFORMATION_SCHEMA okur; INSERT/UPDATE/DELETE çalıştırmaz.';
+
+  if (demoMode || !isSqlConfigured()) {
+    response.json({
+      ok: false,
+      mode: 'read-only',
+      message: 'Vega bağlantısı yok. Schema discovery için SQL bağlantı ayarları hazır değil.',
+      safetyMessage,
+      sql: {
+        configured: isSqlConfigured(),
+        status: demoMode ? 'demo-mode' : 'missing-config',
+      },
+      relationshipNote: 'header.IND = line.EVRAKNO',
+      targets: vegaSchemaTargets.map((target) => ({
+        key: target.key,
+        label: target.label,
+        schema: target.schema,
+        table: target.table,
+        exists: false,
+        importantColumns: target.importantColumns.map((columnName) => ({ name: columnName, exists: false })),
+        columnCount: 0,
+        columns: [],
+      })),
+    });
+    return;
+  }
+
+  try {
+    const targets = await discoverVegaSchema();
+    response.json({
+      ok: true,
+      mode: 'read-only',
+      message: 'Vega schema discovery tamamlandı.',
+      safetyMessage,
+      sql: {
+        configured: true,
+        status: lastSqlStatus,
+      },
+      relationshipNote: 'header.IND = line.EVRAKNO',
+      targets,
+    });
+  } catch (error) {
+    lastSqlStatus = 'error';
+    sqlPoolPromise = undefined;
+    response.status(200).json({
+      ok: false,
+      mode: 'read-only',
+      message: 'Vega bağlantısı yok veya schema discovery okunamadı.',
+      safetyMessage,
+      sql: {
+        configured: isSqlConfigured(),
+        status: lastSqlStatus,
+      },
+      relationshipNote: 'header.IND = line.EVRAKNO',
+      error: error instanceof Error ? error.message : 'Bilinmeyen SQL hatası',
+      targets: vegaSchemaTargets.map((target) => ({
+        key: target.key,
+        label: target.label,
+        schema: target.schema,
+        table: target.table,
+        exists: false,
+        importantColumns: target.importantColumns.map((columnName) => ({ name: columnName, exists: false })),
+        columnCount: 0,
+        columns: [],
+      })),
     });
   }
 });
