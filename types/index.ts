@@ -10,6 +10,7 @@ export type AppScreen =
   | 'failedQueue'
   | 'dataUpdate'
   | 'auditLog'
+  | 'currencySettings'
   | 'settings';
 
 export type UserSession = {
@@ -94,6 +95,11 @@ export type ExchangeRateSnapshot = {
   USD_TO_EUR: number;
 };
 
+export type CurrencySettings = ExchangeRateSnapshot & {
+  updatedAt?: string;
+  updatedBy?: string;
+};
+
 export type SalePrintJobLine = {
   lineId: string;
   code: string;
@@ -138,6 +144,7 @@ export type AuditLogOperationType =
   | 'PC bridge’e gönderildi'
   | 'saleCurrency seçildi'
   | 'saleCurrency değişti'
+  | 'Kur ayarı değişti'
   | 'Hata oluştu';
 
 export type AuditLogEntry = {

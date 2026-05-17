@@ -5,12 +5,12 @@ import { AppButton } from '../../components/AppButton';
 import { StatusPill } from '../../components/StatusPill';
 import { TerminalHeader } from '../../components/TerminalHeader';
 import { ToastMessage, ToastTone } from '../../components/ToastMessage';
-import { DEFAULT_EXCHANGE_RATES, SUPPORTED_CURRENCIES, calculateLineTotal, formatMoney, normalizeCurrencyCode, normalizeSaleLineCurrency } from '../utils/currencyUtils';
+import { DEFAULT_EXCHANGE_RATES, SUPPORTED_CURRENCIES, calculateLineTotal, formatMoney, getEffectiveExchangeRates, normalizeCurrencyCode, normalizeSaleLineCurrency } from '../utils/currencyUtils';
 import { formatSaleReceipt } from '../utils/receiptFormatter';
 import { createSaleMock, getMockProductByCode } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
 import { addAuditLog, addSalePrintJob, loadActiveSaleDraft, loadSelectedSalesCustomer, saveActiveSaleDraft } from '../../storage/localStorage';
-import type { ActiveSaleDraft, CurrencyCode, Product, SaleLine, SalePrintJob, SaleStatus } from '../../types';
+import type { ActiveSaleDraft, CurrencyCode, ExchangeRateSnapshot, Product, SaleLine, SalePrintJob, SaleStatus } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
 type NewSaleScreenProps = {
@@ -27,9 +27,9 @@ const parseQuantity = (value: string) => {
   return parsed;
 };
 
-const makeSaleLine = (product: Product, quantity: number, saleCurrency: CurrencyCode, existingLine?: SaleLine): SaleLine => {
+const makeSaleLine = (product: Product, quantity: number, saleCurrency: CurrencyCode, rates: ExchangeRateSnapshot, existingLine?: SaleLine): SaleLine => {
   const sourceCurrency = normalizeCurrencyCode(product.sourceCurrency || product.currency);
-  const totals = calculateLineTotal(product.price, quantity, sourceCurrency, saleCurrency);
+  const totals = calculateLineTotal(product.price, quantity, sourceCurrency, saleCurrency, rates);
   return {
     ...product,
     lineId: existingLine?.lineId || `${product.code}-${Date.now()}`,
@@ -46,7 +46,7 @@ const makeSaleLine = (product: Product, quantity: number, saleCurrency: Currency
   };
 };
 
-const repriceLines = (lines: SaleLine[], saleCurrency: CurrencyCode) => lines.map((line) => normalizeSaleLineCurrency(line, saleCurrency));
+const repriceLines = (lines: SaleLine[], saleCurrency: CurrencyCode, rates: ExchangeRateSnapshot) => lines.map((line) => normalizeSaleLineCurrency(line, saleCurrency, rates));
 
 export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   const insets = useSafeAreaInsets();
@@ -57,6 +57,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   const [customer, setCustomer] = useState('');
   const [documentNo, setDocumentNo] = useState('');
   const [saleCurrency, setSaleCurrency] = useState<CurrencyCode>('TRY');
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRateSnapshot>(DEFAULT_EXCHANGE_RATES);
   const [barcode, setBarcode] = useState('');
   const [quantityInput, setQuantityInput] = useState('1');
   const [pendingProduct, setPendingProduct] = useState<PendingProduct | null>(null);
@@ -67,14 +68,15 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   const totalQuantity = useMemo(() => lines.reduce((sum, line) => sum + line.quantity, 0), [lines]);
   const totalAmount = useMemo(() => lines.reduce((sum, line) => sum + (line.convertedLineTotal || line.quantity * line.price), 0), [lines]);
   const pendingQuantity = useMemo(() => parseQuantity(quantityInput), [quantityInput]);
-  const pendingPrice = pendingProduct ? calculateLineTotal(pendingProduct.price, pendingQuantity, normalizeCurrencyCode(pendingProduct.sourceCurrency || pendingProduct.currency), saleCurrency) : null;
+  const pendingPrice = pendingProduct ? calculateLineTotal(pendingProduct.price, pendingQuantity, normalizeCurrencyCode(pendingProduct.sourceCurrency || pendingProduct.currency), saleCurrency, exchangeRates) : null;
   const status: SaleStatus = documentNo && lines.length > 0 ? 'Hazır' : 'Taslak';
   const canScan = Boolean(documentNo);
 
   useEffect(() => {
-    Promise.all([loadActiveSaleDraft(), loadSelectedSalesCustomer()]).then(async ([draft, selectedSalesCustomer]) => {
+    Promise.all([loadActiveSaleDraft(), loadSelectedSalesCustomer(), getEffectiveExchangeRates()]).then(async ([draft, selectedSalesCustomer, effectiveRates]) => {
       if (bootstrappedRef.current) return;
       bootstrappedRef.current = true;
+      setExchangeRates(effectiveRates);
 
       const hasActiveDraft = Boolean(draft && (draft.documentNo || draft.lines.length > 0));
       if (draft && hasActiveDraft) {
@@ -82,7 +84,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
         setCustomer(draft.customerName);
         setDocumentNo(draft.documentNo);
         setSaleCurrency(draftCurrency);
-        setLines(repriceLines(draft.lines, draftCurrency));
+        setLines(repriceLines(draft.lines, draftCurrency, effectiveRates));
         setBanner({ message: `${draft.documentNo} yüklendi.`, tone: 'info' });
         setTimeout(() => barcodeInputRef.current?.focus(), 150);
         return;
@@ -99,7 +101,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       setCustomer(nextCustomerName);
       setDocumentNo(sale.documentNo);
       setSaleCurrency(nextSaleCurrency);
-      await persistDraft([], sale.documentNo, nextCustomerName, nextSaleCurrency);
+      await persistDraft([], sale.documentNo, nextCustomerName, nextSaleCurrency, effectiveRates);
       await addAuditLog({
         operationType: 'saleCurrency seçildi',
         customerName: nextCustomerName,
@@ -125,7 +127,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     return () => clearTimeout(timer);
   }, [documentNo]);
 
-  const persistDraft = async (nextLines: SaleLine[] = lines, nextDocumentNo = documentNo, nextCustomer = customer, nextSaleCurrency = saleCurrency) => {
+  const persistDraft = async (nextLines: SaleLine[] = lines, nextDocumentNo = documentNo, nextCustomer = customer, nextSaleCurrency = saleCurrency, rates = exchangeRates) => {
     if (!nextDocumentNo) return;
     const normalizedSaleCurrency = normalizeCurrencyCode(nextSaleCurrency);
     const draft: ActiveSaleDraft = {
@@ -133,7 +135,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       customerName: nextCustomer || 'Seçili müşteri yok',
       saleCurrency: normalizedSaleCurrency,
       status: nextLines.length > 0 ? 'Hazır' : 'Taslak',
-      lines: repriceLines(nextLines, normalizedSaleCurrency),
+      lines: repriceLines(nextLines, normalizedSaleCurrency, rates),
       updatedAt: new Date().toISOString(),
     };
     await saveActiveSaleDraft(draft);
@@ -150,10 +152,10 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   const selectSaleCurrency = async (nextCurrency: CurrencyCode) => {
     if (nextCurrency === saleCurrency) return;
     const previousCurrency = saleCurrency;
-    const nextLines = repriceLines(lines, nextCurrency);
+    const nextLines = repriceLines(lines, nextCurrency, exchangeRates);
     setSaleCurrency(nextCurrency);
     setLines(nextLines);
-    await persistDraft(nextLines, documentNo, customer, nextCurrency);
+    await persistDraft(nextLines, documentNo, customer, nextCurrency, exchangeRates);
     await addAuditLog({
       operationType: previousCurrency ? 'saleCurrency değişti' : 'saleCurrency seçildi',
       customerName: customer,
@@ -249,8 +251,8 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
     const quantity = parseQuantity(quantityInput);
     const existingLine = lines.find((line) => line.code === pendingProduct.code);
     const nextLines = existingLine
-      ? lines.map((line) => (line.lineId === existingLine.lineId ? makeSaleLine({ ...pendingProduct, price: line.originalUnitPrice || pendingProduct.price, currency: line.sourceCurrency || pendingProduct.currency }, line.quantity + quantity, saleCurrency, line) : line))
-      : [...lines, makeSaleLine(pendingProduct, quantity, saleCurrency)];
+      ? lines.map((line) => (line.lineId === existingLine.lineId ? makeSaleLine({ ...pendingProduct, price: line.originalUnitPrice || pendingProduct.price, currency: line.sourceCurrency || pendingProduct.currency }, line.quantity + quantity, saleCurrency, exchangeRates, line) : line))
+      : [...lines, makeSaleLine(pendingProduct, quantity, saleCurrency, exchangeRates)];
 
     setLines(nextLines);
     setPendingProduct(null);
@@ -285,7 +287,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
   };
 
   const changeQuantity = async (lineId: string, delta: number) => {
-    const nextLines = lines.map((line) => (line.lineId === lineId ? normalizeSaleLineCurrency({ ...line, quantity: Math.max(1, line.quantity + delta) }, saleCurrency) : line));
+    const nextLines = lines.map((line) => (line.lineId === lineId ? normalizeSaleLineCurrency({ ...line, quantity: Math.max(1, line.quantity + delta) }, saleCurrency, exchangeRates) : line));
     setLines(nextLines);
     await persistDraft(nextLines);
     focusScanner();
@@ -331,8 +333,8 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       return;
     }
 
-    const saleLines = repriceLines(lines, saleCurrency);
-    await persistDraft(saleLines);
+    const saleLines = repriceLines(lines, saleCurrency, exchangeRates);
+    await persistDraft(saleLines, documentNo, customer, saleCurrency, exchangeRates);
     await addAuditLog({
       operationType: 'Fiş tamamlandı',
       customerName: customer,
@@ -349,7 +351,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
       totalAmount,
       currency: saleCurrency,
       saleCurrency,
-      exchangeRateSnapshot: DEFAULT_EXCHANGE_RATES,
+      exchangeRateSnapshot: exchangeRates,
       lines: saleLines.map((line) => ({
         lineId: line.lineId,
         code: line.code,
@@ -368,6 +370,7 @@ export function NewSaleScreen({ onBack }: NewSaleScreenProps) {
         customerName: customer || 'Seçili müşteri yok',
         saleCurrency,
         lines: saleLines,
+        exchangeRateSnapshot: exchangeRates,
         showSourcePrices: false,
       }),
       status: 'Yazdırma bekliyor',

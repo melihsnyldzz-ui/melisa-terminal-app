@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DashboardScreen } from './app/screens/DashboardScreen';
 import { DataUpdateScreen } from './app/screens/DataUpdateScreen';
 import { AuditLogScreen } from './app/screens/AuditLogScreen';
+import { CurrencySettingsScreen } from './app/screens/CurrencySettingsScreen';
 import { FailedQueueScreen } from './app/screens/FailedQueueScreen';
 import { LoginScreen } from './app/screens/LoginScreen';
 import { MessagesScreen } from './app/screens/MessagesScreen';
@@ -111,6 +112,7 @@ export default function App() {
     if (screen === 'failedQueue') return <FailedQueueScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'dataUpdate') return <DataUpdateScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'auditLog') return <AuditLogScreen onBack={() => navigateTo('dashboard')} />;
+    if (screen === 'currencySettings') return <CurrencySettingsScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'settings') return <SettingsScreen onBack={() => navigateTo('dashboard')} onLogout={handleLogout} session={session} />;
     return <DashboardScreen session={session} onNavigate={navigateTo} systemMessage={backHint} />;
   };

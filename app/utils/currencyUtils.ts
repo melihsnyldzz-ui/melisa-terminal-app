@@ -1,4 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { CurrencyCode, ExchangeRateSnapshot, SaleLine } from '../../types';
+import type { CurrencySettings } from '../../types';
 
 export const SUPPORTED_CURRENCIES: CurrencyCode[] = ['TRY', 'USD', 'EUR'];
 
@@ -8,6 +10,8 @@ export const DEFAULT_EXCHANGE_RATES: ExchangeRateSnapshot = {
   EUR_TO_USD: 1.087,
   USD_TO_EUR: 0.92,
 };
+
+const CURRENCY_SETTINGS_KEY = 'melisa-terminal:currency-settings';
 
 export function normalizeCurrencyCode(value?: string | null): CurrencyCode {
   const normalized = String(value || '').trim().toUpperCase();
@@ -45,6 +49,36 @@ export function convertMoney(amount: number, sourceCurrency: CurrencyCode, saleC
   return { amount: convertedAmount, exchangeRate };
 }
 
+export async function loadCurrencySettings(): Promise<CurrencySettings | null> {
+  try {
+    const value = await AsyncStorage.getItem(CURRENCY_SETTINGS_KEY);
+    if (!value) return null;
+    const settings = JSON.parse(value) as CurrencySettings;
+    return {
+      ...DEFAULT_EXCHANGE_RATES,
+      ...settings,
+    };
+  } catch {
+    await AsyncStorage.removeItem(CURRENCY_SETTINGS_KEY);
+    return null;
+  }
+}
+
+export async function saveCurrencySettings(settings: CurrencySettings): Promise<void> {
+  await AsyncStorage.setItem(CURRENCY_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+export async function getEffectiveExchangeRates(): Promise<ExchangeRateSnapshot> {
+  const settings = await loadCurrencySettings();
+  if (!settings) return DEFAULT_EXCHANGE_RATES;
+  return {
+    USD_TO_TRY: settings.USD_TO_TRY,
+    EUR_TO_TRY: settings.EUR_TO_TRY,
+    EUR_TO_USD: settings.EUR_TO_USD,
+    USD_TO_EUR: settings.USD_TO_EUR,
+  };
+}
+
 export function calculateLineTotal(unitPrice: number, quantity: number, currency: CurrencyCode, saleCurrency: CurrencyCode = currency, rates: ExchangeRateSnapshot = DEFAULT_EXCHANGE_RATES) {
   const safeQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
   const originalUnitPrice = Number.isFinite(unitPrice) && unitPrice >= 0 ? unitPrice : 0;
@@ -60,11 +94,11 @@ export function calculateLineTotal(unitPrice: number, quantity: number, currency
   };
 }
 
-export function normalizeSaleLineCurrency(line: SaleLine, saleCurrency?: CurrencyCode): SaleLine {
+export function normalizeSaleLineCurrency(line: SaleLine, saleCurrency?: CurrencyCode, rates: ExchangeRateSnapshot = DEFAULT_EXCHANGE_RATES): SaleLine {
   const sourceCurrency = normalizeCurrencyCode(line.sourceCurrency || line.currency);
   const targetCurrency = saleCurrency || normalizeCurrencyCode(line.saleCurrency || sourceCurrency);
   const originalUnitPrice = Number.isFinite(line.originalUnitPrice) ? line.originalUnitPrice || 0 : line.price;
-  const totals = calculateLineTotal(originalUnitPrice, line.quantity, sourceCurrency, targetCurrency);
+  const totals = calculateLineTotal(originalUnitPrice, line.quantity, sourceCurrency, targetCurrency, rates);
   return {
     ...line,
     currency: sourceCurrency,

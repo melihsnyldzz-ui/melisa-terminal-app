@@ -1,4 +1,5 @@
-import type { CurrencyCode, SaleLine } from '../../types';
+import type { CurrencyCode, ExchangeRateSnapshot, SaleLine } from '../../types';
+import { DEFAULT_EXCHANGE_RATES } from './currencyUtils';
 import { formatMoney, normalizeSaleLineCurrency } from './currencyUtils';
 
 export function formatSaleReceipt(params: {
@@ -6,9 +7,11 @@ export function formatSaleReceipt(params: {
   customerName: string;
   saleCurrency: CurrencyCode;
   lines: SaleLine[];
+  exchangeRateSnapshot?: ExchangeRateSnapshot;
   showSourcePrices?: boolean;
 }) {
-  const normalizedLines = params.lines.map((line) => normalizeSaleLineCurrency(line, params.saleCurrency));
+  const rates = params.exchangeRateSnapshot || DEFAULT_EXCHANGE_RATES;
+  const normalizedLines = params.lines.map((line) => normalizeSaleLineCurrency(line, params.saleCurrency, rates));
   const totalAmount = normalizedLines.reduce((sum, line) => sum + (line.convertedLineTotal || 0), 0);
   const lineTexts = normalizedLines.map((line) => {
     const base = `${line.code} x${line.quantity} ${formatMoney(line.convertedLineTotal || 0, params.saleCurrency)}`;
