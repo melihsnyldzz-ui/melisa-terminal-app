@@ -7,7 +7,7 @@ import { StatusPill } from '../../components/StatusPill';
 import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
-import { addAuditLog, addSalePrintJob, loadActiveSaleDraft } from '../../storage/localStorage';
+import { addAuditLog, addSalePrintJob, loadActiveSaleDraft, upsertSaleDraft } from '../../storage/localStorage';
 import type { ActiveSaleDraft, CurrencyCode, ExchangeRateSnapshot, SaleLine, SalePrintJob } from '../../types';
 import { DEFAULT_EXCHANGE_RATES, formatMoney, loadCurrencySettings, normalizeCurrencyCode, normalizeSaleLineCurrency } from '../utils/currencyUtils';
 import { formatSaleReceipt } from '../utils/receiptFormatter';
@@ -123,6 +123,7 @@ export function SaleReviewScreen({ onBack, onDone }: SaleReviewScreenProps) {
     };
 
     await addSalePrintJob(printJob);
+    await upsertSaleDraft({ ...draft, draftStatus: 'printPending', updatedAt: new Date().toISOString() }, 'printPending');
     await addAuditLog({
       operationType: 'Fiş onaylandı',
       customerName: draft.customerName,

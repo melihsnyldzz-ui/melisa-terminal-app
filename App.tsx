@@ -10,6 +10,7 @@ import { FailedQueueScreen } from './app/screens/FailedQueueScreen';
 import { LoginScreen } from './app/screens/LoginScreen';
 import { MessagesScreen } from './app/screens/MessagesScreen';
 import { NewSaleScreen } from './app/screens/NewSaleScreen';
+import { OpenSaleDraftsScreen } from './app/screens/OpenSaleDraftsScreen';
 import { OpenDocumentsScreen } from './app/screens/OpenDocumentsScreen';
 import { PickingScreen } from './app/screens/PickingScreen';
 import { QRAlbumScreen } from './app/screens/QRAlbumScreen';
@@ -107,6 +108,7 @@ export default function App() {
     if (screen === 'salesCustomer') return <SalesCustomerScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
     if (screen === 'newSale') return <NewSaleScreen onBack={() => navigateTo('salesCustomer')} onNavigate={navigateTo} />;
     if (screen === 'saleReview') return <SaleReviewScreen onBack={() => navigateTo('newSale')} onDone={() => navigateTo('dashboard')} />;
+    if (screen === 'openSaleDrafts') return <OpenSaleDraftsScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
     if (screen === 'picking') return <PickingScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'openDocuments') return <OpenDocumentsScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
     if (screen === 'qrAlbum') return <QRAlbumScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;

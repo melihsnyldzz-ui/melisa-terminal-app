@@ -75,7 +75,7 @@ export function SalesCustomerScreen({ onBack, onNavigate }: SalesCustomerScreenP
 
   const openDocuments = async () => {
     if (selectedCustomer) await saveSelectedSalesCustomer(selectedCustomer);
-    onNavigate('openDocuments');
+    onNavigate('openSaleDrafts');
   };
 
   const showComingSoon = (label: string) => {

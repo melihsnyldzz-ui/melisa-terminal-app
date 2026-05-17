@@ -4,6 +4,7 @@ export type AppScreen =
   | 'salesCustomer'
   | 'newSale'
   | 'saleReview'
+  | 'openSaleDrafts'
   | 'picking'
   | 'openDocuments'
   | 'qrAlbum'
@@ -80,11 +81,14 @@ export type SaleLine = Product & {
 
 export type SaleStatus = 'Taslak' | 'Hazır';
 
+export type SaleDraftStatus = 'open' | 'reviewPending' | 'printPending';
+
 export type ActiveSaleDraft = {
   documentNo: string;
   customerName: string;
   saleCurrency?: CurrencyCode;
   exchangeRateSnapshot?: ExchangeRateSnapshot;
+  draftStatus?: SaleDraftStatus;
   status: SaleStatus;
   lines: SaleLine[];
   updatedAt: string;
@@ -150,6 +154,10 @@ export type AuditLogOperationType =
   | 'Fiş review açıldı'
   | 'Fiş onaylandı'
   | 'Fiş review uyarısı oluştu'
+  | 'Açık fiş kaydedildi'
+  | 'Açık fişe devam edildi'
+  | 'Açık fiş silindi'
+  | 'Açık fiş review’a gönderildi'
   | 'Hata oluştu';
 
 export type AuditLogEntry = {

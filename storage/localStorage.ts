@@ -9,6 +9,7 @@ const KEYS = {
   draftDocuments: 'melisa-terminal:draft-documents',
   selectedSalesCustomer: 'melisa-terminal:selected-sales-customer',
   activeSaleDraft: 'melisa-terminal:active-sale-draft',
+  saleDrafts: 'melisa-terminal:sale-drafts',
   activePickingDraft: 'melisa-terminal:active-picking-draft',
   salePrintJobs: 'melisa-terminal:sale-print-jobs',
   auditLogs: 'melisa-terminal:audit-logs',
@@ -51,6 +52,7 @@ const normalizeActiveSaleDraft = (draft: ActiveSaleDraft | null): ActiveSaleDraf
     customerName: draft.customerName || 'Seçili müşteri yok',
     saleCurrency,
     exchangeRateSnapshot: draft.exchangeRateSnapshot || DEFAULT_EXCHANGE_RATES,
+    draftStatus: draft.draftStatus || 'open',
     status: draft.lines?.length ? 'Hazır' : 'Taslak',
     lines: Array.isArray(draft.lines) ? draft.lines.map((line) => normalizeSaleLineCurrency(normalizeSaleLine(line), saleCurrency, draft.exchangeRateSnapshot || DEFAULT_EXCHANGE_RATES)) : [],
   };
@@ -174,6 +176,29 @@ export async function saveActiveSaleDraft(draft: ActiveSaleDraft): Promise<void>
 
 export async function clearActiveSaleDraft(): Promise<void> {
   await AsyncStorage.removeItem(KEYS.activeSaleDraft);
+}
+
+export async function loadSaleDrafts(): Promise<ActiveSaleDraft[]> {
+  const drafts = await readJson<ActiveSaleDraft[]>(KEYS.saleDrafts, []);
+  return Array.isArray(drafts) ? drafts.map((draft) => normalizeActiveSaleDraft(draft)).filter((draft): draft is ActiveSaleDraft => Boolean(draft?.documentNo)) : [];
+}
+
+export async function saveSaleDrafts(drafts: ActiveSaleDraft[]): Promise<void> {
+  const normalizedDrafts = drafts.map((draft) => normalizeActiveSaleDraft(draft)).filter((draft): draft is ActiveSaleDraft => Boolean(draft?.documentNo));
+  await writeJson(KEYS.saleDrafts, normalizedDrafts);
+}
+
+export async function upsertSaleDraft(draft: ActiveSaleDraft, draftStatus: ActiveSaleDraft['draftStatus'] = 'open'): Promise<void> {
+  const normalizedDraft = normalizeActiveSaleDraft({ ...draft, draftStatus });
+  if (!normalizedDraft?.documentNo) return;
+  const drafts = await loadSaleDrafts();
+  const nextDrafts = [normalizedDraft, ...drafts.filter((item) => item.documentNo !== normalizedDraft.documentNo)];
+  await saveSaleDrafts(nextDrafts);
+}
+
+export async function removeSaleDraft(documentNo: string): Promise<void> {
+  const drafts = await loadSaleDrafts();
+  await saveSaleDrafts(drafts.filter((draft) => draft.documentNo !== documentNo));
 }
 
 export async function loadSalePrintJobs(): Promise<SalePrintJob[]> {

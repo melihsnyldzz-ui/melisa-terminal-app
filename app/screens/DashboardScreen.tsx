@@ -25,6 +25,7 @@ const quickActions: Array<{ label: string; screen: AppScreen; tone?: 'primary' |
 
 const modules: Array<{ label: string; description: string; screen: AppScreen; code: string }> = [
   { label: 'Depo Toplama', description: 'Barkodla tikle', screen: 'picking', code: 'TOP' },
+  { label: 'Satış Taslakları', description: 'Yarım kalan fişler', screen: 'openSaleDrafts', code: 'TAS' },
   { label: 'Açık Fişler', description: 'Bekleyen fişler', screen: 'openDocuments', code: 'AÇK' },
   { label: 'QR Albüm', description: 'Ürün görselleri', screen: 'qrAlbum', code: 'QR' },
   { label: 'Mesajlar', description: 'Operasyon notları', screen: 'messages', code: 'MSG' },

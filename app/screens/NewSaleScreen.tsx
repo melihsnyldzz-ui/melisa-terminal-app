@@ -8,7 +8,7 @@ import { ToastMessage, ToastTone } from '../../components/ToastMessage';
 import { DEFAULT_EXCHANGE_RATES, SUPPORTED_CURRENCIES, calculateLineTotal, formatMoney, getEffectiveExchangeRates, normalizeCurrencyCode, normalizeSaleLineCurrency } from '../utils/currencyUtils';
 import { createSaleMock, getMockProductByCode } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
-import { addAuditLog, loadActiveSaleDraft, loadSelectedSalesCustomer, saveActiveSaleDraft } from '../../storage/localStorage';
+import { addAuditLog, loadActiveSaleDraft, loadSelectedSalesCustomer, saveActiveSaleDraft, upsertSaleDraft } from '../../storage/localStorage';
 import type { ActiveSaleDraft, AppScreen, CurrencyCode, ExchangeRateSnapshot, Product, SaleLine, SaleStatus } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
@@ -135,11 +135,22 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
       customerName: nextCustomer || 'Seçili müşteri yok',
       saleCurrency: normalizedSaleCurrency,
       exchangeRateSnapshot: rates,
+      draftStatus: 'open',
       status: nextLines.length > 0 ? 'Hazır' : 'Taslak',
       lines: repriceLines(nextLines, normalizedSaleCurrency, rates),
       updatedAt: new Date().toISOString(),
     };
     await saveActiveSaleDraft(draft);
+    if (draft.documentNo) {
+      await upsertSaleDraft(draft, 'open');
+      await addAuditLog({
+        operationType: 'Açık fiş kaydedildi',
+        customerName: draft.customerName,
+        documentNo: draft.documentNo,
+        description: `${draft.lines.length} kalem · ${draft.saleCurrency}`,
+        status: 'success',
+      });
+    }
   };
 
   const focusScanner = () => {
@@ -336,6 +347,23 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
 
     const saleLines = repriceLines(lines, saleCurrency, exchangeRates);
     await persistDraft(saleLines, documentNo, customer, saleCurrency, exchangeRates);
+    await upsertSaleDraft({
+      documentNo,
+      customerName: customer || 'Seçili müşteri yok',
+      saleCurrency,
+      exchangeRateSnapshot: exchangeRates,
+      draftStatus: 'reviewPending',
+      status: saleLines.length > 0 ? 'Hazır' : 'Taslak',
+      lines: saleLines,
+      updatedAt: new Date().toISOString(),
+    }, 'reviewPending');
+    await addAuditLog({
+      operationType: 'Açık fiş review’a gönderildi',
+      customerName: customer,
+      documentNo,
+      description: `${saleLines.length} kalem review ekranına alındı.`,
+      status: 'success',
+    });
     await addAuditLog({
       operationType: 'Fiş review açıldı',
       customerName: customer,
