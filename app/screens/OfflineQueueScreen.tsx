@@ -7,11 +7,13 @@ import { StatusPill } from '../../components/StatusPill';
 import { TerminalHeader } from '../../components/TerminalHeader';
 import { ToastMessage } from '../../components/ToastMessage';
 import type { ToastTone } from '../../components/ToastMessage';
-import { sendSaleReceiptToPrintBridge } from '../../services/api';
+import { checkPrintBridgeHealth, sendSaleReceiptToPrintBridge } from '../../services/api';
+import type { PrintBridgeResult } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
 import { clearOfflineActions, loadOfflineActions, removeOfflineAction, removeOfflineActionsByStatus, updateOfflineAction } from '../../storage/offlineQueueStorage';
 import type { OfflineQueueAction } from '../offline/offlineQueueTypes';
 import { getRetryPlan } from '../offline/retryScheduler';
+import { formatBridgeCheckedAt, toPrintBridgeHealthView } from '../utils/printBridgeHealthUtils';
 import { colors, radius, spacing, typography } from '../theme';
 
 type OfflineQueueScreenProps = {
@@ -55,6 +57,9 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
   const [expandedActionId, setExpandedActionId] = useState<string | null>(null);
   const [jsonActionId, setJsonActionId] = useState<string | null>(null);
   const [retryingActionId, setRetryingActionId] = useState<string | null>(null);
+  const [bridgeHealth, setBridgeHealth] = useState<PrintBridgeResult | null>(null);
+  const [bridgeChecking, setBridgeChecking] = useState(false);
+  const [bridgeCheckedAt, setBridgeCheckedAt] = useState<string | undefined>(undefined);
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
 
   const loadQueue = useCallback(async () => {
@@ -64,7 +69,17 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
 
   useEffect(() => {
     loadQueue();
+    refreshBridgeHealth();
   }, [loadQueue]);
+
+  const refreshBridgeHealth = async () => {
+    setBridgeChecking(true);
+    const result = await checkPrintBridgeHealth();
+    setBridgeHealth(result);
+    setBridgeCheckedAt(new Date().toISOString());
+    setBridgeChecking(false);
+    return result;
+  };
 
   const summary = useMemo(() => ({
     total: actions.length,
@@ -76,6 +91,7 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
     retryWaiting: actions.filter((action) => getRetryPlan(action).retryState === 'waiting').length,
     retryBlocked: actions.filter((action) => getRetryPlan(action).retryState === 'blocked').length,
   }), [actions]);
+  const bridgeView = toPrintBridgeHealthView(bridgeHealth, bridgeChecking, bridgeCheckedAt);
 
   const confirmDelete = (action: OfflineQueueAction) => {
     Alert.alert(
@@ -149,6 +165,13 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
 
     setRetryingActionId(action.id);
     setBanner({ message: `${action.documentNo || action.id} tekrar deneniyor.`, tone: 'info' });
+    const health = await refreshBridgeHealth();
+    if (!health.ok) {
+      setBanner({ message: 'Yazdırma bilgisayarına ulaşılamıyor. Servis açık değil veya ağ bağlantısı yok.', tone: 'warning' });
+      notifyWarning();
+      setRetryingActionId(null);
+      return;
+    }
     const result = await sendSaleReceiptToPrintBridge(action.payload.printJob);
 
     if (result.ok) {
@@ -218,6 +241,19 @@ export function OfflineQueueScreen({ onBack }: OfflineQueueScreenProps) {
               <Text style={styles.noticeText}>Bu ekran local queue durumunu gösterir. Auto retry, background sync ve gerçek write-back bu sürümde çalışmaz; uygun kayıtlar sadece elle denenir.</Text>
             </View>
             <ToastMessage message={banner?.message} tone={banner?.tone} />
+
+            <View style={styles.bridgeBox}>
+              <View style={styles.bridgeTextBlock}>
+                <Text style={styles.bridgeTitle}>Yazdırma bilgisayarı</Text>
+                <Text style={styles.bridgeText} numberOfLines={2}>{bridgeView.message}</Text>
+                <Text style={styles.bridgeMeta}>Son kontrol: {formatBridgeCheckedAt(bridgeView.checkedAt)}</Text>
+                {bridgeView.reason ? <Text style={styles.bridgeMeta} numberOfLines={2}>{bridgeView.reason}</Text> : null}
+              </View>
+              <View style={styles.bridgeSide}>
+                <StatusPill label={bridgeView.label} tone={bridgeView.status === 'connected' ? 'success' : bridgeView.status === 'checking' ? 'warning' : 'danger'} />
+                <SmallButton label="Kontrol" onPress={refreshBridgeHealth} />
+              </View>
+            </View>
 
             <View style={styles.summaryGrid}>
               <InfoBox label="Toplam" value={summary.total.toString()} />
@@ -369,6 +405,24 @@ const styles = StyleSheet.create({
   noticeText: { color: colors.text, fontSize: typography.small, fontWeight: '800', lineHeight: 16 },
   summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   adminActions: { gap: spacing.xs },
+  bridgeBox: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.anthracite,
+    padding: spacing.sm,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  bridgeTextBlock: { flex: 1, gap: 2 },
+  bridgeTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
+  bridgeText: { color: colors.text, fontSize: typography.small, fontWeight: '800', lineHeight: 16 },
+  bridgeMeta: { color: colors.muted, fontSize: typography.small, fontWeight: '800', lineHeight: 15 },
+  bridgeSide: { alignItems: 'flex-end', gap: spacing.xs },
   infoBox: {
     flex: 1,
     minWidth: '31%',

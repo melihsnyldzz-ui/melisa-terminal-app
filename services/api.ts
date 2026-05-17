@@ -222,8 +222,8 @@ export async function checkPrintBridgeHealth(): Promise<PrintBridgeResult> {
       ok: false,
       url: '',
       endpoint,
-      message: 'PC bridge adresi gecersiz',
-      reason: 'Adres http://192.168.1.45:8787 formatinda olmali.',
+      message: 'Yazdırma bilgisayarına ulaşılamıyor.',
+      reason: 'Servis açık değil veya ağ bağlantısı yok.',
     };
   }
 
@@ -243,8 +243,8 @@ export async function checkPrintBridgeHealth(): Promise<PrintBridgeResult> {
       ok,
       url: baseUrl,
       endpoint,
-      message: ok ? `PC bridge hazır.${safeMode}` : `PC bridge hazır değil: HTTP ${response.status}`,
-      reason: ok ? payload?.message : text || payload?.message,
+      message: ok ? `Yazdırma bilgisayarı bağlı.${safeMode}` : 'Yazdırma bilgisayarına ulaşılamıyor.',
+      reason: ok ? payload?.message : 'Servis açık değil veya ağ bağlantısı yok.',
     };
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Baglanti hatasi';
@@ -252,8 +252,8 @@ export async function checkPrintBridgeHealth(): Promise<PrintBridgeResult> {
       ok: false,
       url: baseUrl,
       endpoint,
-      message: 'PC bridge bağlı değil',
-      reason,
+      message: 'Yazdırma bilgisayarına ulaşılamıyor.',
+      reason: reason ? 'Servis açık değil veya ağ bağlantısı yok.' : undefined,
     };
   }
 }
@@ -266,8 +266,8 @@ export async function sendSaleReceiptToPrintBridge(job: SalePrintJob): Promise<P
       ok: false,
       url: '',
       endpoint,
-      message: 'PC bridge adresi gecersiz',
-      reason: 'Adres http://192.168.1.45:8787 formatinda olmali.',
+      message: 'Yazdırma bilgisayarına ulaşılamıyor.',
+      reason: 'Servis açık değil veya ağ bağlantısı yok.',
     };
   }
 
@@ -307,8 +307,8 @@ export async function sendSaleReceiptToPrintBridge(job: SalePrintJob): Promise<P
       ok,
       url: baseUrl,
       endpoint,
-      message: ok ? (payload?.message || 'Fiş PC bridge yazdırma kuyruğuna gönderildi.') : `PC bridge yazdırma hatası: HTTP ${response.status}`,
-      reason: ok ? undefined : payload?.error || payload?.message || text,
+      message: ok ? (payload?.message || 'Fiş yazdırma bilgisayarına gönderildi.') : 'Yazdırma bilgisayarına ulaşılamıyor.',
+      reason: ok ? undefined : 'Servis açık değil veya ağ bağlantısı yok.',
     };
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Baglanti hatasi';
@@ -316,8 +316,8 @@ export async function sendSaleReceiptToPrintBridge(job: SalePrintJob): Promise<P
       ok: false,
       url: baseUrl,
       endpoint,
-      message: 'Fiş PC bridge’e gönderilemedi',
-      reason,
+      message: 'Yazdırma bilgisayarına ulaşılamıyor.',
+      reason: reason ? 'Servis açık değil veya ağ bağlantısı yok.' : undefined,
     };
   }
 }

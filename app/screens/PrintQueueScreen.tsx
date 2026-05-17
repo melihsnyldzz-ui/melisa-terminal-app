@@ -13,6 +13,7 @@ import { addOfflineAction, createPrintRetryOfflineAction } from '../../storage/o
 import { addAuditLog, loadSalePrintJobs, saveSalePrintJobs } from '../../storage/localStorage';
 import type { SalePrintJob } from '../../types';
 import { formatMoney, normalizeCurrencyCode } from '../utils/currencyUtils';
+import { formatBridgeCheckedAt, toPrintBridgeHealthView } from '../utils/printBridgeHealthUtils';
 import { colors, radius, spacing, typography } from '../theme';
 
 type PrintQueueScreenProps = {
@@ -51,6 +52,8 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
   const [filter, setFilter] = useState<FilterKey>('all');
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [bridgeHealth, setBridgeHealth] = useState<PrintBridgeResult | null>(null);
+  const [bridgeChecking, setBridgeChecking] = useState(false);
+  const [bridgeCheckedAt, setBridgeCheckedAt] = useState<string | undefined>(undefined);
   const [banner, setBanner] = useState<{ message: string; tone: ToastTone } | null>(null);
   const [printingJobId, setPrintingJobId] = useState<string | null>(null);
 
@@ -65,8 +68,12 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
   };
 
   const refreshHealth = async () => {
+    setBridgeChecking(true);
     const result = await checkPrintBridgeHealth();
     setBridgeHealth(result);
+    setBridgeCheckedAt(new Date().toISOString());
+    setBridgeChecking(false);
+    return result;
   };
 
   const visibleJobs = useMemo(() => {
@@ -79,6 +86,7 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
     printed: jobs.filter((job) => job.status === 'Yazdırıldı').length,
     error: jobs.filter((job) => job.status === 'Yazdırma hatası').length,
   }), [jobs]);
+  const bridgeView = toPrintBridgeHealthView(bridgeHealth, bridgeChecking, bridgeCheckedAt);
 
   const updateJob = async (jobId: string, patch: Partial<SalePrintJob>) => {
     const nextJobs = jobs.map((job) => (job.id === jobId ? { ...job, ...patch } : job));
@@ -90,6 +98,13 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
     if (printingJobId) return;
     setPrintingJobId(job.id);
     const now = new Date().toISOString();
+    const health = await refreshHealth();
+    if (!health.ok) {
+      setBanner({ message: 'Yazdırma bilgisayarına ulaşılamıyor. Servis açık değil veya ağ bağlantısı yok.', tone: 'warning' });
+      notifyWarning();
+      setPrintingJobId(null);
+      return;
+    }
     const result = await sendSaleReceiptToPrintBridge(job);
 
     if (result.ok) {
@@ -127,7 +142,6 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
       notifyWarning();
     }
 
-    setBridgeHealth(result);
     setPrintingJobId(null);
   };
 
@@ -137,12 +151,13 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
 
       <View style={styles.healthPanel}>
         <View style={styles.healthTextBlock}>
-          <Text style={styles.healthTitle}>PC bridge</Text>
-          <Text style={styles.healthText} numberOfLines={2}>{bridgeHealth?.message || 'Sağlık kontrolü bekleniyor'}</Text>
-          {bridgeHealth?.reason ? <Text style={styles.healthReason} numberOfLines={2}>{bridgeHealth.reason}</Text> : null}
+          <Text style={styles.healthTitle}>Yazdırma bilgisayarı</Text>
+          <Text style={styles.healthText} numberOfLines={2}>{bridgeView.message}</Text>
+          <Text style={styles.healthReason} numberOfLines={1}>Son kontrol: {formatBridgeCheckedAt(bridgeView.checkedAt)}</Text>
+          {bridgeView.reason ? <Text style={styles.healthReason} numberOfLines={2}>{bridgeView.reason}</Text> : null}
         </View>
         <View style={styles.healthSide}>
-          <StatusPill label={bridgeHealth?.ok ? 'Hazır' : 'Kapalı'} tone={bridgeHealth?.ok ? 'success' : 'warning'} />
+          <StatusPill label={bridgeView.label} tone={bridgeView.status === 'connected' ? 'success' : bridgeView.status === 'checking' ? 'warning' : 'danger'} />
           <Pressable onPress={refreshHealth} style={({ pressed }) => [styles.healthButton, pressed && styles.pressed]}>
             <Text style={styles.healthButtonText}>Kontrol</Text>
           </Pressable>
