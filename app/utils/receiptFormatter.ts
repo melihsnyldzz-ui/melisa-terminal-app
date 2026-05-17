@@ -10,6 +10,8 @@ export function formatSaleReceipt(params: {
   exchangeRateSnapshot?: ExchangeRateSnapshot;
   operatorName?: string;
   showOperator?: boolean;
+  deviceName?: string;
+  showDevice?: boolean;
   showSourcePrices?: boolean;
 }) {
   const rates = params.exchangeRateSnapshot || DEFAULT_EXCHANGE_RATES;
@@ -28,5 +30,6 @@ export function formatSaleReceipt(params: {
     ...lineTexts,
     `GENEL TOPLAM: ${formatMoney(totalAmount, params.saleCurrency)}`,
     ...(params.showOperator && params.operatorName ? [`Operator: ${params.operatorName}`] : []),
+    ...(params.showDevice && params.deviceName ? [`Device: ${params.deviceName}`] : []),
   ].join('\n');
 }

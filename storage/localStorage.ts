@@ -1,13 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DEFAULT_EXCHANGE_RATES, normalizeCurrencyCode, normalizeSaleLineCurrency } from '../app/utils/currencyUtils';
 import { normalizePersonnelRole } from '../app/utils/permissionUtils';
-import type { ActivePickingDraft, ActiveSaleDraft, AuditLogEntry, FailedOperation, OpenDocument, PersonnelUser, PickingLine, SaleLine, SalePrintJob, SalesCustomer, TerminalSettings, UserSession } from '../types';
+import type { ActivePickingDraft, ActiveSaleDraft, AuditLogEntry, FailedOperation, OpenDocument, PersonnelUser, PickingLine, SaleLine, SalePrintJob, SalesCustomer, TerminalDeviceSettings, TerminalSettings, UserSession } from '../types';
 
 const KEYS = {
   settings: 'melisa-terminal:settings',
   session: 'melisa-terminal:session',
   personnelUsers: 'melisa-terminal:personnel-users',
   currentUser: 'melisa-terminal:current-user',
+  terminalDeviceSettings: 'melisa-terminal:terminal-settings',
   failedOperations: 'melisa-terminal:failed-operations',
   draftDocuments: 'melisa-terminal:draft-documents',
   selectedSalesCustomer: 'melisa-terminal:selected-sales-customer',
@@ -34,6 +35,16 @@ const defaultSettings: TerminalSettings = {
   apiMode: 'fallback',
   vibrationEnabled: true,
   urgentVibrationEnabled: true,
+};
+
+const defaultTerminalDeviceSettings: TerminalDeviceSettings = {
+  deviceId: 'HONEYWELL-01',
+  deviceName: 'HONEYWELL-01',
+  branchName: 'MERKEZ',
+  warehouseName: 'MERKEZ',
+  defaultPersonnelCode: 'DEPO01',
+  defaultSaleCurrency: 'TRY',
+  apiBaseUrl: 'http://192.168.1.45:8787',
 };
 
 const normalizeSaleLine = (line: SaleLine): SaleLine => {
@@ -63,6 +74,8 @@ const normalizeActiveSaleDraft = (draft: ActiveSaleDraft | null): ActiveSaleDraf
     saleCurrency,
     exchangeRateSnapshot: draft.exchangeRateSnapshot || DEFAULT_EXCHANGE_RATES,
     draftStatus: draft.draftStatus || 'open',
+    deviceId: draft.deviceId,
+    deviceName: draft.deviceName,
     status: draft.lines?.length ? 'Hazır' : 'Taslak',
     lines: Array.isArray(draft.lines) ? draft.lines.map((line) => normalizeSaleLineCurrency(normalizeSaleLine(line), saleCurrency, draft.exchangeRateSnapshot || DEFAULT_EXCHANGE_RATES)) : [],
   };
@@ -129,6 +142,23 @@ export async function loadSettings(): Promise<TerminalSettings> {
 
 export async function saveSettings(settings: TerminalSettings): Promise<void> {
   await writeJson(KEYS.settings, settings);
+}
+
+export async function loadTerminalDeviceSettings(): Promise<TerminalDeviceSettings> {
+  const settings = await readJson<TerminalDeviceSettings>(KEYS.terminalDeviceSettings, defaultTerminalDeviceSettings);
+  return {
+    ...defaultTerminalDeviceSettings,
+    ...settings,
+    defaultSaleCurrency: normalizeCurrencyCode(settings.defaultSaleCurrency),
+  };
+}
+
+export async function saveTerminalDeviceSettings(settings: TerminalDeviceSettings): Promise<void> {
+  await writeJson(KEYS.terminalDeviceSettings, {
+    ...settings,
+    defaultSaleCurrency: normalizeCurrencyCode(settings.defaultSaleCurrency),
+    updatedAt: settings.updatedAt || new Date().toISOString(),
+  });
 }
 
 export async function loadSession(): Promise<UserSession | null> {
@@ -210,7 +240,7 @@ export async function loadActiveSaleDraft(): Promise<ActiveSaleDraft | null> {
 }
 
 export async function saveActiveSaleDraft(draft: ActiveSaleDraft): Promise<void> {
-  const currentUser = await loadCurrentUser();
+  const [currentUser, terminalSettings] = await Promise.all([loadCurrentUser(), loadTerminalDeviceSettings()]);
   const currentUserFields = currentUser ? {
     createdBy: draft.createdBy || currentUser.id,
     createdByCode: draft.createdByCode || currentUser.code,
@@ -219,7 +249,12 @@ export async function saveActiveSaleDraft(draft: ActiveSaleDraft): Promise<void>
     updatedByCode: currentUser.code,
     updatedByName: currentUser.name,
   } : {};
-  await writeJson(KEYS.activeSaleDraft, normalizeActiveSaleDraft({ ...draft, ...currentUserFields }));
+  await writeJson(KEYS.activeSaleDraft, normalizeActiveSaleDraft({
+    ...draft,
+    ...currentUserFields,
+    deviceId: draft.deviceId || terminalSettings.deviceId,
+    deviceName: draft.deviceName || terminalSettings.deviceName,
+  }));
 }
 
 export async function clearActiveSaleDraft(): Promise<void> {
@@ -237,7 +272,7 @@ export async function saveSaleDrafts(drafts: ActiveSaleDraft[]): Promise<void> {
 }
 
 export async function upsertSaleDraft(draft: ActiveSaleDraft, draftStatus: ActiveSaleDraft['draftStatus'] = 'open'): Promise<void> {
-  const currentUser = await loadCurrentUser();
+  const [currentUser, terminalSettings] = await Promise.all([loadCurrentUser(), loadTerminalDeviceSettings()]);
   const currentUserFields = currentUser ? {
     createdBy: draft.createdBy || currentUser.id,
     createdByCode: draft.createdByCode || currentUser.code,
@@ -246,7 +281,13 @@ export async function upsertSaleDraft(draft: ActiveSaleDraft, draftStatus: Activ
     updatedByCode: currentUser.code,
     updatedByName: currentUser.name,
   } : {};
-  const normalizedDraft = normalizeActiveSaleDraft({ ...draft, ...currentUserFields, draftStatus });
+  const normalizedDraft = normalizeActiveSaleDraft({
+    ...draft,
+    ...currentUserFields,
+    deviceId: draft.deviceId || terminalSettings.deviceId,
+    deviceName: draft.deviceName || terminalSettings.deviceName,
+    draftStatus,
+  });
   if (!normalizedDraft?.documentNo) return;
   const drafts = await loadSaleDrafts();
   const nextDrafts = [normalizedDraft, ...drafts.filter((item) => item.documentNo !== normalizedDraft.documentNo)];
@@ -268,13 +309,15 @@ export async function saveSalePrintJobs(jobs: SalePrintJob[]): Promise<void> {
 }
 
 export async function addSalePrintJob(job: SalePrintJob): Promise<void> {
-  const currentUser = await loadCurrentUser();
-  const jobWithUser = currentUser ? {
+  const [currentUser, terminalSettings] = await Promise.all([loadCurrentUser(), loadTerminalDeviceSettings()]);
+  const jobWithUser = {
     ...job,
-    createdBy: job.createdBy || currentUser.id,
-    createdByCode: job.createdByCode || currentUser.code,
-    createdByName: job.createdByName || currentUser.name,
-  } : job;
+    createdBy: job.createdBy || currentUser?.id,
+    createdByCode: job.createdByCode || currentUser?.code,
+    createdByName: job.createdByName || currentUser?.name,
+    deviceId: job.deviceId || terminalSettings.deviceId,
+    deviceName: job.deviceName || terminalSettings.deviceName,
+  };
   const jobs = await loadSalePrintJobs();
   await saveSalePrintJobs([jobWithUser, ...jobs]);
 }
@@ -288,13 +331,14 @@ export async function saveAuditLogs(logs: AuditLogEntry[]): Promise<void> {
   await writeJson(KEYS.auditLogs, normalizeAuditLogs(logs));
 }
 
-export async function addAuditLog(entry: Omit<AuditLogEntry, 'id' | 'createdAt' | 'deviceName' | 'personnelName' | 'personnelId' | 'personnelCode'> & Partial<Pick<AuditLogEntry, 'deviceName' | 'personnelId' | 'personnelCode' | 'personnelName'>>): Promise<void> {
-  const [logs, session, settings, currentUser] = await Promise.all([loadAuditLogs(), loadSession(), loadSettings(), loadCurrentUser()]);
+export async function addAuditLog(entry: Omit<AuditLogEntry, 'id' | 'createdAt' | 'deviceName' | 'deviceId' | 'personnelName' | 'personnelId' | 'personnelCode'> & Partial<Pick<AuditLogEntry, 'deviceId' | 'deviceName' | 'personnelId' | 'personnelCode' | 'personnelName'>>): Promise<void> {
+  const [logs, session, settings, terminalSettings, currentUser] = await Promise.all([loadAuditLogs(), loadSession(), loadSettings(), loadTerminalDeviceSettings(), loadCurrentUser()]);
   const now = new Date().toISOString();
   const nextEntry: AuditLogEntry = {
     id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     createdAt: now,
-    deviceName: entry.deviceName || session?.terminalId || settings.terminalId || 'Bilinmeyen cihaz',
+    deviceId: entry.deviceId || terminalSettings.deviceId || session?.terminalId || settings.terminalId,
+    deviceName: entry.deviceName || terminalSettings.deviceName || session?.terminalId || settings.terminalId || 'Bilinmeyen cihaz',
     personnelId: entry.personnelId || currentUser?.id,
     personnelCode: entry.personnelCode || currentUser?.code,
     personnelName: entry.personnelName || currentUser?.name || session?.username || 'Personel',

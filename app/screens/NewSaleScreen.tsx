@@ -8,7 +8,7 @@ import { ToastMessage, ToastTone } from '../../components/ToastMessage';
 import { DEFAULT_EXCHANGE_RATES, SUPPORTED_CURRENCIES, calculateLineTotal, formatMoney, getEffectiveExchangeRates, normalizeCurrencyCode, normalizeSaleLineCurrency } from '../utils/currencyUtils';
 import { createSaleMock, getMockProductByCode } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
-import { addAuditLog, loadActiveSaleDraft, loadSelectedSalesCustomer, saveActiveSaleDraft, upsertSaleDraft } from '../../storage/localStorage';
+import { addAuditLog, loadActiveSaleDraft, loadSelectedSalesCustomer, loadTerminalDeviceSettings, saveActiveSaleDraft, upsertSaleDraft } from '../../storage/localStorage';
 import type { ActiveSaleDraft, AppScreen, CurrencyCode, ExchangeRateSnapshot, Product, SaleLine, SaleStatus } from '../../types';
 import { colors, radius, spacing, typography } from '../theme';
 
@@ -73,7 +73,7 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
   const canScan = Boolean(documentNo);
 
   useEffect(() => {
-    Promise.all([loadActiveSaleDraft(), loadSelectedSalesCustomer(), getEffectiveExchangeRates()]).then(async ([draft, selectedSalesCustomer, effectiveRates]) => {
+    Promise.all([loadActiveSaleDraft(), loadSelectedSalesCustomer(), getEffectiveExchangeRates(), loadTerminalDeviceSettings()]).then(async ([draft, selectedSalesCustomer, effectiveRates, terminalSettings]) => {
       if (bootstrappedRef.current) return;
       bootstrappedRef.current = true;
       setExchangeRates(effectiveRates);
@@ -96,7 +96,7 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
         return;
       }
 
-      const nextSaleCurrency = normalizeCurrencyCode(selectedSalesCustomer?.currency || draft?.saleCurrency);
+      const nextSaleCurrency = normalizeCurrencyCode(selectedSalesCustomer?.currency || draft?.saleCurrency || terminalSettings.defaultSaleCurrency);
       const sale = await createSaleMock(nextCustomerName);
       setCustomer(nextCustomerName);
       setDocumentNo(sale.documentNo);

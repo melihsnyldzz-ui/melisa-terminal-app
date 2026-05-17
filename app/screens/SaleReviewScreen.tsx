@@ -99,6 +99,8 @@ export function SaleReviewScreen({ onBack, onDone }: SaleReviewScreenProps) {
       currency: review.saleCurrency,
       saleCurrency: review.saleCurrency,
       exchangeRateSnapshot: review.rates,
+      deviceId: draft.deviceId,
+      deviceName: draft.deviceName,
       lines: review.lines.map((line) => ({
         lineId: line.lineId,
         code: line.code,
@@ -120,6 +122,8 @@ export function SaleReviewScreen({ onBack, onDone }: SaleReviewScreenProps) {
         exchangeRateSnapshot: review.rates,
         operatorName: currentUser?.name || draft.updatedByName,
         showOperator: false,
+        deviceName: draft.deviceName,
+        showDevice: false,
         showSourcePrices: false,
       }),
       createdBy: currentUser?.id || draft.updatedBy || draft.createdBy,

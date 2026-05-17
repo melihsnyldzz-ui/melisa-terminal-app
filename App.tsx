@@ -18,13 +18,14 @@ import { QRAlbumScreen } from './app/screens/QRAlbumScreen';
 import { SaleReviewScreen } from './app/screens/SaleReviewScreen';
 import { SalesCustomerScreen } from './app/screens/SalesCustomerScreen';
 import { SettingsScreen } from './app/screens/SettingsScreen';
+import { TerminalSettingsScreen } from './app/screens/TerminalSettingsScreen';
 import { UnauthorizedScreen } from './app/screens/UnauthorizedScreen';
 import { colors } from './app/theme';
 import { canOpenScreen, screenPermissions } from './app/utils/permissionUtils';
 import { HoneywellPreviewFrame } from './components/HoneywellPreviewFrame';
 import { ScreenErrorBoundary } from './components/ScreenErrorBoundary';
 import { checkLocalPriceService } from './services/api';
-import { addAuditLog, clearCurrentUser, clearSession, loadCurrentUser, loadSession, loadSettings, saveCurrentUser, saveSession } from './storage/localStorage';
+import { addAuditLog, clearCurrentUser, clearSession, loadCurrentUser, loadSession, loadSettings, loadTerminalDeviceSettings, saveCurrentUser, saveSession } from './storage/localStorage';
 import type { AppScreen, PersonnelUser, UserSession } from './types';
 
 export default function App() {
@@ -92,11 +93,11 @@ export default function App() {
   };
 
   const handlePersonnelSelect = async (user: PersonnelUser) => {
-    const settings = await loadSettings();
+    const [settings, terminalSettings] = await Promise.all([loadSettings(), loadTerminalDeviceSettings()]);
     const nextSession: UserSession = {
       username: user.name,
-      branch: settings.branch,
-      terminalId: settings.terminalId,
+      branch: terminalSettings.branchName || settings.branch,
+      terminalId: terminalSettings.deviceName || settings.terminalId,
       offlineMode: true,
     };
     setCurrentUser(user);
@@ -153,6 +154,7 @@ export default function App() {
     if (screen === 'dataUpdate') return <DataUpdateScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'auditLog') return <AuditLogScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'currencySettings') return <CurrencySettingsScreen onBack={() => navigateTo('dashboard')} />;
+    if (screen === 'terminalSettings') return <TerminalSettingsScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'settings') return <SettingsScreen onBack={() => navigateTo('dashboard')} onLogout={handleLogout} session={session} />;
     return <DashboardScreen session={session} currentUser={currentUser} onNavigate={navigateTo} systemMessage={backHint} />;
   };

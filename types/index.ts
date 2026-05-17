@@ -15,6 +15,7 @@ export type AppScreen =
   | 'dataUpdate'
   | 'auditLog'
   | 'currencySettings'
+  | 'terminalSettings'
   | 'settings';
 
 export type UserSession = {
@@ -45,7 +46,8 @@ export type Permission =
   | 'settings'
   | 'messages'
   | 'qrAlbum'
-  | 'dataUpdate';
+  | 'dataUpdate'
+  | 'terminalSettings';
 
 export type SalesCustomer = {
   id: string;
@@ -92,6 +94,17 @@ export type Product = {
 
 export type CurrencyCode = 'TRY' | 'USD' | 'EUR';
 
+export type TerminalDeviceSettings = {
+  deviceId: string;
+  deviceName: string;
+  branchName: string;
+  warehouseName: string;
+  defaultPersonnelCode: string;
+  defaultSaleCurrency: CurrencyCode;
+  apiBaseUrl: string;
+  updatedAt?: string;
+};
+
 export type SaleLine = Product & {
   lineId: string;
   quantity: number;
@@ -120,6 +133,8 @@ export type ActiveSaleDraft = {
   updatedBy?: string;
   updatedByCode?: string;
   updatedByName?: string;
+  deviceId?: string;
+  deviceName?: string;
   status: SaleStatus;
   lines: SaleLine[];
   updatedAt: string;
@@ -166,6 +181,8 @@ export type SalePrintJob = {
   createdBy?: string;
   createdByCode?: string;
   createdByName?: string;
+  deviceId?: string;
+  deviceName?: string;
   status: 'Yazdırma bekliyor' | 'Yazdırıldı' | 'Yazdırma hatası';
   createdAt: string;
 };
@@ -193,6 +210,7 @@ export type AuditLogOperationType =
   | 'Açık fiş silindi'
   | 'Açık fiş review’a gönderildi'
   | 'Yetkisiz erişim denemesi'
+  | 'Terminal ayarı değişti'
   | 'Hata oluştu';
 
 export type AuditLogEntry = {
@@ -200,6 +218,7 @@ export type AuditLogEntry = {
   operationType: AuditLogOperationType;
   createdAt: string;
   deviceName: string;
+  deviceId?: string;
   personnelName: string;
   personnelId?: string;
   personnelCode?: string;

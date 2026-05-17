@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusPill } from '../../components/StatusPill';
 import { ToastMessage } from '../../components/ToastMessage';
-import { loadPersonnelUsers } from '../../storage/localStorage';
+import { loadPersonnelUsers, loadTerminalDeviceSettings } from '../../storage/localStorage';
 import type { PersonnelUser } from '../../types';
 import { colors, radius, shadows, spacing, typography } from '../theme';
 import { APP_VERSION } from '../version';
@@ -16,9 +16,16 @@ type PersonnelSelectScreenProps = {
 export function PersonnelSelectScreen({ onSelect, systemMessage }: PersonnelSelectScreenProps) {
   const insets = useSafeAreaInsets();
   const [users, setUsers] = useState<PersonnelUser[]>([]);
+  const [defaultPersonnelCode, setDefaultPersonnelCode] = useState('');
 
   useEffect(() => {
-    loadPersonnelUsers().then((items) => setUsers(items.filter((user) => user.isActive)));
+    Promise.all([loadPersonnelUsers(), loadTerminalDeviceSettings()]).then(([items, terminalSettings]) => {
+      const defaultCode = terminalSettings.defaultPersonnelCode.toUpperCase();
+      setDefaultPersonnelCode(defaultCode);
+      setUsers(items
+        .filter((user) => user.isActive)
+        .sort((first, second) => Number(second.code.toUpperCase() === defaultCode) - Number(first.code.toUpperCase() === defaultCode)));
+    });
   }, []);
 
   return (
@@ -38,15 +45,21 @@ export function PersonnelSelectScreen({ onSelect, systemMessage }: PersonnelSele
         <View style={styles.panel}>
           <Text style={styles.title}>Terminal kullanıcısı</Text>
           <Text style={styles.text}>İşlemler, açık fişler ve audit log seçilen personel adına kaydedilir.</Text>
-          {users.map((user) => (
-            <Pressable key={user.id} onPress={() => onSelect(user)} style={({ pressed }) => [styles.userRow, pressed && styles.pressed]}>
-              <View style={styles.userMain}>
-                <Text style={styles.userName}>{user.name}</Text>
-                <Text style={styles.userMeta}>{user.code} · {user.role.toUpperCase()}</Text>
-              </View>
-              <StatusPill label="Seç" tone="success" />
-            </Pressable>
-          ))}
+          {users.map((user) => {
+            const isDefault = user.code.toUpperCase() === defaultPersonnelCode;
+            return (
+              <Pressable key={user.id} onPress={() => onSelect(user)} style={({ pressed }) => [styles.userRow, pressed && styles.pressed]}>
+                <View style={styles.userMain}>
+                  <Text style={styles.userName}>{user.name}</Text>
+                  <Text style={styles.userMeta}>{user.code} · {user.role.toUpperCase()}</Text>
+                </View>
+                <View style={styles.userSide}>
+                  {isDefault ? <StatusPill label="Varsayılan" tone="warning" /> : null}
+                  <StatusPill label="Seç" tone="success" />
+                </View>
+              </Pressable>
+            );
+          })}
         </View>
       </ScrollView>
     </View>
@@ -109,6 +122,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   userMain: { flex: 1, gap: 2 },
+  userSide: { alignItems: 'flex-end', gap: spacing.xs },
   userName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
   userMeta: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
   pressed: { opacity: 0.86 },

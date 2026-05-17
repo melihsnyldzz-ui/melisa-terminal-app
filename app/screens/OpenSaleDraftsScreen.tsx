@@ -147,6 +147,7 @@ function DraftCard({ draft, onContinue, onReview, onDelete }: {
         <InfoItem label="Güncelleme" value={formatUpdatedAt(draft.updatedAt)} wide />
       </View>
       <Text style={styles.operatorText}>Oluşturan: {draft.createdByName || 'Personel'}{draft.createdByCode ? ` · ${draft.createdByCode}` : ''}</Text>
+      <Text style={styles.operatorText}>Cihaz: {draft.deviceName || 'Terminal'}</Text>
 
       <ActionRow
         actions={[
