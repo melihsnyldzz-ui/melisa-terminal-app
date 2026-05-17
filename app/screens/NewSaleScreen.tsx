@@ -217,7 +217,22 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
           description: `${code} bulunamadı.`,
           status: 'warning',
         });
-        setBanner({ message: `${code} bulunamadı.`, tone: 'warning' });
+        setBanner({ message: 'Ürün bulunamadı.', tone: 'warning' });
+        notifyWarning();
+        focusScanner();
+        return;
+      }
+
+      if (!Number.isFinite(product.price) || product.price <= 0) {
+        setPendingProduct(null);
+        await addAuditLog({
+          operationType: 'Hata oluştu',
+          customerName: customer,
+          documentNo,
+          description: `${code} fiyatı alınamadı.`,
+          status: 'error',
+        });
+        setBanner({ message: 'Fiyat alınamadı.', tone: 'warning' });
         notifyWarning();
         focusScanner();
         return;
@@ -248,7 +263,7 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
         description: message,
         status: 'error',
       });
-      setBanner({ message, tone: 'warning' });
+      setBanner({ message: message.toLocaleLowerCase('tr-TR').includes('fiyat') ? 'Fiyat alınamadı.' : message, tone: 'warning' });
       notifyWarning();
       focusScanner();
     }
@@ -382,14 +397,14 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
       <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 86 }]} keyboardShouldPersistTaps="handled">
         <View style={styles.topPanel}>
           <View style={styles.topMain}>
-            <Text style={styles.documentNo}>{documentNo || 'Fiş hazırlanıyor'}</Text>
+            <Text style={styles.customerLabel}>MÜŞTERİ</Text>
             <Text style={styles.customerName} numberOfLines={1}>{customer || 'Müşteri seçilmedi'}</Text>
+            <Text style={styles.documentNo}>{documentNo || 'Fiş hazırlanıyor'} · {saleCurrency}</Text>
           </View>
           <StatusPill label={status} tone={status === 'Hazır' ? 'success' : 'warning'} />
         </View>
 
-        <View style={styles.currencyPanel}>
-          <Text style={styles.currencyLabel}>FİŞ PARA BİRİMİ</Text>
+        <View style={styles.currencyPanelCompact}>
           <View style={styles.currencyButtons}>
             {SUPPORTED_CURRENCIES.map((currency) => (
               <Pressable key={currency} onPress={() => void selectSaleCurrency(currency)} style={({ pressed }) => [styles.currencyButton, saleCurrency === currency && styles.currencyButtonActive, pressed && styles.pressed]}>
@@ -400,6 +415,7 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
         </View>
 
         <View style={styles.scanPanel}>
+          <Text style={styles.scanTitle}>Barkod okut</Text>
           <TextInput
             ref={barcodeInputRef}
             value={barcode}
@@ -416,9 +432,9 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
 
           <View style={styles.productReadout}>
             <View style={styles.productReadoutMain}>
-              <Text style={styles.pendingCode}>{pendingProduct?.code || '-'}</Text>
+              <Text style={styles.pendingCode}>{pendingProduct?.code || 'Son okutulan ürün'}</Text>
               <Text style={styles.pendingName} numberOfLines={2}>{pendingProduct?.name || 'Ürün okutulmadı'}</Text>
-              <Text style={styles.pendingTime}>{pendingProduct ? pendingProduct.time : ''}</Text>
+              <Text style={styles.pendingTime}>{pendingProduct ? pendingProduct.time : 'Barkodu okutunca ürün ve fiyat burada görünür.'}</Text>
             </View>
             <View style={styles.priceBlock}>
               <Text style={styles.priceLabel}>FİYAT</Text>
@@ -428,6 +444,7 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
           </View>
 
           <View style={styles.quantityRow}>
+            <Text style={styles.quantityLabel}>Adet</Text>
             <Pressable onPress={() => changePendingQuantity(-1)} style={styles.quantityButton}>
               <Text style={styles.quantityButtonText}>-</Text>
             </Pressable>
@@ -448,11 +465,17 @@ export function NewSaleScreen({ onBack, onNavigate }: NewSaleScreenProps) {
             </View>
           </View>
 
-          <AppButton label="FİŞE EKLE" onPress={addPendingProduct} variant="primary" />
+          <Pressable onPress={addPendingProduct} style={({ pressed }) => [styles.addSaleButton, pressed && styles.pressed]}>
+            <Text style={styles.addSaleButtonText}>FİŞE EKLE</Text>
+          </Pressable>
         </View>
 
         <View style={styles.table}>
           <View style={styles.tableHeader}>
+            <Text style={styles.tableTitle}>Fiş Satırları</Text>
+            <Text style={styles.tableCount}>{lines.length} kalem · {totalQuantity} adet</Text>
+          </View>
+          <View style={styles.tableColumns}>
             <Text style={[styles.headerCell, styles.codeCol]}>KOD</Text>
             <Text style={[styles.headerCell, styles.qtyCol]}>ADET</Text>
             <Text style={[styles.headerCell, styles.priceCol]}>FİYAT</Text>
@@ -508,7 +531,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: spacing.sm, gap: spacing.sm },
   topPanel: {
-    minHeight: 56,
+    minHeight: 58,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
@@ -522,21 +545,17 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   topMain: { flex: 1, gap: 2 },
-  documentNo: { color: colors.red, fontSize: typography.section, fontWeight: '900' },
-  customerName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
-  currencyPanel: {
+  customerLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
+  documentNo: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
+  customerName: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
+  currencyPanelCompact: {
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.line,
-    padding: spacing.sm,
-    gap: spacing.xs,
+    paddingHorizontal: 0,
   },
-  currencyLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
   currencyButtons: { flexDirection: 'row', gap: spacing.xs },
   currencyButton: {
     flex: 1,
-    minHeight: 34,
+    minHeight: 30,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.line,
@@ -549,20 +568,21 @@ const styles = StyleSheet.create({
   currencyButtonTextActive: { color: colors.surface },
   scanPanel: {
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.anthracite,
     borderRadius: radius.md,
     padding: spacing.sm,
     gap: spacing.sm,
   },
+  scanTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
   barcodeInput: {
-    minHeight: 58,
+    minHeight: 66,
     borderRadius: radius.md,
     backgroundColor: colors.surfaceSoft,
-    borderWidth: 2,
-    borderColor: colors.anthracite,
+    borderWidth: 3,
+    borderColor: colors.red,
     color: colors.ink,
-    fontSize: 24,
+    fontSize: 26,
     paddingHorizontal: spacing.md,
     fontWeight: '900',
     textAlign: 'center',
@@ -572,7 +592,7 @@ const styles = StyleSheet.create({
   productReadout: { flexDirection: 'row', alignItems: 'stretch', gap: spacing.sm },
   productReadoutMain: {
     flex: 1,
-    minHeight: 70,
+    minHeight: 88,
     borderRadius: radius.md,
     backgroundColor: colors.surfaceSoft,
     borderWidth: 1,
@@ -580,11 +600,11 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     justifyContent: 'center',
   },
-  pendingCode: { color: colors.red, fontSize: typography.section, fontWeight: '900' },
-  pendingName: { color: colors.ink, fontSize: typography.body, fontWeight: '900' },
-  pendingTime: { color: colors.muted, fontSize: typography.small, fontWeight: '800' },
+  pendingCode: { color: colors.red, fontSize: typography.small, fontWeight: '900' },
+  pendingName: { color: colors.ink, fontSize: typography.title, fontWeight: '900', lineHeight: 21 },
+  pendingTime: { color: colors.muted, fontSize: typography.small, fontWeight: '800', lineHeight: 14 },
   priceBlock: {
-    width: 108,
+    width: 126,
     borderRadius: radius.md,
     backgroundColor: colors.anthracite,
     padding: spacing.sm,
@@ -592,33 +612,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   priceLabel: { color: colors.line, fontSize: typography.small, fontWeight: '900' },
-  priceValue: { color: colors.surface, fontSize: typography.body, fontWeight: '900', textAlign: 'center' },
+  priceValue: { color: colors.surface, fontSize: typography.title, fontWeight: '900', textAlign: 'center' },
   sourcePriceText: { color: colors.line, fontSize: 9, fontWeight: '800', textAlign: 'center', marginTop: 2 },
   quantityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  quantityLabel: { color: colors.ink, fontSize: typography.body, fontWeight: '900', width: 34 },
   quantityButton: {
-    width: 44,
-    height: 44,
+    width: 50,
+    height: 50,
     borderRadius: radius.md,
     backgroundColor: colors.anthracite,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  quantityButtonText: { color: colors.surface, fontSize: 24, fontWeight: '900' },
+  quantityButtonText: { color: colors.surface, fontSize: 28, fontWeight: '900' },
   quantityInput: {
-    width: 62,
-    height: 44,
+    width: 72,
+    height: 50,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.anthracite,
     backgroundColor: colors.surfaceSoft,
     color: colors.ink,
-    fontSize: typography.title,
+    fontSize: 22,
     fontWeight: '900',
     textAlign: 'center',
   },
   pendingTotalBox: {
     flex: 1,
-    height: 44,
+    height: 50,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.line,
@@ -628,10 +649,22 @@ const styles = StyleSheet.create({
   },
   pendingTotalLabel: { color: colors.muted, fontSize: 10, fontWeight: '900' },
   pendingTotalValue: { color: colors.red, fontSize: typography.body, fontWeight: '900' },
+  addSaleButton: {
+    minHeight: 58,
+    borderRadius: radius.md,
+    backgroundColor: colors.red,
+    borderWidth: 1,
+    borderColor: colors.redDark,
+    borderBottomWidth: 3,
+    borderBottomColor: colors.anthracite,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addSaleButtonText: { color: colors.surface, fontSize: typography.section, fontWeight: '900' },
   table: {
     flex: 1,
-    minHeight: 190,
-    maxHeight: 390,
+    minHeight: 170,
+    maxHeight: 360,
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: radius.md,
@@ -639,13 +672,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   tableHeader: {
-    minHeight: 24,
+    minHeight: 34,
     backgroundColor: colors.anthracite,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  tableTitle: { color: colors.surface, fontSize: typography.body, fontWeight: '900' },
+  tableCount: { color: colors.line, fontSize: typography.small, fontWeight: '900' },
+  tableColumns: {
+    minHeight: 22,
+    backgroundColor: colors.anthraciteSoft,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 2,
   },
-  tableBody: { maxHeight: 366 },
+  tableBody: { maxHeight: 326 },
   headerCell: { color: colors.surface, fontSize: 10, fontWeight: '900' },
   codeCol: { flex: 1, minWidth: 0, paddingHorizontal: 3 },
   qtyCol: { width: 74, alignItems: 'center' },
