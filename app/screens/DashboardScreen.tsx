@@ -4,8 +4,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusPill } from '../../components/StatusPill';
 import { TerminalHeader } from '../../components/TerminalHeader';
 import { ToastMessage } from '../../components/ToastMessage';
-import { getFailedOperationsMock, getMessagesMock, getOpenDocumentsMock } from '../../services/api';
-import { loadActiveSaleDraft, loadFailedOperationsSnapshot, saveFailedOperations } from '../../storage/localStorage';
+import { checkPrintBridgeHealth, getFailedOperationsMock, getMessagesMock, getOpenDocumentsMock } from '../../services/api';
+import { loadOfflineActions } from '../../storage/offlineQueueStorage';
+import { loadActiveSaleDraft, loadFailedOperationsSnapshot, loadSaleDrafts, loadSalePrintJobs, saveFailedOperations } from '../../storage/localStorage';
+import { loadPrintEvents } from '../../storage/printEventStorage';
 import type { ActiveSaleDraft } from '../../types';
 import type { AppScreen, OpenDocument, PersonnelUser, UserSession } from '../../types';
 import { canOpenScreen } from '../utils/permissionUtils';
@@ -42,6 +44,31 @@ const modules: Array<{ label: string; description: string; screen: AppScreen; co
   { label: 'Ayarlar', description: 'Terminal bilgileri', screen: 'settings', code: 'SET' },
 ];
 
+type MainStatusSnapshot = {
+  bridgeConnected: boolean | null;
+  openSaleDraftCount: number;
+  pendingPrintCount: number;
+  printErrorCount: number;
+  pendingOfflineCount: number;
+  todayPrintErrorCount: number;
+};
+
+const emptyStatusSnapshot: MainStatusSnapshot = {
+  bridgeConnected: null,
+  openSaleDraftCount: 0,
+  pendingPrintCount: 0,
+  printErrorCount: 0,
+  pendingOfflineCount: 0,
+  todayPrintErrorCount: 0,
+};
+
+const isToday = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  const now = new Date();
+  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+};
+
 export function DashboardScreen({ session, currentUser, onNavigate, systemMessage }: DashboardScreenProps) {
   const insets = useSafeAreaInsets();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -49,6 +76,7 @@ export function DashboardScreen({ session, currentUser, onNavigate, systemMessag
   const [documents, setDocuments] = useState<OpenDocument[]>([]);
   const [failedCount, setFailedCount] = useState(0);
   const [activeDraft, setActiveDraft] = useState<ActiveSaleDraft | null>(null);
+  const [mainStatus, setMainStatus] = useState<MainStatusSnapshot>(emptyStatusSnapshot);
 
   useEffect(() => {
     getMessagesMock().then((messages) => {
@@ -65,7 +93,26 @@ export function DashboardScreen({ session, currentUser, onNavigate, systemMessag
       await saveFailedOperations(operations);
       setFailedCount(operations.length);
     });
-    loadActiveSaleDraft().then(setActiveDraft);
+    Promise.all([
+      loadActiveSaleDraft(),
+      checkPrintBridgeHealth(),
+      loadSaleDrafts(),
+      loadSalePrintJobs(),
+      loadOfflineActions(),
+      loadPrintEvents(),
+    ]).then(([activeSaleDraft, bridgeHealth, saleDrafts, printJobs, offlineActions, printEvents]) => {
+      const openDraftNos = new Set(saleDrafts.filter((draft) => draft.draftStatus !== 'printPending').map((draft) => draft.documentNo));
+      if (activeSaleDraft?.documentNo) openDraftNos.add(activeSaleDraft.documentNo);
+      setActiveDraft(activeSaleDraft);
+      setMainStatus({
+        bridgeConnected: bridgeHealth.ok,
+        openSaleDraftCount: openDraftNos.size,
+        pendingPrintCount: printJobs.filter((job) => job.status === 'Yazdırma bekliyor').length,
+        printErrorCount: printJobs.filter((job) => job.status === 'Yazdırma hatası').length,
+        pendingOfflineCount: offlineActions.filter((action) => action.status === 'pending').length,
+        todayPrintErrorCount: printEvents.filter((event) => isToday(event.createdAt) && (event.eventType === 'printError' || event.eventType === 'retryError')).length,
+      });
+    });
   }, []);
 
   const personName = session?.username || 'Personel';
@@ -73,6 +120,13 @@ export function DashboardScreen({ session, currentUser, onNavigate, systemMessag
   const activeTotalQuantity = activeDraft?.lines.reduce((sum, line) => sum + line.quantity, 0) ?? 0;
   const visibleQuickActions = quickActions.filter((action) => canOpenScreen(currentUser, action.screen));
   const visibleModules = modules.filter((module) => canOpenScreen(currentUser, module.screen));
+  const isAdmin = currentUser?.role === 'admin';
+  const hasMainIssue = mainStatus.bridgeConnected === false
+    || mainStatus.openSaleDraftCount > 0
+    || mainStatus.pendingPrintCount > 0
+    || mainStatus.printErrorCount > 0
+    || mainStatus.pendingOfflineCount > 0
+    || mainStatus.todayPrintErrorCount > 0;
 
   return (
     <View style={styles.container}>
@@ -96,6 +150,30 @@ export function DashboardScreen({ session, currentUser, onNavigate, systemMessag
               {action.screen === 'messages' && unreadCount > 0 ? <View style={styles.quickUnreadDot}><Text style={styles.quickUnreadText}>{unreadCount}</Text></View> : null}
             </Pressable>
           ))}
+        </View>
+
+        <View style={[styles.todayStatusPanel, hasMainIssue ? styles.todayStatusWarning : styles.todayStatusSuccess]}>
+          <View style={styles.todayStatusTop}>
+            <View style={styles.todayStatusTextBlock}>
+              <Text style={styles.todayStatusKicker}>BUGÜNKÜ DURUM</Text>
+              <Text style={[styles.todayStatusTitle, hasMainIssue ? styles.todayStatusTitleWarning : styles.todayStatusTitleSuccess]}>
+                {hasMainIssue ? 'Dikkat: Bekleyen veya hatalı işlem var.' : 'Bugün sistemde sorun görünmüyor.'}
+              </Text>
+            </View>
+            <StatusPill label={mainStatus.bridgeConnected === null ? 'Kontrol' : mainStatus.bridgeConnected ? 'Bağlı' : 'Bağlı değil'} tone={mainStatus.bridgeConnected === null ? 'warning' : mainStatus.bridgeConnected ? 'success' : 'danger'} />
+          </View>
+          <View style={styles.todayStatusSimpleRow}>
+            <StatusBox label="Açık satış" value={mainStatus.openSaleDraftCount.toString()} tone={mainStatus.openSaleDraftCount > 0 ? 'warning' : 'success'} />
+            <StatusBox label="Bekleyen print" value={mainStatus.pendingPrintCount.toString()} tone={mainStatus.pendingPrintCount > 0 ? 'warning' : 'success'} />
+            <StatusBox label="Hata" value={(mainStatus.printErrorCount + mainStatus.todayPrintErrorCount).toString()} tone={(mainStatus.printErrorCount + mainStatus.todayPrintErrorCount) > 0 ? 'danger' : 'success'} />
+          </View>
+          {isAdmin ? (
+            <View style={styles.todayStatusAdminGrid}>
+              <StatusBox label="Offline bekleyen" value={mainStatus.pendingOfflineCount.toString()} tone={mainStatus.pendingOfflineCount > 0 ? 'warning' : 'success'} />
+              <StatusBox label="Print hata" value={mainStatus.printErrorCount.toString()} tone={mainStatus.printErrorCount > 0 ? 'danger' : 'success'} />
+              <StatusBox label="Bugünkü hata" value={mainStatus.todayPrintErrorCount.toString()} tone={mainStatus.todayPrintErrorCount > 0 ? 'danger' : 'success'} />
+            </View>
+          ) : null}
         </View>
 
         {urgentCount > 0 ? (
@@ -147,6 +225,21 @@ type SummaryBoxProps = {
   value: string;
   tone?: 'dark' | 'danger' | 'warning';
 };
+
+type StatusBoxProps = {
+  label: string;
+  value: string;
+  tone?: 'success' | 'warning' | 'danger';
+};
+
+function StatusBox({ label, value, tone = 'success' }: StatusBoxProps) {
+  return (
+    <View style={styles.statusBox}>
+      <Text style={[styles.statusBoxValue, tone === 'success' && styles.statusBoxSuccess, tone === 'warning' && styles.statusBoxWarning, tone === 'danger' && styles.statusBoxDanger]} numberOfLines={1}>{value}</Text>
+      <Text style={styles.statusBoxLabel}>{label}</Text>
+    </View>
+  );
+}
 
 function SummaryBox({ label, value, tone = 'dark' }: SummaryBoxProps) {
   return (
@@ -208,6 +301,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   quickUnreadText: { color: colors.surface, fontSize: 10, fontWeight: '900' },
+  todayStatusPanel: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderLeftWidth: 4,
+    padding: spacing.sm,
+    gap: spacing.xs,
+    ...shadows.subtle,
+  },
+  todayStatusSuccess: { backgroundColor: colors.successSoft, borderColor: '#bce7c8', borderLeftColor: colors.success },
+  todayStatusWarning: { backgroundColor: colors.warningSoft, borderColor: '#efd5a7', borderLeftColor: colors.amber },
+  todayStatusTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
+  todayStatusTextBlock: { flex: 1, gap: 2 },
+  todayStatusKicker: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
+  todayStatusTitle: { fontSize: typography.body, fontWeight: '900', lineHeight: 17 },
+  todayStatusTitleSuccess: { color: colors.success },
+  todayStatusTitleWarning: { color: colors.amber },
+  todayStatusSimpleRow: { flexDirection: 'row', gap: spacing.xs },
+  todayStatusAdminGrid: { flexDirection: 'row', gap: spacing.xs },
+  statusBox: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.xs,
+    gap: 2,
+  },
+  statusBoxValue: { color: colors.anthracite, fontSize: typography.body, fontWeight: '900' },
+  statusBoxSuccess: { color: colors.success },
+  statusBoxWarning: { color: colors.amber },
+  statusBoxDanger: { color: colors.red },
+  statusBoxLabel: { color: colors.muted, fontSize: typography.small, fontWeight: '900' },
   urgentAlert: {
     backgroundColor: colors.dangerSoft,
     borderWidth: 1,
