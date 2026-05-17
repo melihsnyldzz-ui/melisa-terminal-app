@@ -39,6 +39,7 @@ const modules: Array<{ label: string; description: string; screen: AppScreen; co
   { label: 'Günlük Yazdırma Özeti', description: 'Bugünkü print durumu', screen: 'printDailySummary', code: 'GÜN' },
   { label: 'Pilot Test', description: 'Saha öncesi kontrol', screen: 'pilotTest', code: 'PLT' },
   { label: 'Pilot Hataları', description: 'Saha test sorunları', screen: 'pilotIssues', code: 'HAT' },
+  { label: 'Performans Testi', description: 'Yoğun kullanım izleme', screen: 'performanceTest', code: 'PER' },
   { label: 'Gün Sonu Özeti', description: 'Kapanış kontrolü', screen: 'endOfDaySummary', code: 'SON' },
   { label: 'Offline Kuyruk', description: 'Sync hazırlığı', screen: 'offlineQueue', code: 'SYN' },
   { label: 'Gönderilemeyenler', description: 'Kuyruk işlemleri', screen: 'failedQueue', code: 'ERR' },
