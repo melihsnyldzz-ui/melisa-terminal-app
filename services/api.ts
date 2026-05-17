@@ -1,8 +1,9 @@
-import type { FailedOperation, Message, OpenDocument, Product, QRAlbum, TerminalSettings, UserSession } from '../types';
-import { loadSettings } from '../storage/localStorage';
+import type { FailedOperation, Message, OpenDocument, Product, QRAlbum, SalePrintJob, TerminalSettings, UserSession } from '../types';
+import { loadSettings, loadTerminalDeviceSettings } from '../storage/localStorage';
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const LOCAL_PRICE_TIMEOUT_MS = 1800;
+const PRINT_BRIDGE_TIMEOUT_MS = 3000;
 const HEALTH_ENDPOINTS = ['/health', '/status', '/'];
 
 const productTemplates: Product[] = [
@@ -67,6 +68,14 @@ export type LocalPriceConnectionResult = {
   message: string;
   url: string;
   endpoint?: string;
+  reason?: string;
+};
+
+export type PrintBridgeResult = {
+  ok: boolean;
+  message: string;
+  url: string;
+  endpoint: string;
   reason?: string;
 };
 
@@ -179,6 +188,138 @@ export async function checkLocalPriceService(settings: TerminalSettings): Promis
     message: `Local fiyat servisi bagli degil: ${baseUrl}`,
     reason: lastReason,
   };
+}
+
+async function getPrintBridgeBaseUrl() {
+  const [settings, terminalSettings] = await Promise.all([loadSettings(), loadTerminalDeviceSettings()]);
+  return normalizeApiBaseUrl(terminalSettings.apiBaseUrl || settings.apiBaseUrl);
+}
+
+async function fetchPrintBridge(endpoint: string, init?: RequestInit): Promise<Response> {
+  const baseUrl = await getPrintBridgeBaseUrl();
+  if (!baseUrl) throw new Error('API adresi gecersiz. Adres http://192.168.1.45:8787 formatinda olmali.');
+
+  const loopbackReason = getLoopbackReason(baseUrl);
+  if (loopbackReason) throw new Error(loopbackReason);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), PRINT_BRIDGE_TIMEOUT_MS);
+  try {
+    return await fetch(`${baseUrl}${endpoint}`, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export async function checkPrintBridgeHealth(): Promise<PrintBridgeResult> {
+  const endpoint = '/api/print/health';
+  const baseUrl = await getPrintBridgeBaseUrl();
+  if (!baseUrl) {
+    return {
+      ok: false,
+      url: '',
+      endpoint,
+      message: 'PC bridge adresi gecersiz',
+      reason: 'Adres http://192.168.1.45:8787 formatinda olmali.',
+    };
+  }
+
+  try {
+    const response = await fetchPrintBridge(endpoint, { method: 'GET' });
+    const text = await response.text();
+    let payload: { ok?: boolean; enabled?: boolean; mode?: string; message?: string } | null = null;
+    try {
+      payload = text ? JSON.parse(text) : null;
+    } catch {
+      payload = null;
+    }
+
+    const ok = response.ok && payload?.ok !== false;
+    const safeMode = payload?.enabled === false || payload?.mode === 'fileOnly' ? ' Güvenli mod korunuyor.' : '';
+    return {
+      ok,
+      url: baseUrl,
+      endpoint,
+      message: ok ? `PC bridge hazır.${safeMode}` : `PC bridge hazır değil: HTTP ${response.status}`,
+      reason: ok ? payload?.message : text || payload?.message,
+    };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Baglanti hatasi';
+    return {
+      ok: false,
+      url: baseUrl,
+      endpoint,
+      message: 'PC bridge bağlı değil',
+      reason,
+    };
+  }
+}
+
+export async function sendSaleReceiptToPrintBridge(job: SalePrintJob): Promise<PrintBridgeResult> {
+  const endpoint = '/api/print/sale-receipt';
+  const baseUrl = await getPrintBridgeBaseUrl();
+  if (!baseUrl) {
+    return {
+      ok: false,
+      url: '',
+      endpoint,
+      message: 'PC bridge adresi gecersiz',
+      reason: 'Adres http://192.168.1.45:8787 formatinda olmali.',
+    };
+  }
+
+  try {
+    const response = await fetchPrintBridge(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jobId: job.id,
+        documentNo: job.documentNo,
+        customerName: job.customerName,
+        receiptText: job.receiptText,
+        saleCurrency: job.saleCurrency || job.currency,
+        totalAmount: job.totalAmount,
+        totalQuantity: job.totalQuantity,
+        lineCount: job.lineCount,
+        lines: job.lines || [],
+        deviceId: job.deviceId,
+        deviceName: job.deviceName,
+        safety: {
+          requestedBy: 'melisa-terminal-app',
+          defaultMode: 'fileOnly',
+          enableWindowsSpooler: false,
+        },
+      }),
+    });
+    const text = await response.text();
+    let payload: { ok?: boolean; message?: string; error?: string } | null = null;
+    try {
+      payload = text ? JSON.parse(text) : null;
+    } catch {
+      payload = null;
+    }
+
+    const ok = response.ok && payload?.ok !== false;
+    return {
+      ok,
+      url: baseUrl,
+      endpoint,
+      message: ok ? (payload?.message || 'Fiş PC bridge yazdırma kuyruğuna gönderildi.') : `PC bridge yazdırma hatası: HTTP ${response.status}`,
+      reason: ok ? undefined : payload?.error || payload?.message || text,
+    };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Baglanti hatasi';
+    return {
+      ok: false,
+      url: baseUrl,
+      endpoint,
+      message: 'Fiş PC bridge’e gönderilemedi',
+      reason,
+    };
+  }
 }
 
 export async function loginMock(username: string, branch: string, offlineMode: boolean): Promise<UserSession> {

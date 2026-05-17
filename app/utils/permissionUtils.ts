@@ -14,6 +14,7 @@ export const screenPermissions: Partial<Record<AppScreen, Permission>> = {
   picking: 'picking',
   saleReview: 'review',
   failedQueue: 'printQueue',
+  printQueue: 'printQueue',
   currencySettings: 'currencySettings',
   terminalSettings: 'terminalSettings',
   auditLog: 'auditLog',

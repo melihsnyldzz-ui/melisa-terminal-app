@@ -12,6 +12,7 @@ export type AppScreen =
   | 'qrAlbum'
   | 'messages'
   | 'failedQueue'
+  | 'printQueue'
   | 'dataUpdate'
   | 'auditLog'
   | 'currencySettings'
@@ -184,6 +185,9 @@ export type SalePrintJob = {
   deviceId?: string;
   deviceName?: string;
   status: 'Yazdırma bekliyor' | 'Yazdırıldı' | 'Yazdırma hatası';
+  errorMessage?: string;
+  lastTriedAt?: string;
+  printedAt?: string;
   createdAt: string;
 };
 

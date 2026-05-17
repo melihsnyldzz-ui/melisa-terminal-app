@@ -104,6 +104,9 @@ const normalizeSalePrintJobs = (jobs: SalePrintJob[]): SalePrintJob[] => Array.i
   saleCurrency: normalizeCurrencyCode(job.saleCurrency || job.currency),
   exchangeRateSnapshot: job.exchangeRateSnapshot || DEFAULT_EXCHANGE_RATES,
   lines: Array.isArray(job.lines) ? job.lines : [],
+  errorMessage: job.errorMessage,
+  lastTriedAt: job.lastTriedAt,
+  printedAt: job.printedAt,
   status: job.status || 'Yazdırma bekliyor',
 })) : [];
 
