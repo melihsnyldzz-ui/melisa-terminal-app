@@ -7,7 +7,7 @@ import type { ToastTone } from '../../components/ToastMessage';
 import { loginMock } from '../../services/api';
 import type { UserSession } from '../../types';
 import { colors, radius, shadows, spacing, typography } from '../theme';
-import { APP_VERSION } from '../version';
+import { APP_DISPLAY_VERSION } from '../version';
 
 const branches = ['Merkez Depo', 'Mağaza', 'Sevkiyat'];
 
@@ -68,7 +68,7 @@ export function LoginScreen({ onLogin, systemMessage }: LoginScreenProps) {
             <Text style={styles.branchLine}>T01 · {branch}</Text>
           </View>
           <View style={styles.versionBadge}>
-            <Text style={styles.versionText}>v{APP_VERSION}</Text>
+            <Text style={styles.versionText}>{APP_DISPLAY_VERSION}</Text>
           </View>
         </Pressable>
 

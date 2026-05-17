@@ -154,7 +154,7 @@ Detaylı APK akışı için `docs/APK_BUILD_GUIDE.md` kullanılmalıdır.
 - `v0.5.6`: Yeni Fiş ekranında müşteri arama/autocomplete, seçili müşteri kartı, müşteri kilitleme ve daha kompakt müşteri seçim akışı eklendi
 - Sonraki fazlar: gerçek ERP API bağlantısı, offline kuyruk sertleştirme, bildirim/ses/titreşim, QR albüm servis bağlantısı
 
-Uygulama versiyonu TerminalHeader sağ üstünde gösterilir. Honeywell testlerinde ekranda görünen versiyon, GitHub'daki `package.json` version alanıyla uyumlu olmalıdır.
+Uygulama versiyonu TerminalHeader sağ üstünde gösterilir. Honeywell testlerinde ekranda görünen versiyonun merkezi kaynağı `app/version.ts` içindeki `APP_DISPLAY_VERSION` değeridir.
 Uygulama içi titreşim geri bildirimi `services/feedback.ts` üzerinden yönetilir; gerçek push notification ileriki fazdadır.
 
 ## EAS CLI Durumu

@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, spacing, typography } from '../app/theme';
-import { APP_VERSION } from '../app/version';
+import { APP_DISPLAY_VERSION } from '../app/version';
 import { StatusPill } from './StatusPill';
 
 type TerminalHeaderProps = {
@@ -28,7 +28,7 @@ export function TerminalHeader({ title = 'MELİSA BEBE', terminalId = 'T01', bra
           <Text style={styles.subBrand}>Saha Terminali</Text>
         </View>
         <View style={styles.versionBadge}>
-          <Text style={styles.versionText}>v{APP_VERSION}</Text>
+          <Text style={styles.versionText}>{APP_DISPLAY_VERSION}</Text>
         </View>
       </View>
       <View style={styles.metaRow}>

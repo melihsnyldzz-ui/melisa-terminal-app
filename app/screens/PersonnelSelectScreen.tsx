@@ -6,7 +6,7 @@ import { ToastMessage } from '../../components/ToastMessage';
 import { loadPersonnelUsers, loadTerminalDeviceSettings } from '../../storage/localStorage';
 import type { PersonnelUser } from '../../types';
 import { colors, radius, shadows, spacing, typography } from '../theme';
-import { APP_VERSION } from '../version';
+import { APP_DISPLAY_VERSION } from '../version';
 
 type PersonnelSelectScreenProps = {
   onSelect: (user: PersonnelUser) => void;
@@ -37,7 +37,7 @@ export function PersonnelSelectScreen({ onSelect, systemMessage }: PersonnelSele
             <Text style={styles.brand}>MELİSA BEBE</Text>
             <Text style={styles.product}>Personel seçimi</Text>
           </View>
-          <View style={styles.versionBadge}><Text style={styles.versionText}>v{APP_VERSION}</Text></View>
+          <View style={styles.versionBadge}><Text style={styles.versionText}>{APP_DISPLAY_VERSION}</Text></View>
         </View>
 
         <ToastMessage message={systemMessage} tone="info" />
