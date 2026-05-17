@@ -113,6 +113,15 @@ export async function removeOfflineAction(actionId: string): Promise<void> {
   await writeQueue(actions.filter((action) => action.id !== actionId));
 }
 
+export async function removeOfflineActionsByStatus(status: OfflineQueueAction['status']): Promise<void> {
+  const actions = await readQueue();
+  await writeQueue(actions.filter((action) => action.status !== status));
+}
+
+export async function clearOfflineActions(): Promise<void> {
+  await writeQueue([]);
+}
+
 export async function updateOfflineAction(actionId: string, patch: Partial<OfflineQueueAction>): Promise<OfflineQueueAction | null> {
   const actions = await readQueue();
   let updatedAction: OfflineQueueAction | null = null;
