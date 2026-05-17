@@ -32,6 +32,7 @@ const modules: Array<{ label: string; description: string; screen: AppScreen; co
   { label: 'QR Albüm', description: 'Ürün görselleri', screen: 'qrAlbum', code: 'QR' },
   { label: 'Mesajlar', description: 'Operasyon notları', screen: 'messages', code: 'MSG' },
   { label: 'Yazdırma Kuyruğu', description: 'Fiş tekrar yazdırma', screen: 'printQueue', code: 'PRN' },
+  { label: 'Offline Kuyruk', description: 'Sync hazırlığı', screen: 'offlineQueue', code: 'SYN' },
   { label: 'Gönderilemeyenler', description: 'Kuyruk işlemleri', screen: 'failedQueue', code: 'ERR' },
   { label: 'İşlem Geçmişi', description: 'Terminal audit log', screen: 'auditLog', code: 'LOG' },
   { label: 'Kur Ayarları', description: 'Para birimi oranları', screen: 'currencySettings', code: 'KUR' },

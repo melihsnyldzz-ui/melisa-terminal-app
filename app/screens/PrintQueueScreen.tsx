@@ -9,6 +9,7 @@ import type { ToastTone } from '../../components/ToastMessage';
 import { checkPrintBridgeHealth, sendSaleReceiptToPrintBridge } from '../../services/api';
 import type { PrintBridgeResult } from '../../services/api';
 import { notifySuccess, notifyWarning } from '../../services/feedback';
+import { addOfflineAction, createPrintRetryOfflineAction } from '../../storage/offlineQueueStorage';
 import { addAuditLog, loadSalePrintJobs, saveSalePrintJobs } from '../../storage/localStorage';
 import type { SalePrintJob } from '../../types';
 import { formatMoney, normalizeCurrencyCode } from '../utils/currencyUtils';
@@ -114,6 +115,7 @@ export function PrintQueueScreen({ onBack }: PrintQueueScreenProps) {
         errorMessage,
         lastTriedAt: now,
       });
+      await addOfflineAction(createPrintRetryOfflineAction({ ...job, status: 'Yazdırma hatası', errorMessage, lastTriedAt: now }, errorMessage));
       await addAuditLog({
         operationType: 'Hata oluştu',
         customerName: job.customerName,

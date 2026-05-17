@@ -10,6 +10,7 @@ import { FailedQueueScreen } from './app/screens/FailedQueueScreen';
 import { LoginScreen } from './app/screens/LoginScreen';
 import { MessagesScreen } from './app/screens/MessagesScreen';
 import { NewSaleScreen } from './app/screens/NewSaleScreen';
+import { OfflineQueueScreen } from './app/screens/OfflineQueueScreen';
 import { OpenSaleDraftsScreen } from './app/screens/OpenSaleDraftsScreen';
 import { OpenDocumentsScreen } from './app/screens/OpenDocumentsScreen';
 import { PickingScreen } from './app/screens/PickingScreen';
@@ -153,6 +154,7 @@ export default function App() {
     if (screen === 'messages') return <MessagesScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'failedQueue') return <FailedQueueScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'printQueue') return <PrintQueueScreen onBack={() => navigateTo('dashboard')} />;
+    if (screen === 'offlineQueue') return <OfflineQueueScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'dataUpdate') return <DataUpdateScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'auditLog') return <AuditLogScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'currencySettings') return <CurrencySettingsScreen onBack={() => navigateTo('dashboard')} />;
