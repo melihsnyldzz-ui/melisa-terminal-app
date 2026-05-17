@@ -35,6 +35,7 @@ import { TerminalSettingsScreen } from './app/screens/TerminalSettingsScreen';
 import { UnauthorizedScreen } from './app/screens/UnauthorizedScreen';
 import { VegaWriteBackReadinessScreen } from './app/screens/VegaWriteBackReadinessScreen';
 import { VegaSchemaDiscoveryScreen } from './app/screens/VegaSchemaDiscoveryScreen';
+import { VegaTestSlipPlanScreen } from './app/screens/VegaTestSlipPlanScreen';
 import { colors } from './app/theme';
 import { canOpenScreen, screenPermissions } from './app/utils/permissionUtils';
 import { HoneywellPreviewFrame } from './components/HoneywellPreviewFrame';
@@ -185,6 +186,7 @@ export default function App() {
     if (screen === 'terminalSettings') return <TerminalSettingsScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'vegaWriteBackReadiness') return <VegaWriteBackReadinessScreen onBack={() => navigateTo('dashboard')} />;
     if (screen === 'vegaSchemaDiscovery') return <VegaSchemaDiscoveryScreen onBack={() => navigateTo('dashboard')} />;
+    if (screen === 'vegaTestSlipPlan') return <VegaTestSlipPlanScreen onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
     if (screen === 'settings') return <SettingsScreen onBack={() => navigateTo('dashboard')} onLogout={handleLogout} session={session} currentUser={currentUser} />;
     return <DashboardScreen session={session} currentUser={currentUser} onNavigate={navigateTo} systemMessage={backHint} />;
   };

@@ -47,6 +47,7 @@ const modules: Array<{ label: string; description: string; screen: AppScreen; co
   { label: 'Pilot Veri Temizleme', description: 'Test kayıtlarını temizle', screen: 'pilotDataCleanup', code: 'CLN' },
   { label: 'Vega Hazırlık', description: 'Write-back kontrolü', screen: 'vegaWriteBackReadiness', code: 'VGA' },
   { label: 'Vega Kolon Keşfi', description: 'Tablo/kolon hazırlığı', screen: 'vegaSchemaDiscovery', code: 'KŞF' },
+  { label: 'Vega Test Fişi Planı', description: 'Taslak alan eşleme', screen: 'vegaTestSlipPlan', code: 'PLN' },
   { label: 'Gün Sonu Özeti', description: 'Kapanış kontrolü', screen: 'endOfDaySummary', code: 'SON' },
   { label: 'Offline Kuyruk', description: 'Sync hazırlığı', screen: 'offlineQueue', code: 'SYN' },
   { label: 'Gönderilemeyenler', description: 'Kuyruk işlemleri', screen: 'failedQueue', code: 'ERR' },
